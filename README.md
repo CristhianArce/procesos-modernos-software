@@ -2,7 +2,7 @@
 
 Aplicación para administrar nodos y sensores de una red eléctrica, simular lecturas de voltaje, corriente y potencia, verlas en un tablero y generar alertas por umbral. Se construye con Spec-Driven Development (OpenSpec) y un orquestador de agentes de Claude Code que lleva cada historia de usuario desde el issue hasta el PR, con puertas de calidad y evidencia trazable. Taller "Aplicación de Solución IA bajo SDD", modalidad B; entrega el 24 de noviembre de 2026.
 
-![CI](https://img.shields.io/badge/CI-pendiente-lightgrey) <!-- pendiente: reemplazar por el badge de ci.yml cuando exista -->
+[![CI](https://github.com/danielfms/procesos-modernos-software/actions/workflows/ci.yml/badge.svg)](https://github.com/danielfms/procesos-modernos-software/actions/workflows/ci.yml)
 
 ## Stack
 
