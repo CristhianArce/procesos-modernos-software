@@ -1,5 +1,5 @@
 ---
-name: crea-hu
+name: crear-hu
 description: Redacta historias de usuario con formato claro (Como/quiero/para, criterios de aceptación CA-n en Dado/Cuando/Entonces, reglas, fuera de alcance) y las publica como issues de GitHub listos para el orquestador. Úsala cuando pidan "crea la historia de usuario #N de la propuesta", "crea las historias 6 a 10", "crea todas las historias del backlog", "convierte esta idea en una historia" o "crea el issue de la historia N".
 argument-hint: <N | N-M | todas | "idea libre"> [borrador]
 allowed-tools: Read Grep Glob Write Bash(gh auth status*) Bash(gh repo view*) Bash(gh issue list*) Bash(gh issue view*) Bash(gh issue create*) Bash(gh issue edit*) Bash(gh label list*) Bash(gh label create*) Bash(mkdir -p .flujo/*) Bash(mkdir -p docs/backlog*)

@@ -9,7 +9,7 @@ Este plan ordena todo lo que hay que construir antes de implementar la primera h
 - **Para nota máxima:** revisor cruzado `Plan`, decisor como 3 agentes en paralelo más consolidador, `revisor-pr` (solo `COMMENT`), 2 smoke de Playwright en CI, `/api/metrics` e índice `AGENTS_LOG.md`.
 - **Pospuesto:** automatización de `esperar-ci`, `validador-comentarios`, `generar-planes-prueba`, `ejecutor-e2e` con capturas, `reporte-historia`, `solicitar-revision-humana`, automatización de `cierre-post-merge` (el archivo se hace a mano con los mismos comandos), modo `manual`, `.claude/workflows/decisor.js`, hook `guardia.mjs` (queda el `deny` de `settings.json`), Grafana y despliegue.
 
-**Fuera de este plan:** el contenido de las historias (issues). Se redactan y publican con el skill `crea-hu`; el plan solo indica qué issues necesita cada fase y cuándo (sección 2.0).
+**Fuera de este plan:** el contenido de las historias (issues). Se redactan y publican con el skill `crear-hu`; el plan solo indica qué issues necesita cada fase y cuándo (sección 2.0).
 
 ---
 
@@ -39,7 +39,7 @@ Este plan ordena todo lo que hay que construir antes de implementar la primera h
 |---|---|---|---|---|
 | `openspec-explore`, `openspec-propose`, `openspec-apply-change`, `openspec-update-change`, `openspec-sync-specs`, `openspec-archive-change` | 3.2, 3.6, 3.8 | — (los instala OpenSpec) | `/openspec-*` | Imprescindible (los instala `init`) |
 | `orquestador` | 3.0, 3.13, 3.21, 3.23 | `scripts/copiar-evidencias.mjs` | solo persona (`disable-model-invocation: true`) | Imprescindible (modo `demo` primero; modo normal reducido después) |
-| `crea-hu` | — (ya creado en `.claude/skills/crea-hu/`) | — | lenguaje natural: "crea la historia de usuario #N de la propuesta", "crea las historias 6 a 10", "crea todas las historias" | Imprescindible (crea los issues de las HU 1 a 10 con `CA-n`) |
+| `crear-hu` | — (ya creado en `.claude/skills/crear-hu/`) | — | lenguaje natural: "crea la historia de usuario #N de la propuesta", "crea las historias 6 a 10", "crea todas las historias" | Imprescindible (crea los issues de las HU 1 a 10 con `CA-n`) |
 | `generar-planes-prueba` | 3.7 | — | la corre un agente | Pospuesto |
 | `build-test` | 3.9 | `scripts/build-test.mjs` | orquestador (paso 5); `commit` lee su resultado en `estado.md` | Imprescindible |
 | `entorno-docker` | 3.10 | `scripts/entorno-docker.mjs` (`levantar`, `logs`, `bajar`) | orquestador (paso 5 del modo normal reducido, para el smoke `npm run e2e`; no corre en `demo`) | Imprescindible |
@@ -141,7 +141,7 @@ Fase 0 Prerrequisitos ─► Fase 1A HU 1a arranque (OpenSpec, reglas, permisos)
 
 ### 2.0 Issues que el plan necesita (se crean por separado)
 
-Todos se crean con el skill `crea-hu` (criterios `CA-n` ya numerados, que el preparador conserva).
+Todos se crean con el skill `crear-hu` (criterios `CA-n` ya numerados, que el preparador conserva).
 
 | Issue | Lo usa | Cuándo se crea | Requisito |
 |---|---|---|---|
@@ -160,7 +160,7 @@ Todos se crean con el skill `crea-hu` (criterios `CA-n` ya numerados, que el pre
 2. `git config --global core.longpaths true`: las rutas de `node_modules` dentro de `Documents\EAFIT\...` superan el límite de Windows.
 3. En Claude Code, confirmar acceso a sonnet y haiku (el modo `demo` corre con sonnet; opus solo se usa en el modo normal si la cuenta lo tiene). Habilitar "Dynamic workflows" es opcional: el decisor usa por defecto la alternativa sin workflow (1.4).
 4. La noche antes de la demo: `docker compose pull` y `npm ci` en el checkout principal, para no depender de la red.
-5. Una sola persona (A), al empezar: crear con `crea-hu` los issues de HU 2 y los 3 de práctica (2.0). Los de HU 1b (#2) y HU 1a (#1) ya existen, en [el backlog](backlog/README.md).
+5. Una sola persona (A), al empezar: crear con `crear-hu` los issues de HU 2 y los 3 de práctica (2.0). Los de HU 1b (#2) y HU 1a (#1) ya existen, en [el backlog](backlog/README.md).
 
 **Hecho cuando:** los cinco portátiles pasan `node -v`, `docker compose version`, `gh auth status` y `openspec --version`, y existen los 6 issues del sábado.
 
@@ -223,7 +223,7 @@ Change `infraestructura-ci-cd`. Puede arrancar el 21 en cuanto la HU 1b (fase 1B
    - `cd.yml`: el de flujo-orquestador.md, paso 10, con `actions/checkout@v6`, `docker/login-action@v4` y `docker/build-push-action@v7`.
 5. **GitHub:** plantillas de issue y PR, CODEOWNERS, protección de `main` y las etiquetas de 1.1 creadas antes de usarlas (`gh` falla si la etiqueta no existe).
 6. **Imagen:** marcar público el paquete de `ghcr.io` tras el primer CD.
-7. **Issues:** crear con `crea-hu` los issues de las HU 3 a 10 y uno de práctica por integrante (2.0); los de práctica de las fases 3 y 4 ya existen desde el sábado.
+7. **Issues:** crear con `crear-hu` los issues de las HU 3 a 10 y uno de práctica por integrante (2.0); los de práctica de las fases 3 y 4 ya existen desde el sábado.
 
 **Hecho cuando:**
 - `docker compose up` funciona en un portátil que no es el de quien lo preparó;
@@ -291,7 +291,7 @@ Se construyen de abajo hacia arriba y cada pieza tiene una prueba aislada antes 
 
 | Día | Trabajo | Hito |
 |---|---|---|
-| Sáb 21 | Fase 0 (incluye los issues de HU 2 y de práctica con `crea-hu`); fase 1 completa (1A: arranque de la HU 1a, change `configuracion-ia-sdd`; 1B: HU 1b, change `herramientas-desarrollo`); fase 3.0 a 3.4 y 3.6 (fixtures, plantillas, scripts, agentes imprescindibles y `preparador`); compose mínimo (`db` + `flyway`) de la HU 2 por la noche | PR de arranque de la HU 1a y HU 1b fusionados; OpenSpec configurado; `npm run build` en verde; issues del sábado creados |
+| Sáb 21 | Fase 0 (incluye los issues de HU 2 y de práctica con `crear-hu`); fase 1 completa (1A: arranque de la HU 1a, change `configuracion-ia-sdd`; 1B: HU 1b, change `herramientas-desarrollo`); fase 3.0 a 3.4 y 3.6 (fixtures, plantillas, scripts, agentes imprescindibles y `preparador`); compose mínimo (`db` + `flyway`) de la HU 2 por la noche | PR de arranque de la HU 1a y HU 1b fusionados; OpenSpec configurado; `npm run build` en verde; issues del sábado creados |
 | Dom 22 | Fase 2 (HU 2: resto del compose, CI, CD a `ghcr.io` con paquete público, etiquetas, issues 3 a 10 y uno de práctica por integrante); fase 3.7 a 3.10 (resto del nivel Imprescindible de la HU 1a, change `configuracion-ia-sdd`); fase 4: prueba del modo `demo` sobre el issue de práctica | `docker compose up` en un portátil ajeno; CI en verde; imagen publicada; modo `demo` de punta a punta |
 | Lun 23 | Fase 5: HU 3 a 5 con el orquestador en modo normal reducido; piezas de nota máxima si hay tiempo; ensayo cronometrado por la noche | 5 historias base con su `evidencias/issue-<n>/`; un ensayo por integrante |
 | Mar 24 | Hasta las 18:00: ensayo con una historia no vista, ramas de respaldo, video de contingencia, README y `AGENTS_LOG.md`. Sin funcionalidades nuevas después de las 12:00 | Entrega |
@@ -302,7 +302,7 @@ Si el domingo por la noche el modo normal reducido no está estable, las HU 3 a 
 
 | Integrante | Sábado 21 | Domingo 22 |
 |---|---|---|
-| A | Issues del sábado con `crea-hu` (primero); fase 1A (OpenSpec, `config.yaml`, `CLAUDE.md`, change `configuracion-ia-sdd`, PR de arranque); fase 1B (proyecto, núcleo de `src/lib`) | Apoyo en la fase 4 |
+| A | Issues del sábado con `crear-hu` (primero); fase 1A (OpenSpec, `config.yaml`, `CLAUDE.md`, change `configuracion-ia-sdd`, PR de arranque); fase 1B (proyecto, núcleo de `src/lib`) | Apoyo en la fase 4 |
 | B | Inicio de la fase 2 (compose mínimo `db` + `flyway` antes de la noche, luego Dockerfile) | Fin de la fase 2 (servicio `app`, CI, CD, protección de rama); fase 3.7 y 3.8 |
 | C | `settings.json` y prueba de worktrees (fase 1A, sobre la rama de A); exclusiones de worktrees en la HU 1b; fase 3.6 `preparador` | 3.10 (`commit`, `abrir-pr`) |
 | D | Fase 3.0 y 3.1 (fixtures, plantillas, scripts, incluidos `copiar-evidencias.mjs` y `migracion-timestamp.mjs`); `revisor-salida`, `revisor-reglas`, `trazabilidad` | Puertas en el orquestador; `revisor-pr` (nota máxima) |
@@ -569,7 +569,7 @@ El cuerpo de cada agente contiene:
 15. **`trazabilidad` antes de G2 también en `demo`** (haiku / low), porque G2 exige su salida.
 16. **`revisor-salida` no escribe archivos:** el orquestador pega su salida textual en `gates.md`.
 17. **`entorno-docker`** se usa en el modo normal reducido para el smoke `npm run e2e` (especificación 3.13 paso 7); no corre en `demo`.
-18. **Issues** con el skill `crea-hu`, guardados en `docs/backlog/`: HU 1b (#2) y 1a (#1) ya creados; HU 2 y práctica el sábado; HU 3 a 10 el domingo (2.0).
+18. **Issues** con el skill `crear-hu`, guardados en `docs/backlog/`: HU 1b (#2) y 1a (#1) ya creados; HU 2 y práctica el sábado; HU 3 a 10 el domingo (2.0).
 19. **HU 1a** en una rama de integración `feature/issue-1-configuracion-ia-sdd`, con un PR de arranque a `main` en la fase 1A y sub-ramas `hu1a/<pieza>` en la fase 3.
 20. **`effort` por invocación:** verificado; la herramienta `Agent` lo acepta junto con `model`.
 21. **CI mínimo en la HU 1a:** `.github/workflows/ci.yml` con `node --test` de `.claude/`, `openspec validate --strict` y lint, typecheck, `test:unit` y build del proyecto; la HU 2 lo amplía con integración, Flyway, gitleaks, `npm audit`, CodeQL y build de la imagen.

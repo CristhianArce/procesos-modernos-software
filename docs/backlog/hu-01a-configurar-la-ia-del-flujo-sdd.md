@@ -4,7 +4,7 @@ Como equipo de desarrollo quiero tener versionada y probada toda la configuraci�
 
 ## Contexto
 
-Es la parte de **configuración de IA** de la HU 1 de la propuesta (sección 5): `openspec init`, `openspec/config.yaml`, `CLAUDE.md`, `.claude/settings.json` y los agentes y skills del orquestador (plan de construcción, fases 1A, 3 y 4). Las herramientas de desarrollo quedaron en la HU 1b. Hoy en `.claude/` solo está el skill `crea-hu`. Se construye en modo interactivo, no con el orquestador, porque él depende de esta historia (especificación 2.7).
+Es la parte de **configuración de IA** de la HU 1 de la propuesta (sección 5): `openspec init`, `openspec/config.yaml`, `CLAUDE.md`, `.claude/settings.json` y los agentes y skills del orquestador (plan de construcción, fases 1A, 3 y 4). Las herramientas de desarrollo quedaron en la HU 1b. Hoy en `.claude/` solo está el skill `crear-hu`. Se construye en modo interactivo, no con el orquestador, porque él depende de esta historia (especificación 2.7).
 
 ## Criterios de aceptación
 
@@ -29,7 +29,7 @@ Es la parte de **configuración de IA** de la HU 1 de la propuesta (sección 5):
 - El proyecto Next.js, la estructura, el núcleo de `src/lib` y los puntos de extensión (HU 1b).
 - Docker, `docker compose`, el CD, la imagen en `ghcr.io`, la ampliación del CI (integración con Postgres, Flyway, gitleaks, `npm audit`, CodeQL, build de la imagen), las plantillas de GitHub, CODEOWNERS y las etiquetas del repo (HU 2).
 - Las piezas pospuestas: `esperar-ci`, `validador-comentarios`, `generar-planes-prueba`, `ejecutor-e2e`, `reporte-historia`, `solicitar-revision-humana`, la automatización de `cierre-post-merge`, el modo `manual`, el workflow `decisor.js` y el hook `guardia.mjs`.
-- Redactar los issues de las HU 3 a 10 (los crea el skill `crea-hu`).
+- Redactar los issues de las HU 3 a 10 (los crea el skill `crear-hu`).
 - El modo normal reducido del orquestador (pasos 1 a 6 con G2, G3, los dos revisores y el decisor): se prueba con la HU 3 y no bloquea esta historia.
 
 ## Notas técnicas (no vinculantes)
