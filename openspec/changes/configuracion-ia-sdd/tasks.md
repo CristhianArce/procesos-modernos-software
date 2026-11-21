@@ -37,8 +37,8 @@
 ## 5. Preparador (B5)
 
 - [x] 5.1 Crear el issue de prueba (uno solo: #6 "[PRUEBA] Página Acerca de") y verificar que existe con la etiqueta `prueba` (CA-6, CA-7)
-- [ ] 5.2 Escribir `.claude/agents/preparador.md` (sonnet / medium, ficha 3.1) y verificar con el issue de prueba #6 que crea `feature/issue-<n>-<slug>` en el checkout principal y `.flujo/issue-<n>/issue.md` con `CA-n`, y que una segunda corrida reutiliza todo; guardar en `evidencias/issue-1/pruebas/preparador.md` (CA-6)
-- [ ] 5.3 Verificar que con el issue de prueba #6 cerrado el `preparador` devuelve `BLOQUEAR: ya resuelto` sin crear rama ni worktree, y reabrir el issue; guardar en la misma evidencia (CA-7)
+- [x] 5.2 Escribir `.claude/agents/preparador.md` (sonnet / medium, ficha 3.1) y verificar con el issue de prueba #6 que crea `feature/issue-<n>-<slug>` en el checkout principal y `.flujo/issue-<n>/issue.md` con `CA-n`, y que una segunda corrida reutiliza todo; guardar en `evidencias/issue-1/pruebas/preparador.md` (CA-6)
+- [x] 5.3 Verificar que con el issue de prueba #6 cerrado el `preparador` devuelve `BLOQUEAR: ya resuelto` sin crear rama ni worktree, y reabrir el issue; guardar en la misma evidencia (CA-7)
 
 ## 6. Compilación, commit y PR (requiere la HU 1b y el compose mínimo)
 

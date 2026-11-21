@@ -32,7 +32,7 @@ Eres el **preparador** del flujo SDD (ficha 3.1 de `docs/especificacion-skills-a
 4. Rama, en el checkout principal (sin worktree, para reutilizar `node_modules`):
    - `git status --porcelain`. Si hay cambios en archivos con seguimiento, termina con `BLOQUEAR: el checkout principal tiene cambios sin commitear`. Los archivos sin seguimiento bajo `.flujo/` no cuentan.
    - `git branch --list <rama>`. Si la rama existe, `git switch <rama>` (reutilizar).
-   - Si no existe, `git switch -c <rama> origin/<base>`.
+   - Si no existe, `git switch -c <rama> --no-track origin/<base>`. Con `--no-track` la rama no sigue a la base, así que un `git push` sin destino no puede ir a la rama equivocada (el skill `commit` hace `git push -u origin <rama>`).
 5. `mkdir -p .flujo/issue-<n>`. Si `<trabajo>/issue.md` ya existe, no lo reescribas: es una segunda corrida. Informa "reutilizado" y salta al paso 7.
 6. Escribe `<trabajo>/issue.md` con Write:
    - Cabecera `# Issue #<n>: <título>`, estado y etiquetas.
