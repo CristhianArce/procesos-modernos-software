@@ -10,13 +10,13 @@
 - [x] 1.6 Crear `.claude/tests/config.test.mjs` con `node --test`: `config.yaml` sin claves duplicadas y con todas las reglas como texto; `settings.json` con cada regla `deny` obligatoria; `.gitignore` con `.flujo/` y `.claude/worktrees/`. Verificar que `node --test ".claude/tests/*.test.mjs"` pasa (CA-1, CA-3)
 - [x] 1.7 Verificación manual en una sesión nueva: `gh pr merge`, `git commit --amend`, `git rebase`, `git reset` y `git push --force` se rechazan; crear y borrar `.claude/worktrees/prueba` no pide confirmación. Anotar el resultado en `evidencias/issue-1/pruebas/permisos.md` (CA-3)
 - [x] 1.8 CI mínimo `.github/workflows/ci.yml` (job `configuracion-ia`: OpenSpec 2.1, `node --test ".claude/tests/*.test.mjs"`, `openspec validate --all --strict --no-interactive`; job `proyecto` condicionado a `package.json`) y verificar que el CI del PR de arranque termina en verde (CA-1, CA-3; Derivado: decisión #21)
-- [ ] 1.9 Abrir y fusionar el PR de arranque a `main` con `Refs #1`, y verificar que `main` contiene `openspec/`, `CLAUDE.md` y `.claude/settings.json` (Derivado: decisión #22)
+- [x] 1.9 Abrir y fusionar el PR de arranque a `main` con `Refs #1`, y verificar que `main` contiene `openspec/`, `CLAUDE.md` y `.claude/settings.json` (Derivado: decisión #22)
 
 ## 2. Fixtures y validación del formato de specs (B0)
 
-- [ ] 2.1 Crear `.claude/fixtures/change-ok/` (un change con `## Purpose`, `### Requirement:` y escenarios que citan `CA-n`) y `.claude/fixtures/change-espanol/` (el mismo con `### Requisito:`) (CA-1, CA-4)
-- [ ] 2.2 Crear `.claude/fixtures/parche-violaciones.diff` (SQL en un `service.ts` y `fetch('/api/...')` en un `page.tsx`), `.claude/fixtures/trabajo-ejemplo/` con `estado.md`, `issue.md` y `agentes-log.md`, y `.claude/fixtures/repo-ejemplo/` con una migración (`CREATE TABLE` y `ALTER TABLE … ADD COLUMN`), un módulo con `menu.ts`, una semilla y un `contracts/openapi.yaml` (CA-5, CA-6)
-- [ ] 2.3 Agregar a `.claude/tests/` una prueba que copia cada change de ejemplo a un directorio temporal con su `openspec/` y verifica que `change-ok` pasa `openspec validate --strict` y `change-espanol` falla (CA-1)
+- [x] 2.1 Crear `.claude/fixtures/change-ok/` (un change con `## Purpose`, `### Requirement:` y escenarios que citan `CA-n`) y `.claude/fixtures/change-espanol/` (el mismo con `### Requisito:`) (CA-1, CA-4)
+- [x] 2.2 Crear `.claude/fixtures/parche-violaciones.diff` (SQL en un `service.ts` y `fetch('/api/...')` en un `page.tsx`), `.claude/fixtures/trabajo-ejemplo/` con `estado.md`, `issue.md` y `agentes-log.md`, y `.claude/fixtures/repo-ejemplo/` con una migración (`CREATE TABLE` y `ALTER TABLE … ADD COLUMN`), un módulo con `menu.ts`, una semilla y un `contracts/openapi.yaml` (CA-5, CA-6)
+- [x] 2.3 Agregar a `.claude/tests/` una prueba que copia cada change de ejemplo a un directorio temporal con su `openspec/` y verifica que `change-ok` pasa `openspec validate --strict` y `change-espanol` falla (CA-1)
 
 ## 3. Configuración, plantillas y scripts del orquestador (B1)
 

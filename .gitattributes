@@ -1,0 +1,2 @@
+# Los parches de fixture se aplican con `git apply`: no convertir sus finales de línea.
+*.diff -text
