@@ -1,0 +1,62 @@
+# CI mínimo de la HU 1a (#1, change configuracion-ia-sdd).
+# La HU 2 lo amplía con integración con Postgres, Flyway, gitleaks, npm audit, CodeQL y build de la imagen.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  configuracion-ia:
+    name: Configuración de IA (OpenSpec y Claude Code)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      - name: Instalar OpenSpec 2.1
+        run: npm i -g @fission-ai/openspec@2.1
+      - name: Pruebas de la configuración (node --test)
+        run: node --test ".claude/tests/*.test.mjs"
+      - name: Validación estricta de OpenSpec
+        run: openspec validate --all --strict --no-interactive
+
+  proyecto:
+    name: Proyecto (lint, typecheck, unit, build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - name: Sin proyecto todavía (llega con la HU 1b)
+        if: hashFiles('package.json') == ''
+        run: echo "No hay package.json; se omiten lint, typecheck, pruebas y build."
+      - uses: actions/setup-node@v6
+        if: hashFiles('package.json') != ''
+        with:
+          node-version: 24
+          cache: npm
+      - name: Instalar dependencias
+        if: hashFiles('package.json') != ''
+        run: npm ci
+      - name: Lint
+        if: hashFiles('package.json') != ''
+        run: npm run lint
+      - name: Typecheck
+        if: hashFiles('package.json') != ''
+        run: npm run typecheck
+      - name: Pruebas unitarias
+        if: hashFiles('package.json') != ''
+        run: npm run test:unit
+      - name: Build
+        if: hashFiles('package.json') != ''
+        run: npm run build

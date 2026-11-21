@@ -449,7 +449,6 @@ Claude Code evalúa los permisos por subcomando: en `cd "<raiz>" && git add src/
       "Bash(git reset)",
       "Bash(git reset *)",
       "Edit(/.claude/worktrees/**/.github/**)",
-      "Write(/.claude/worktrees/**/.github/**)",
       "Read(/.env)",
       "Read(/.claude/worktrees/**/.env)"
     ]
@@ -461,7 +460,7 @@ Este JSON es el que se versiona tal cual. El bloque `hooks` de `guardia.mjs` est
 
 Notas:
 - **Worktrees:** las reglas `git worktree add *`, `git fetch *`, `cp .env .claude/worktrees/*`, `mkdir -p .flujo/*` y `Edit(/.claude/worktrees/**)` son las que permiten al preparador crear el worktree, copiar el `.env` y escribir en él sin pedir confirmación. En `demo`, las reglas `git switch` le permiten crear o reutilizar la rama en el checkout principal y volver a `main` al terminar. Las rutas `Edit(/...)` se toman como relativas a la raíz del proyecto; se comprueba en la fase 1A (punto 7) que escribir en `.flujo/` y `.claude/worktrees/` no pide permiso, y si lo pide se prueba la forma `Edit(.flujo/**)`.
-- **`.github/`:** el `deny` de `Edit`/`Write` en `.claude/worktrees/**/.github/**` impide que un agente edite el CI desde un worktree, sin estorbar a quien hace la HU 2 en el repo principal. En modo `demo` (checkout principal) depende de las instrucciones del agente hasta que exista `guardia.mjs`.
+- **`.github/`:** el `deny` de `Edit` en `.claude/worktrees/**/.github/**` (Claude Code aplica las reglas `Edit` a todas las herramientas que editan archivos; `Write(...)` no se evalúa) impide que un agente edite el CI desde un worktree, sin estorbar a quien hace la HU 2 en el repo principal. En modo `demo` (checkout principal) depende de las instrucciones del agente hasta que exista `guardia.mjs`.
 - **`.env`:** el `deny` de `Read(/.env)` impide que un agente lea su contenido; `cp` lo copia sin mostrarlo (especificación 3.1 paso 4).
 - **`gh api *`:** queda permitido porque los pasos 7 y 10 lo necesitan. Las formas peligrosas (`.../merge`, `"event": "APPROVE"`) las bloquearía el hook cuando exista; hasta entonces dependen de las instrucciones de los agentes.
 - **Sintaxis:** se usa la forma con espacio (`Bash(git fetch *)`). Si la versión de Claude Code del equipo solo acepta la antigua (`Bash(git fetch:*)`), se convierte con buscar y reemplazar.
