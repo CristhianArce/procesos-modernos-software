@@ -27,7 +27,7 @@ Es la parte de **configuración de IA** de la HU 1 de la propuesta (sección 5):
 ## Fuera de alcance
 
 - El proyecto Next.js, la estructura, el núcleo de `src/lib` y los puntos de extensión (HU 1b).
-- Docker, `docker compose`, CI/CD, las plantillas de GitHub, CODEOWNERS y las etiquetas del repo (HU 2).
+- Docker, `docker compose`, el CD, la imagen en `ghcr.io`, la ampliación del CI (integración con Postgres, Flyway, gitleaks, `npm audit`, CodeQL, build de la imagen), las plantillas de GitHub, CODEOWNERS y las etiquetas del repo (HU 2).
 - Las piezas pospuestas: `esperar-ci`, `validador-comentarios`, `generar-planes-prueba`, `ejecutor-e2e`, `reporte-historia`, `solicitar-revision-humana`, la automatización de `cierre-post-merge`, el modo `manual`, el workflow `decisor.js` y el hook `guardia.mjs`.
 - Redactar los issues de las HU 3 a 10 (los crea el skill `crea-hu`).
 - El modo normal reducido del orquestador (pasos 1 a 6 con G2, G3, los dos revisores y el decisor): se prueba con la HU 3 y no bloquea esta historia.
@@ -44,6 +44,7 @@ Es la parte de **configuración de IA** de la HU 1 de la propuesta (sección 5):
 - Fixtures en `.claude/fixtures/`, excluidas de lint, typecheck, Vitest y build: un change correcto, uno con encabezados en español, un parche con violaciones y un `<trabajo>` de ejemplo.
 - Orden de construcción: OpenSpec, `CLAUDE.md` y permisos, luego las fases 3.0 → 3.10 del plan y al final la fase 4.
 - Comprobar si `effort` se puede pasar por invocación de `Agent`. Si no, se usa el del frontmatter y se anota en `agentes.md`.
+- **CI mínimo en esta historia** (`.github/workflows/ci.yml`, en cada PR y push a `main`): `node --test` de las pruebas de `.claude/`, `openspec validate --strict` y, en cuanto exista el proyecto (HU 1b), lint, typecheck, `test:unit` y build. La HU 2 lo amplía; así la definición de hecho ("CI en verde") se cumple sin esperar a la HU 2.
 - No hay migraciones, semilla ni puntos de extensión.
 
 ## Dependencias

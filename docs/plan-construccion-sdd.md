@@ -570,6 +570,8 @@ El cuerpo de cada agente contiene:
 18. **Issues** con el skill `crea-hu`, guardados en `docs/backlog/`: HU 1b (#2) y 1a (#1) ya creados; HU 2 y práctica el sábado; HU 3 a 10 el domingo (2.0).
 19. **HU 1a** en una rama de integración `feature/issue-1-configuracion-ia-sdd`, con un PR de arranque a `main` en la fase 1A y sub-ramas `hu1a/<pieza>` en la fase 3.
 20. **`effort` por invocación:** verificado; la herramienta `Agent` lo acepta junto con `model`.
+21. **CI mínimo en la HU 1a:** `.github/workflows/ci.yml` con `node --test` de `.claude/`, `openspec validate --strict` y lint, typecheck, `test:unit` y build del proyecto; la HU 2 lo amplía con integración, Flyway, gitleaks, `npm audit`, CodeQL y build de la imagen.
+22. **HU 1a, HU 1b y compose mínimo en un solo día (sáb 21)**, en secuencia por una sola persona: entrega A de la HU 1a → HU 1b → compose mínimo → resto de la HU 1a, con commits por pieza en la rama de integración, sin sub-ramas.
 
 **Pendientes de verificar al construir** (cada uno con su respaldo ya definido):
 - **`pino` con la salida `standalone`** de Next (si su transporte da problemas, se usa sin transporte, escribiendo JSON a stdout).
