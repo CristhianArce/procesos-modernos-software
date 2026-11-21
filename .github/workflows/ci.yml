@@ -1,5 +1,5 @@
-# CI mínimo de la HU 1a (#1, change configuracion-ia-sdd).
-# La HU 2 lo amplía con integración con Postgres, Flyway, gitleaks, npm audit, CodeQL y build de la imagen.
+# CI mínimo: rápido en cada PR; los controles de seguridad corren solo al fusionar en main.
+# La HU 2 agrega después Postgres de servicio, Flyway, CodeQL y el build de la imagen (CD).
 name: CI
 
 on:
@@ -32,31 +32,46 @@ jobs:
         run: openspec validate --all --strict --no-interactive
 
   proyecto:
-    name: Proyecto (lint, typecheck, unit, build)
+    name: Proyecto (lint, typecheck, pruebas, build)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
-      - name: Sin proyecto todavía (llega con la HU 1b)
-        if: hashFiles('package.json') == ''
-        run: echo "No hay package.json; se omiten lint, typecheck, pruebas y build."
       - uses: actions/setup-node@v6
-        if: hashFiles('package.json') != ''
         with:
           node-version: 24
           cache: npm
       - name: Instalar dependencias
-        if: hashFiles('package.json') != ''
         run: npm ci
       - name: Lint
-        if: hashFiles('package.json') != ''
         run: npm run lint
       - name: Typecheck
-        if: hashFiles('package.json') != ''
         run: npm run typecheck
       - name: Pruebas unitarias
-        if: hashFiles('package.json') != ''
         run: npm run test:unit
+      # Hoy las pruebas de integración invocan los handlers con Request y no usan BD.
+      # Cuando una necesite Postgres (HU 3), la HU 2 agrega el servicio a este job.
+      - name: Pruebas de integración
+        run: npm run test:integration
       - name: Build
-        if: hashFiles('package.json') != ''
         run: npm run build
+
+  seguridad:
+    name: Seguridad (gitleaks y npm audit)
+    # Solo al fusionar en main: mantiene ligero el CI de cada PR.
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: gitleaks (secretos en el historial)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      - name: npm audit (nivel alto o crítico)
+        run: npm audit --audit-level=high
