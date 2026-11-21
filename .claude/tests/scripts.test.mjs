@@ -24,7 +24,7 @@ test("CA-6: orquestador.json tiene las claves que usa el orquestador", () => {
   assert.ok(["archivar", "borrar"].includes(cfg.limpiarTrabajo));
 });
 
-test("CA-6: hay una plantilla por cada archivo de <trabajo> (especificación 2.1)", () => {
+test("CA-6: hay una plantilla por cada archivo de <trabajo> (flujo-orquestador 2.1)", () => {
   const esperadas = ["estado.md", "agentes-log.md", "issue.md", "preguntas.md", "decisiones.md", "contexto.md", "explore.md", "gates.md", "plan-pruebas.md", "plan-smoke.md", "verificacion.md", "ciclo-pr.md", "trazabilidad.md", "pr-body.md", "bloqueo.md", "agentes.md", "review.json"];
   const hay = readdirSync(join(RAIZ, ".claude", "skills", "orquestador", "plantillas"));
   assert.deepEqual(esperadas.filter((e) => !hay.includes(e)), []);

@@ -224,7 +224,7 @@ Las dos primeras historias crean el proyecto y la infraestructura sobre la que c
 
 La colaboración es real solo si hay trabajo de al menos dos agentes distintos, un rechazo genuino del agente de calidad y la corrección posterior, todo con evidencia en el repositorio.
 
-La arquitectura de agentes es la del [flujo del orquestador](flujo-orquestador.md), y cada pieza está detallada en la [especificación de skills y agentes](especificacion-skills-agentes-orquestador.md). Los skills y agentes son de Claude Code, viven en `.claude/skills/` y `.claude/agents/` y se versionan en el repo. El orquestador es un skill que corre en la sesión principal: cada historia (un issue de GitHub) avanza por sus pasos en su propia rama, con un change de OpenSpec y un PR con el código; tras el merge, un segundo PR pequeño (`chore/archivar-<change>`) archiva el change. Para la entrega tiene **un solo modo**, de 8 pasos y 5 minutos o menos, que trabaja en el checkout principal; el diseño completo (worktrees para trabajar varias historias en paralelo, decisor, ciclo del PR) queda documentado y pospuesto. La tabla marca qué corre en la entrega.
+La arquitectura de agentes es la del [flujo del orquestador](flujo-orquestador.md), y cada pieza está detallada en su ficha (sección 3 del mismo documento). Los skills y agentes son de Claude Code, viven en `.claude/skills/` y `.claude/agents/` y se versionan en el repo. El orquestador es un skill que corre en la sesión principal: cada historia (un issue de GitHub) avanza por sus pasos en su propia rama, con un change de OpenSpec y un PR con el código; tras el merge, un segundo PR pequeño (`chore/archivar-<change>`) archiva el change. Para la entrega tiene **un solo modo**, de 8 pasos y 5 minutos o menos, que trabaja en el checkout principal; el diseño completo (worktrees para trabajar varias historias en paralelo, decisor, ciclo del PR) queda documentado y pospuesto. La tabla marca qué corre en la entrega.
 
 | Agente o skill | Paso | Responsabilidad | Rechaza cuando | Entrega |
 | --- | --- | --- | --- | --- |
@@ -335,7 +335,7 @@ Hoy es el sábado 21 de noviembre de 2026 y la entrega es el martes 24 a las 18:
   - 2 smoke de Playwright en el CI.
   - `/api/metrics`.
   - Índice `AGENTS_LOG.md`.
-- **Pospuesto** (queda documentado en el flujo y la especificación, pero no se construye para la entrega):
+- **Pospuesto** (queda documentado en el [flujo del orquestador](flujo-orquestador.md), pero no se construye para la entrega):
   - El agente `trazabilidad` (lo reemplaza el script `trazabilidad-grep.mjs`; el archivo del agente existe pero el flujo no lo usa), la puerta G3 y la trazabilidad final del paso 8.
   - Worktrees, `entorno-docker` (solo servía al smoke local) y `openspec-explore` con `preguntas-tecnicas`.
   - Decisor (3 agentes en paralelo más consolidador) y revisor cruzado `Plan`.

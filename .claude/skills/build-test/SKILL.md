@@ -7,7 +7,7 @@ allowed-tools: Bash(node .claude/skills/build-test/scripts/*) Read
 
 # build-test
 
-Ficha 3.9 de `docs/especificacion-skills-agentes-orquestador.md`. `lint` y `next build` no se corren aquí: los corre el CI.
+Ficha 3.9 de `docs/flujo-orquestador.md`. `lint` y `next build` no se corren aquí: los corre el CI.
 
 ## Uso
 

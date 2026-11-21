@@ -16,7 +16,7 @@ context: |
   Lo que ya existe (tablas, módulos, rutas, capacidades) lo lista <trabajo>/contexto.md en cada historia.
   Las reglas del proyecto (stack, estructura, capas, datos, seguridad) están en CLAUDE.md: respétalas.
 
-# Ajuste mínimo (plan de construcción, sección 4.1): solo las reglas sin las cuales
+# Ajuste mínimo (docs/flujo-orquestador.md, sección 7.1): solo las reglas sin las cuales
 # el flujo falla. Todo lo demás vive en CLAUDE.md. Cada clave aparece una sola vez.
 # rules llega solo al crear cada artefacto; operations llega a apply y archive.
 rules:

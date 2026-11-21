@@ -4,7 +4,7 @@ Como equipo de desarrollo quiero tener versionada y probada toda la configuraci�
 
 ## Contexto
 
-Es la parte de **configuración de IA** de la HU 1 de la propuesta (sección 5): `openspec init`, `openspec/config.yaml`, `CLAUDE.md`, `.claude/settings.json` y los agentes y skills del orquestador (plan de construcción, fases 1A, 3 y 4). Las herramientas de desarrollo quedaron en la HU 1b. Hoy en `.claude/` solo está el skill `crear-hu`. Se construye en modo interactivo, no con el orquestador, porque él depende de esta historia (especificación 2.7).
+Es la parte de **configuración de IA** de la HU 1 de la propuesta (sección 5): `openspec init`, `openspec/config.yaml`, `CLAUDE.md`, `.claude/settings.json` y los agentes y skills del orquestador ([flujo del orquestador](../flujo-orquestador.md), fases 1A, 3 y 4). Las herramientas de desarrollo quedaron en la HU 1b. Hoy en `.claude/` solo está el skill `crear-hu`. Se construye en modo interactivo, no con el orquestador, porque él depende de esta historia (flujo del orquestador, 2.7).
 
 ## Criterios de aceptación
 
@@ -20,7 +20,7 @@ Es la parte de **configuración de IA** de la HU 1 de la propuesta (sección 5):
 
 - **RN-1:** Se siguen los niveles de la propuesta. Solo el nivel **Imprescindible** bloquea el cierre. Las piezas de **nota máxima** (`Plan` como revisor cruzado, decisor de 3 agentes más consolidador, `revisor-pr`, `preguntas-tecnicas`) se agregan si sobra tiempo. Las **pospuestas** no se construyen.
 - **RN-2:** El orquestador tiene un solo modo, de 8 pasos: preparador → `contexto.mjs` → propose → G2 (`revisor-salida` con `openspec validate` y `trazabilidad-grep.mjs`) → apply → `build-test` en paralelo con `revisor-reglas` → una corrección solo si hay CRITICAL → commit, PR en borrador y evidencias. Todo corre con sonnet, con como máximo 1 `CORREGIR` por puerta, sin worktree (rama `feature/issue-<n>-<slug>` en el checkout principal) y sin `next build` (lo corre el CI).
-- **RN-3:** El presupuesto por defecto es el de la especificación 2.5: 20 agentes en los pasos 2 a 4, 2 reintentos por puerta, 2 vueltas de corrección, 2 compiles y 3 rondas de PR.
+- **RN-3:** El presupuesto por defecto es el de la sección 2.5 del flujo del orquestador: 20 agentes en los pasos 2 a 4, 2 reintentos por puerta, 2 vueltas de corrección, 2 compiles y 3 rondas de PR.
 - **RN-4:** Todo comando sobre un worktree empieza con `cd "<raiz>" && ` y nunca usa `git -C`. Los `<trabajo>` van en `.flujo/issue-<n>/` y los worktrees en `.claude/worktrees/`, ambos fuera de git.
 - **RN-5:** En `openspec/config.yaml`, cada clave aparece una sola vez. Las specs van en español, pero `## ADDED Requirements`, `### Requirement:`, `#### Scenario:`, `SHALL`/`MUST` y `**WHEN**`/`**THEN**` quedan en inglés.
 
@@ -35,15 +35,15 @@ Es la parte de **configuración de IA** de la HU 1 de la propuesta (sección 5):
 ## Notas técnicas (no vinculantes)
 
 - Change de OpenSpec: `configuracion-ia-sdd` (antes `orquestador-sdd`).
-- Primera tarea: `openspec init --tools claude --language es --scope project`, porque desbloquea el change de la HU 1b. Luego, el ajuste mínimo de `openspec/config.yaml` según el plan 4.1 (solo las reglas de formato de specs, `CA-n` y `## Purpose`; el resto va en `CLAUDE.md`), comprobado con `node -e "require('yaml').parse(require('fs').readFileSync('openspec/config.yaml','utf8'),{uniqueKeys:true})"`. Revisar si los skills `openspec-*` traen `disable-model-invocation: true`.
-- `CLAUDE.md` según el plan 4.2. `.claude/settings.json` con su lista `deny` según el plan 4.3, comprobando la sintaxis de permisos de la versión instalada de Claude Code. El `deny` incluye `Bash(git reset)` sin argumentos y `Edit` de `.claude/worktrees/**/.github/**`. Como el orquestador trabaja en el checkout principal, la protección de `.github/` depende de las instrucciones del agente, hasta que exista `guardia.mjs`.
+- Primera tarea: `openspec init --tools claude --language es --scope project`, porque desbloquea el change de la HU 1b. Luego, el ajuste mínimo de `openspec/config.yaml` según la sección 7.1 del flujo del orquestador (solo las reglas de formato de specs, `CA-n` y `## Purpose`; el resto va en `CLAUDE.md`), comprobado con `node -e "require('yaml').parse(require('fs').readFileSync('openspec/config.yaml','utf8'),{uniqueKeys:true})"`. Revisar si los skills `openspec-*` traen `disable-model-invocation: true`.
+- `CLAUDE.md` según 7.2. `.claude/settings.json` con su lista `deny` según 7.3, comprobando la sintaxis de permisos de la versión instalada de Claude Code. El `deny` incluye `Bash(git reset)` sin argumentos y `Edit` de `.claude/worktrees/**/.github/**`. Como el orquestador trabaja en el checkout principal, la protección de `.github/` depende de las instrucciones del agente, hasta que exista `guardia.mjs`.
 - `settings.json` permite `Skill(...)` para los 5 skills del flujo (`openspec-propose`, `openspec-apply-change`, `build-test`, `commit`, `abrir-pr`): sin eso, en una sesión sin persona, la herramienta Skill pide permiso y el orquestador se traba.
 - Pruebas de los scripts `.mjs` y de la configuración con `node --test`, sin dependencias nuevas y sin esperar el Vitest de la HU 1b. Las pruebas de los agentes (CA-4 a CA-7) son corridas reproducibles: fixture fija, prompt fijo y salida guardada en `evidencias/issue-1/pruebas/`.
-- Agentes en `.claude/agents/<nombre>.md`, con `model`/`effort`/`tools` según la tabla 1.3 del plan y `disallowedTools: Agent`.
+- Agentes en `.claude/agents/<nombre>.md`, con `model`/`effort`/`tools` según la tabla 4.3 del flujo del orquestador y `disallowedTools: Agent`.
 - Skills en `.claude/skills/<nombre>/SKILL.md`. Scripts Node en `.claude/skills/orquestador/scripts/`: `estado.mjs`, `puerto.mjs`, `trazabilidad-grep.mjs`, `migracion-timestamp.mjs`, `copiar-evidencias.mjs` y `contexto.mjs` (sustituye a explorar). Plantillas de `<trabajo>` en `.claude/skills/orquestador/plantillas/`.
 - `.claude/orquestador.json` con `base`, `owner`, `repo`, `revisor`, `revisorEspecializado` y `limpiarTrabajo`.
 - Fixtures en `.claude/fixtures/`, excluidas de lint, typecheck, Vitest y build: un change correcto, uno con encabezados en español, un parche con violaciones y un `<trabajo>` de ejemplo.
-- Orden de construcción: OpenSpec, `CLAUDE.md` y permisos, luego las fases 3.0 → 3.10 del plan y al final la fase 4.
+- Orden de construcción: OpenSpec, `CLAUDE.md` y permisos, luego las fases 3.0 → 3.10 del flujo del orquestador (sección 5) y al final la fase 4.
 - Comprobar si `effort` se puede pasar por invocación de `Agent`. Si no, se usa el del frontmatter y se anota en `agentes.md`.
 - **CI mínimo en esta historia** (`.github/workflows/ci.yml`, en cada PR y push a `main`): `node --test` de las pruebas de `.claude/`, `openspec validate --strict` y, en cuanto exista el proyecto (HU 1b), lint, typecheck, `test:unit` y build. La HU 2 lo amplía; así la definición de hecho ("CI en verde") se cumple sin esperar a la HU 2.
 - No hay migraciones, semilla ni puntos de extensión.
@@ -52,7 +52,7 @@ Es la parte de **configuración de IA** de la HU 1 de la propuesta (sección 5):
 
 - HU 1b (#2, herramientas de desarrollo): necesaria para las pruebas de `build-test`, `commit` y la corrida completa del orquestador (CA-6 y CA-7). CA-1 a CA-5 no dependen de ella.
 - HU 2 (infraestructura y CI/CD): necesaria solo para CA-6 y la parte de Docker de CA-7.
-- El issue de práctica #6 (plan, sección 2.0) para las pruebas del orquestador.
+- El issue de práctica #6 (flujo del orquestador, 5.0) para las pruebas del orquestador.
 
 ## Preguntas abiertas
 

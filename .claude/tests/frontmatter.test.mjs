@@ -32,7 +32,7 @@ test("CA-2: existen los tres agentes que usa el flujo", () => {
   assert.deepEqual(AGENTES_IMPRESCINDIBLES.filter((a) => !hay.includes(a)), []);
 });
 
-test("CA-2: modelos según el plan (flujo en sonnet; trazabilidad, fuera del flujo, en haiku)", () => {
+test("CA-2: modelos según flujo-orquestador 4.3 (flujo en sonnet; trazabilidad, fuera del flujo, en haiku)", () => {
   const modelo = (a) => frontmatter(leer(`.claude/agents/${a}.md`)).model;
   assert.equal(modelo("trazabilidad"), "haiku");
   assert.equal(modelo("revisor-salida"), "sonnet");

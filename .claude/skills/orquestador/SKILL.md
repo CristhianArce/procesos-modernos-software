@@ -8,7 +8,7 @@ allowed-tools: Skill Agent Read Write Edit Grep Glob Bash(node .claude/skills/*)
 
 # Orquestador SDD (un solo modo, 5 minutos o menos)
 
-Secuencia de `docs/flujo-orquestador.md` ("Secuencia única") y ficha 3.0 de `docs/especificacion-skills-agentes-orquestador.md`. Argumentos: `$ARGUMENTS`.
+Secuencia única (1.1) y ficha 3.0 de `docs/flujo-orquestador.md`. Argumentos: `$ARGUMENTS`.
 
 ## Reglas de ejecución
 

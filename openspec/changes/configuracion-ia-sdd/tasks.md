@@ -5,8 +5,8 @@
 - [x] 1.1 Ejecutar `openspec init --tools claude --language es --scope project` y verificar que existen `openspec/config.yaml` y los seis skills `openspec-*` en `.claude/skills/` y en `.agents/skills/` (CA-1, CA-2)
 - [x] 1.2 Revisar el frontmatter de los skills `openspec-*`: ninguno trae `disable-model-invocation: true`, así que el orquestador puede invocarlos con la herramienta Skill (CA-2)
 - [x] 1.3 Ajuste mínimo de `openspec/config.yaml` (reglas de formato de specs, `CA-n` y `## Purpose`) y verificar que se lee sin claves duplicadas y que `openspec instructions` no advierte reglas ignoradas (CA-1)
-- [x] 1.4 Escribir `CLAUDE.md` con las reglas del proyecto y de los agentes (plan 4.2) y verificar que una sesión nueva de Claude Code en la raíz las tiene en contexto (CA-1)
-- [x] 1.5 Escribir `.claude/settings.json` con `allow` y `deny` (plan 4.3 más `git reset` sin argumentos y `.github/` en worktrees) y `.gitignore` con `.flujo/`, `.claude/worktrees/`, `.env*` y `!.env.example`; verificar que el JSON es válido (CA-3)
+- [x] 1.4 Escribir `CLAUDE.md` con las reglas del proyecto y de los agentes (flujo-orquestador 7.2) y verificar que una sesión nueva de Claude Code en la raíz las tiene en contexto (CA-1)
+- [x] 1.5 Escribir `.claude/settings.json` con `allow` y `deny` (flujo-orquestador 7.3 más `git reset` sin argumentos y `.github/` en worktrees) y `.gitignore` con `.flujo/`, `.claude/worktrees/`, `.env*` y `!.env.example`; verificar que el JSON es válido (CA-3)
 - [x] 1.6 Crear `.claude/tests/config.test.mjs` con `node --test`: `config.yaml` sin claves duplicadas y con todas las reglas como texto; `settings.json` con cada regla `deny` obligatoria; `.gitignore` con `.flujo/` y `.claude/worktrees/`. Verificar que `node --test ".claude/tests/*.test.mjs"` pasa (CA-1, CA-3)
 - [x] 1.7 Verificación manual en una sesión nueva: `gh pr merge`, `git commit --amend`, `git rebase`, `git reset` y `git push --force` se rechazan; crear y borrar `.claude/worktrees/prueba` no pide confirmación. Anotar el resultado en `evidencias/issue-1/pruebas/permisos.md` (CA-3)
 - [x] 1.8 CI mínimo `.github/workflows/ci.yml` (job `configuracion-ia`: OpenSpec 2.1, `node --test ".claude/tests/*.test.mjs"`, `openspec validate --all --strict --no-interactive`; job `proyecto` condicionado a `package.json`) y verificar que el CI del PR de arranque termina en verde (CA-1, CA-3; Derivado: decisión #21)
@@ -20,7 +20,7 @@
 
 ## 3. Configuración, plantillas y scripts del orquestador (B1)
 
-- [x] 3.1 Crear `.claude/orquestador.json` (`base`, `owner`, `repo`, `revisor`, `revisorEspecializado`, `limpiarTrabajo`) y las plantillas de `<trabajo>` en `.claude/skills/orquestador/plantillas/` (especificación 2.1), y verificar con una prueba que existe una plantilla por archivo de la especificación 2.1 (CA-6)
+- [x] 3.1 Crear `.claude/orquestador.json` (`base`, `owner`, `repo`, `revisor`, `revisorEspecializado`, `limpiarTrabajo`) y las plantillas de `<trabajo>` en `.claude/skills/orquestador/plantillas/` (flujo-orquestador 2.1), y verificar con una prueba que existe una plantilla por archivo de flujo-orquestador 2.1 (CA-6)
 - [x] 3.2 Implementar `estado.mjs` (`leer`/`escribir` campos de `estado.md`) y `puerto.mjs` (parseo de `docker compose port`), y verificar con `node --test` sobre `trabajo-ejemplo` y salidas `0.0.0.0:NNNN` y `[::]:NNNN` (CA-6)
 - [x] 3.3 Implementar `trazabilidad-grep.mjs` y verificar que sobre `change-ok` encuentra cada `CA-n` en requisitos, escenarios y tareas (CA-6)
 - [x] 3.4 Implementar `migracion-timestamp.mjs` y verificar con `node --test` que renombra una migración de fixture con timestamp menor que la última de la base (CA-6)

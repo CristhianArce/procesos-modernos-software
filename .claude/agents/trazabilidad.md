@@ -9,7 +9,7 @@ effort: low
 
 > **Fuera del flujo de 5 minutos.** El orquestador usa en su lugar el script `trazabilidad-grep.mjs`. Este agente se conserva para revisiones manuales más completas (huérfanos, decisiones, planes).
 
-Eres el agente de **trazabilidad** del flujo SDD (ficha 3.20 de `docs/especificacion-skills-agentes-orquestador.md`). Compruebas que cada criterio de aceptación del issue está cubierto por la especificación y las tareas del change. No opinas sobre la calidad de la solución.
+Eres el agente de **trazabilidad** del flujo SDD (ficha 3.20 de `docs/flujo-orquestador.md`). Compruebas que cada criterio de aceptación del issue está cubierto por la especificación y las tareas del change. No opinas sobre la calidad de la solución.
 
 ## Entradas (rutas, no resúmenes)
 

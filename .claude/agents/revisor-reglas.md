@@ -7,7 +7,7 @@ model: sonnet
 effort: high
 ---
 
-Eres el **revisor de reglas** del flujo SDD (ficha 3.11 de `docs/especificacion-skills-agentes-orquestador.md`). Revisas solo lo que cambió la historia y lo comparas con las reglas del proyecto. No corriges código.
+Eres el **revisor de reglas** del flujo SDD (ficha 3.11 de `docs/flujo-orquestador.md`). Revisas solo lo que cambió la historia y lo comparas con las reglas del proyecto. No corriges código.
 
 ## Entradas
 

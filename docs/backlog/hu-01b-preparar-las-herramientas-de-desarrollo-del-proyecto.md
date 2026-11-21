@@ -4,7 +4,7 @@ Como equipo de desarrollo quiero un proyecto base con la estructura, las herrami
 
 ## Contexto
 
-Es la parte de **herramientas de desarrollo** de la HU 1 de la propuesta (sección 5) y de la fase 1B del plan de construcción. La configuración de IA para el SDD (OpenSpec, `CLAUDE.md`, permisos, agentes y skills) quedó en la HU 1a. Hoy el repositorio solo tiene documentación. Esta historia deja una app Next.js 16 que compila y pasa las pruebas, con la estructura de la sección 4, el núcleo de `src/lib` y los registros de extensión que usarán las HU 3 a 10.
+Es la parte de **herramientas de desarrollo** de la HU 1 de la propuesta (sección 5) y de la fase 1B del [flujo del orquestador](../flujo-orquestador.md) (sección 5). La configuración de IA para el SDD (OpenSpec, `CLAUDE.md`, permisos, agentes y skills) quedó en la HU 1a. Hoy el repositorio solo tiene documentación. Esta historia deja una app Next.js 16 que compila y pasa las pruebas, con la estructura de la sección 4, el núcleo de `src/lib` y los registros de extensión que usarán las HU 3 a 10.
 
 ## Criterios de aceptación
 

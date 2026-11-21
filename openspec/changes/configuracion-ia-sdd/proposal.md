@@ -11,7 +11,7 @@ Las historias 3 a 10 se van a construir con un orquestador de agentes de Claude 
 - `.claude/settings.json` con los permisos que dejan trabajar al orquestador y una lista `deny` contra merge, aprobación, amend, rebase, reset, force push y la edición de `.github/` en worktrees. También `.gitignore` para `.flujo/` y `.claude/worktrees/`. Cubre CA-3.
 - Agentes `preparador`, `revisor-salida` y `revisor-reglas` en `.claude/agents/`, sin permiso para lanzar subagentes, con fixtures que prueban sus veredictos. Cubre CA-2, CA-4, CA-5 y CA-7. El agente `trazabilidad` existe, pero el flujo no lo usa: lo reemplaza el script `trazabilidad-grep.mjs`.
 - Skills `orquestador` (un solo modo de 8 pasos, 5 minutos o menos, solo invocable por la persona), `build-test`, `commit` y `abrir-pr`, con los scripts Node compartidos y las plantillas de `<trabajo>`. Cubre CA-2, CA-6 y CA-7.
-- CI mínimo en GitHub Actions: pruebas `node --test` de `.claude/`, `openspec validate --strict` y, cuando exista el proyecto (HU 1b), lint, typecheck, `test:unit` y build. Derivado: decisión #21 del plan.
+- CI mínimo en GitHub Actions: pruebas `node --test` de `.claude/`, `openspec validate --strict` y, cuando exista el proyecto (HU 1b), lint, typecheck, `test:unit` y build. Derivado: decisión #21 de flujo-orquestador (sección 8).
 
 Fuera de alcance:
 - todo lo que sale del flujo de 5 minutos: G3, trazabilidad final, `entorno-docker`, worktrees, decisor, revisor cruzado y explorar;

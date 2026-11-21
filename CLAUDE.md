@@ -2,7 +2,7 @@
 
 ## 1. Proyecto
 
-Tablero de sensores eléctricos: nodos, sensores, lecturas simuladas, alertas por umbral y roles (administrador y técnico). Se construye con SDD (OpenSpec) y un orquestador de agentes de Claude Code. Documentación en `docs/`: `propuesta.md`, `flujo-orquestador.md`, `especificacion-skills-agentes-orquestador.md`, `plan-construccion-sdd.md` y `backlog/`.
+Tablero de sensores eléctricos: nodos, sensores, lecturas simuladas, alertas por umbral y roles (administrador y técnico). Se construye con SDD (OpenSpec) y un orquestador de agentes de Claude Code. Documentación en `docs/`: `propuesta.md` (producto), `flujo-orquestador.md` (todo el flujo de IA: secuencia, convenciones, fichas de skills y agentes, y plan de construcción) y `backlog/`.
 
 ## 2. Comandos
 

@@ -7,7 +7,7 @@ allowed-tools: Bash(node .claude/skills/orquestador/scripts/*) Bash(git add *) B
 
 # commit
 
-Ficha 3.15 de `docs/especificacion-skills-agentes-orquestador.md`. Todos los comandos van desde la raíz del repo, sin `cd`, y un comando por llamada.
+Ficha 3.15 de `docs/flujo-orquestador.md`. Todos los comandos van desde la raíz del repo, sin `cd`, y un comando por llamada.
 
 ## Pasos
 

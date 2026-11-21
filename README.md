@@ -15,9 +15,8 @@ Aplicación para administrar nodos y sensores de una red eléctrica, simular lec
 ## Documentación
 
 - [Propuesta de arquitectura y SDD](docs/propuesta.md): requisitos, arquitectura, backlog, reglas del proyecto, cronograma y riesgos.
-- [Flujo del orquestador](docs/flujo-orquestador.md): la secuencia única de 8 pasos que corre para la entrega (5 minutos o menos) y, como referencia, el flujo completo con los pasos 0 a 10 y las puertas G1 a G4.
-- [Especificación de skills y agentes](docs/especificacion-skills-agentes-orquestador.md): ficha de cada pieza del orquestador.
-- [Plan de construcción del entorno SDD](docs/plan-construccion-sdd.md): orden de construcción, niveles y calendario.
+- [Flujo del orquestador](docs/flujo-orquestador.md): todo el flujo de IA en un solo documento: la secuencia única de 8 pasos que corre para la entrega (5 minutos o menos), el flujo completo de referencia (pasos 0 a 10 y puertas G1 a G4), las convenciones compartidas, la ficha de cada skill y agente, y el plan de construcción del entorno SDD (inventario, fases, calendario y decisiones).
+- [Backlog](docs/backlog/README.md): historias de usuario publicadas como issues.
 
 ## Configuración inicial (una vez por portátil)
 

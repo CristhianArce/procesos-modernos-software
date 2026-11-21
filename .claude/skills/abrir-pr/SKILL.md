@@ -7,7 +7,7 @@ allowed-tools: Bash(gh pr view *) Bash(gh pr list *) Bash(gh pr create *) Bash(g
 
 # abrir-pr
 
-Ficha 3.16 de `docs/especificacion-skills-agentes-orquestador.md`. Todos los comandos van desde la raíz del repo, sin `cd`, y un comando por llamada.
+Ficha 3.16 de `docs/flujo-orquestador.md`. Todos los comandos van desde la raíz del repo, sin `cd`, y un comando por llamada.
 
 ## Pasos
 
