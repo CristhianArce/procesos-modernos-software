@@ -44,11 +44,11 @@
 
 - [ ] 6.1 Escribir el skill `build-test` y su `scripts/build-test.mjs` (ficha 3.9) y verificar: verde sobre el proyecto; un tipo roto se clasifica como **código**; con Docker apagado, como **entorno**; typecheck, unit e integración tardan menos de 2 minutos (CA-7)
 - [ ] 6.3 Escribir los skills `commit` (ficha 3.15) y `abrir-pr` (ficha 3.16) y verificar que `commit` se niega sin build verde en `estado.md` y que una segunda llamada a `abrir-pr` devuelve el mismo PR (CA-6, CA-7)
-- [ ] 6.4 Agregar a la prueba de frontmatter los skills `build-test`, `commit` y `abrir-pr`, con `allowed-tools` acotado (nunca `Bash` a secas) (CA-2)
+- [x] 6.4 Agregar a la prueba de frontmatter los skills `build-test`, `commit` y `abrir-pr`, con `allowed-tools` acotado (nunca `Bash` a secas) (CA-2)
 
 ## 7. Orquestador: un solo modo, 5 minutos (C1 a C3)
 
-- [ ] 7.1 Escribir `.claude/skills/orquestador/SKILL.md` con `disable-model-invocation: true` (argumentos de 3.0 sin modos; los 8 pasos: `preparador` → `contexto.mjs` → propose → `trazabilidad-grep.mjs` y G2 con `revisor-salida` → apply → `build-test` en paralelo con `revisor-reglas` → una corrección solo si hay CRITICAL → `commit`, `abrir-pr` y `copiar-evidencias.mjs`; estado con `estado.mjs`, presupuesto 2.5 con 1 `CORREGIR` por puerta, reglas de Bloqueado, todo con sonnet y comandos sin `cd` desde la raíz) y verificar con la prueba de frontmatter que la invocación por el modelo está deshabilitada (CA-2)
+- [x] 7.1 Escribir `.claude/skills/orquestador/SKILL.md` con `disable-model-invocation: true` (argumentos de 3.0 sin modos; los 8 pasos: `preparador` → `contexto.mjs` → propose → `trazabilidad-grep.mjs` y G2 con `revisor-salida` → apply → `build-test` en paralelo con `revisor-reglas` → una corrección solo si hay CRITICAL → `commit`, `abrir-pr` y `copiar-evidencias.mjs`; estado con `estado.mjs`, presupuesto 2.5 con 1 `CORREGIR` por puerta, reglas de Bloqueado, todo con sonnet y comandos sin `cd` desde la raíz) y verificar con la prueba de frontmatter que la invocación por el modelo está deshabilitada (CA-2)
 - [ ] 7.2 Correr `/orquestador 6` cronometrado y verificar que en 5 minutos o menos queda un único PR en borrador que cita `#<n>` y el change, con `evidencias/issue-<n>/` commiteado; guardar tiempo y salida en `evidencias/issue-1/pruebas/orquestador.md`, y cerrar el PR sin fusionar (CA-6)
 - [ ] 7.3 Provocar las salidas de error con el issue de prueba #6 (cerrado temporalmente da `BLOQUEAR`; Docker apagado da error de **entorno** y el item se detiene) y guardar el resultado en `evidencias/issue-1/pruebas/errores.md` (CA-7)
 
