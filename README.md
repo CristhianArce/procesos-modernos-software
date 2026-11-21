@@ -31,7 +31,7 @@ gh auth refresh -h github.com -s workflow      # solo si vas a hacer push de .gi
 gh auth status                                 # verificar
 ```
 
-El orquestador y el skill `crear-hu` usan `gh` para leer y crear issues y PR. Las etiquetas del repo (`historia`, `bloqueado`, `migracion`, `revision-especializada`, `escalado`) las crea la HU 2. `gh` falla si se aplica una etiqueta que no existe.
+El orquestador y el skill `crear-hu` usan `gh` para leer y crear issues y PR. `crear-hu` crea las etiquetas que necesita (`historia`, de fase y `practica`) si faltan; en la secuencia actual el orquestador no etiqueta issues ni PR.
 
 ### OpenSpec
 
@@ -42,7 +42,7 @@ openspec validate --all --strict --no-interactive
 ```
 
 - El repo **ya está inicializado** (`openspec init --tools claude --language es --scope project`, HU 1a). No hay que volver a correr `init`.
-- `openspec/config.yaml` solo trae las reglas mínimas (encabezados de specs en inglés, `CA-n` y `## Purpose`). El resto de las reglas vive en `CLAUDE.md`.
+- `openspec/config.yaml` trae el idioma, un glosario corto del dominio, las reglas de formato por artefacto (`rules`) y la guía de `apply` y `archive` (`operations`). Las reglas técnicas (stack, capas, datos, seguridad) viven solo en `CLAUDE.md`.
 - Los skills `openspec-*` están versionados en `.claude/skills/` y `.agents/skills/`. Si cambia la versión de OpenSpec, se regeneran con `openspec update .`.
 - En Claude Code se invocan por nombre: `/openspec-propose`, `/openspec-explore`, `/openspec-apply-change`, `/openspec-update-change`, `/openspec-sync-specs` y `/openspec-archive-change` (desde OpenSpec 2.0 no existen los `/opsx:*`).
 
@@ -58,7 +58,7 @@ Qué trae el repo y no hay que configurar a mano:
 
 - `CLAUDE.md`: reglas del proyecto (stack, capas, datos, seguridad, SDD y reglas de agentes).
 - `.claude/settings.json`: permisos compartidos. La lista `allow` cubre los comandos del flujo y la lista `deny` bloquea merge, aprobar PR, force push, amend, rebase, reset y leer `.env`. Los ajustes personales van en `.claude/settings.local.json` (ignorado por git), nunca en el compartido.
-- `.claude/skills/`: `crear-hu` (redacta y publica historias como issues) y los skills de OpenSpec. Los agentes y el skill del orquestador llegan con la HU 1a.
+- `.claude/skills/`: `orquestador`, `build-test`, `commit`, `abrir-pr`, `crear-hu` (redacta y publica historias como issues) y los skills de OpenSpec. `.claude/agents/`: `preparador`, `revisor-salida` (G2), `revisor-reglas` y `trazabilidad` (pospuesto).
 - `.claude/worktrees/` (worktrees de cada historia) y `.flujo/` (`<trabajo>` de cada issue) están fuera de git.
 
 Si varias sesiones de Claude trabajan en el mismo clon, no cambies de rama en el checkout principal: usa un worktree (`git worktree add .claude/worktrees/<nombre> origin/main`).
@@ -84,11 +84,64 @@ docker pull ghcr.io/danielfms/procesos-modernos-software:latest
 
 Credenciales de demostración: pendiente (las crea la semilla de la HU 3).
 
-## Historias de usuario
+## Implementar un issue con el orquestador
 
-Las historias son issues de GitHub, con criterios de aceptación numerados (`CA-n`). Cada una se implementa con el orquestador (`/orquestador <n>`), que tiene un solo modo: la secuencia de 8 pasos del [flujo del orquestador](docs/flujo-orquestador.md), con un change de OpenSpec en `openspec/changes/<nombre>/` y un PR en borrador al final. Antes de correrlo, la BD de desarrollo debe estar levantada y migrada (los dos primeros comandos de arriba) y `node_modules` instalado.
+Cada historia de usuario es un issue de GitHub con criterios de aceptación numerados (`CA-n`). El orquestador (`/orquestador <n>`) la lleva en 8 pasos, y en 5 minutos o menos, desde el issue hasta un PR en borrador con su change de OpenSpec y sus evidencias. El detalle de cada paso está en el [flujo del orquestador](docs/flujo-orquestador.md). Se usa desde la HU 3: las HU 1a, 1b y 2 se construyen en modo interactivo.
+
+> **Todavía no se puede correr de punta a punta:** necesita `package.json`, `.env` y el `docker compose` que traen la HU 1b (#2) y la HU 2. Sin ellos se detiene en la precondición sin crear nada.
+
+### 1. Antes de empezar
+
+- La [configuración inicial](#configuración-inicial-una-vez-por-portátil) hecha (`gh auth status` en verde, OpenSpec 2.1 y Claude Code).
+- El issue existe, abierto, sin PR y con sus `CA-n` (las historias del backlog llevan la etiqueta `historia`). Para redactarlo y publicarlo, en Claude Code: `/crear-hu <descripción o fila del backlog>`.
+- El checkout principal está en `main`, actualizado y **limpio** (`git switch main`, `git pull`, `git status` sin cambios; `.flujo/` se ignora). El orquestador crea la rama de la historia en este checkout, así que corre **una sola sesión de Claude en ese clon** mientras dura; si necesitas otra, usa un clon o un worktree aparte.
+- La BD de desarrollo está levantada y migrada y las dependencias instaladas:
+
+  ```
+  docker compose up -d --wait db
+  docker compose run --rm flyway migrate info
+  npm ci
+  ```
+
+### 2. Correrlo
+
+```
+claude                     # en la raíz del repo
+/orquestador <n>           # por ejemplo /orquestador 6
+```
+
+Se escribe a mano: Claude no lo invoca por su cuenta. Durante la corrida:
+
+- Te pregunta las dudas de negocio (las preguntas abiertas del issue y las que surjan al proponer). Tus respuestas quedan en `decisiones.md` con `Decidió: Persona`.
+- Claude Code puede pedirte aprobar algún comando que no esté en `.claude/settings.json`.
+- Si una puerta o el build fallan, corrige una sola vez. Si sigue fallando, se detiene en **Bloqueado**.
+
+### 3. Qué deja
+
+| Dónde | Qué |
+|---|---|
+| Rama `feature/issue-<n>-<slug>` | El código, las pruebas, la migración y la semilla si aplican |
+| `openspec/changes/<change>/` | proposal, specs, design y tasks, cada uno citando su `CA-n` |
+| PR en borrador | `Closes #<n>`, `Change: <change>` y la tabla de `CA` |
+| `evidencias/issue-<n>/` | issue, contexto, decisiones, G2 (`gates.md`), trazabilidad CA → requisito/escenario → tarea, verificación y agentes |
+| `.flujo/issue-<n>/` | El `<trabajo>` completo de la corrida (fuera de git) |
+
+Al final muestra en el chat el tiempo por paso, la URL del PR, los veredictos y las decisiones.
+
+### 4. Si se bloquea o se corta
+
+- El motivo queda en `.flujo/issue-<n>/bloqueo.md` y en `estado.md`. No comenta ni etiqueta el issue: eso lo decides tú.
+- Corrige la causa (por ejemplo, levanta la BD) y retoma sin repetir lo hecho: `/orquestador <n> desde=propuesta|implementar|verificar|pr`.
+
+### 5. Después del PR (a mano)
+
+1. Revisa el PR y márcalo listo (`gh pr ready <pr>`).
+2. Lo revisa y aprueba **otra cuenta**: el autor no puede aprobar su propio PR, y ni el orquestador ni los agentes hacen merge.
+3. Tras el merge, archiva el change en un PR propio, uno a la vez. Antes comprueba que no queden tareas (`openspec instructions apply --change <change> --json` con `progress.remaining == 0`), porque `openspec archive <change> --yes` archiva aunque las haya. Los comandos están en el [paso 10 del flujo](docs/flujo-orquestador.md).
+
+Para practicar está el issue #6 "[PRUEBA] Página Acerca de" (etiqueta `prueba`); su PR se cierra sin fusionar.
 
 ## Evidencias
 
-- `evidencias/issue-<n>/`: decisiones, puerta de calidad G2 (con su trazabilidad CA → requisito → tarea), verificación y agentes que intervinieron en cada historia.
-- `AGENTS_LOG.md`: índice de todas las historias con sus rechazos y correcciones.
+- `evidencias/issue-<n>/`: contexto, decisiones, puerta de calidad G2 (`gates.md`), trazabilidad CA → requisito/escenario → tarea (`trazabilidad.md`), verificación y agentes que intervinieron en cada historia.
+- `AGENTS_LOG.md`: índice de todas las historias con sus rechazos y correcciones; se regenera al archivar cada change.
