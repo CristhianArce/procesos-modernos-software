@@ -25,6 +25,7 @@ TypeScript, una sola app Next.js 16 (App Router) para interfaz y API, Route Hand
   - los componentes `"use client"` llaman a `/api/...`;
   - los handlers solo validan (Zod), autorizan, llaman al servicio y traducen errores;
   - el SQL vive solo en `repo.ts`, con `import "server-only"`.
+- Principios: SOLID, KISS (la solución más simple que cumple los CA), YAGNI (nada fuera de los CA ni de una decisión registrada) y Clean Code (nombres claros, funciones cortas, sin duplicación ni código muerto).
 - Todo Route Handler pasa por el envoltorio de `src/lib/http.ts`. Nada de `console.log` suelto. Los logs nunca incluyen contraseñas, tokens ni cuerpos de petición.
 - Caché: nada con datos de un usuario se marca `"use cache"` ni `Cache-Control: public`. Las páginas que leen la BD son dinámicas.
 - Extensión: menú, paneles de la ficha del nodo y suscriptores de alertas solo mediante `menu.ts`, `paneles.ts` y `on-alerta.ts`. El núcleo (`proxy.ts`, `src/lib/`, el layout del tablero) y la página de otra historia no se editan.
@@ -36,7 +37,7 @@ TypeScript, una sola app Next.js 16 (App Router) para interfaz y API, Route Hand
 - Ninguna historia modifica tablas ajenas. Cada módulo tiene su semilla en `db/seed/<modulo>.sql`.
 - Los agentes nunca escriben en una BD compartida.
 
-## 6. Seguridad
+## 6. Seguridad desde el diseño
 
 - Nunca secretos en el repositorio. `DATABASE_URL`, `SESSION_SECRET` y `METRICS_TOKEN` llegan por variables de entorno. El `.env` local queda fuera del repo y de la imagen.
 - Toda entrada pasa por Zod. Ninguna ruta confía en datos del cliente.
@@ -49,9 +50,12 @@ TypeScript, una sola app Next.js 16 (App Router) para interfaz y API, Route Hand
 - Cada requisito, escenario y tarea cita su criterio `CA-n` del issue. Lo derivado cita "Derivado: decisión #k".
 - Specs: cuerpo en español; `## ADDED Requirements`, `### Requirement:`, `#### Scenario:`, `SHALL`/`MUST` y `**WHEN**`/`**THEN**` en inglés. Una capacidad nueva empieza con `## Purpose`.
 - `design.md` es obligatorio si cambia el contrato (`contracts/openapi.yaml`) o el esquema.
-- `tasks.md` va agrupado por capa (migración, repo, service, schema, handler, página/ui, `menu.ts`, contrato, pruebas), con pruebas unitarias (sin BD) y de integración (handlers con `Request`).
-- Al aplicar: marcar `[x]` solo lo hecho, dejar `[ ]` lo pendiente con su motivo, y no reformatear líneas no tocadas.
-- Las pruebas de aceptación de la historia pasan antes de fusionar.
+- `tasks.md` va agrupado por capa (migración, repo, service, schema, handler + contrato, página/ui, `menu.ts`). Cada grupo incluye sus pruebas: unitarias (sin BD) o de integración (handlers con `Request`). El grupo final es solo para la integración y aceptación de toda la historia. Cada tarea dice cómo se verifica. Abrir el PR, esperar el CI, archivar y correr las pruebas e2e contra la app levantada no son tareas con casilla: van como viñetas en `## Workflow follow-up` (escribir la prueba e2e sí es tarea, verificable con `npx playwright test --list`).
+- BDD: cada CA del issue (Dado/Cuando/Entonces) se vuelve al menos un escenario `**WHEN**`/`**THEN**` y al menos una prueba automatizada.
+- TDD: en cada tarea se escribe primero la prueba que la verifica y luego el código que la hace pasar.
+- El nombre de cada prueba nueva cita el issue y el CA que verifica: `it("#<n> CA-2: rechaza un umbral negativo con 400")`. El número del issue hace única la referencia (todas las historias tienen un CA-1). Las páginas que son Server Components solo se prueban con Playwright, porque Vitest no las renderiza.
+- Al aplicar: marcar `[x]` solo lo hecho, dejar `[ ]` lo pendiente con su motivo en `decisiones.md` (citando el número de la tarea), y no reformatear líneas no tocadas.
+- Las pruebas de aceptación de la historia pasan antes de fusionar, también en el CI del PR (integración continua).
 - Commits y PR citan el issue (`#<n>`) y el change (`Change: <nombre>`).
 - Archivar con `openspec archive <change> --yes` en un PR propio, después del merge y uno a la vez.
 

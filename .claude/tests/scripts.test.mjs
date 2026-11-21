@@ -8,7 +8,7 @@ import { join } from "node:path";
 import { leer, RAIZ } from "./util.mjs";
 import { escribirCampo, leerCampo } from "../skills/orquestador/scripts/estado.mjs";
 import { extraerPuerto } from "../skills/orquestador/scripts/puerto.mjs";
-import { aMarkdown, analizar, criteriosDelIssue } from "../skills/orquestador/scripts/trazabilidad-grep.mjs";
+import { aMarkdown, analizar, criteriosDelIssue, pruebasDeHistoria, pruebasDeTexto } from "../skills/orquestador/scripts/trazabilidad-grep.mjs";
 import { planRenombres } from "../skills/orquestador/scripts/migracion-timestamp.mjs";
 import { agentesDesdeLog, copiarEvidencias } from "../skills/orquestador/scripts/copiar-evidencias.mjs";
 import { capacidadesEspecificadas, changesActivos, generarContexto, rutasDelContrato, tablasDeMigraciones } from "../skills/orquestador/scripts/contexto.mjs";
@@ -120,6 +120,52 @@ test("CA-6: trazabilidad-grep.mjs con --salida escribe trazabilidad.md", () => {
     assert.equal(r.status, 0, r.stderr);
     assert.deepEqual(JSON.parse(r.stdout).sinCobertura, []);
     assert.match(readFileSync(salida, "utf8"), /Veredicto: completa/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("CA-6: trazabilidad-grep.mjs reconoce las pruebas que citan #<n> CA-k", () => {
+  const texto = [
+    'it("#12 CA-1: a", () => {});',
+    'test.skip("#12 CA-2: omitida");',
+    "it.each([[1], [2]])(\"#12 CA-3: tabla %s\", () => {});",
+    "test.describe.parallel(`#12 CA-4: ${x}`, () => {});",
+    "it(",
+    '  "#12 CA-5, CA-6: dice \\"x\\"", () => {});',
+    'it("#120 CA-7: otra historia");',
+    'it("CA-8: sin issue");',
+    'test.fixme("#12 CA-9: pendiente");',
+    '// it("#12 CA-10: comentada");',
+    '/* it("#12 CA-11: en bloque comentado"); */',
+    'it.runIf(process.env.CI)("#12 CA-12: solo en CI", () => {});',
+    'it.skipIf(lento)("#12 CA-13: salvo si es lento", () => {});',
+  ].join("\n");
+  const r = pruebasDeTexto(12, "e2e/a.spec.ts", texto);
+  assert.deepEqual(r.map((p) => p.criterios), [["CA-1"], ["CA-3"], ["CA-4"], ["CA-5", "CA-6"], ["CA-12"], ["CA-13"]]);
+  assert.equal(r[3].nombre, '#12 CA-5, CA-6: dice "x"');
+});
+
+test("CA-6: trazabilidad-grep.mjs --pruebas llena Caso y señala los CA sin prueba sin bloquear", () => {
+  const dir = temporal();
+  try {
+    mkdirSync(join(dir, "src", "modulos", "acerca", "__tests__"), { recursive: true });
+    mkdirSync(join(dir, "e2e"), { recursive: true });
+    writeFileSync(join(dir, "src", "modulos", "acerca", "__tests__", "service.test.ts"), 'it("#6 CA-1: devuelve la versión", () => {});\nit("#7 CA-2: de otra historia", () => {});\n');
+    writeFileSync(join(dir, "src", "modulos", "acerca", "service.ts"), '// it("#6 CA-2: fuera de __tests__")\n');
+    writeFileSync(join(dir, "e2e", "acerca.spec.ts"), 'test("#6 CA-3: el técnico ve la página", async () => {});\n');
+    const pruebas = pruebasDeHistoria(6, dir);
+    assert.deepEqual(pruebas.map((p) => p.ruta).sort(), ["e2e/acerca.spec.ts", "src/modulos/acerca/__tests__/service.test.ts"]);
+    const issue = readFileSync(join(FIX, "trabajo-ejemplo", "issue.md"), "utf8");
+    const r = analizar(issue, join(FIX, "change-ok"), pruebas);
+    assert.deepEqual(r.sinCobertura, []);
+    assert.deepEqual(r.sinPrueba, ["CA-2"]);
+    assert.deepEqual(r.criterios["CA-3"].pruebas, ["e2e/acerca.spec.ts: #6 CA-3: el técnico ve la página"]);
+    const md = aMarkdown(r);
+    assert.match(md, /\| CA-2 \|[^\n]*\| Sin prueba \| Cubierto en spec y tareas; sin prueba \|/);
+    assert.match(md, /Pruebas: 2 de 3 CA con prueba \(sin prueba: CA-2\)/);
+    assert.match(md, /Veredicto: completa/, "la falta de prueba no cambia el veredicto de cobertura");
+    assert.equal(analizar(issue, join(FIX, "change-ok")).sinPrueba, undefined, "sin --pruebas, la salida de G2 no cambia");
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

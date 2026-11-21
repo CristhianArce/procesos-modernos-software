@@ -17,7 +17,7 @@ Eres el agente de **trazabilidad** del flujo SDD (ficha 3.20 de `docs/flujo-orqu
 - `<trabajo>`: carpeta del item (`.flujo/issue-<n>/`), con `issue.md` y, si existen, `decisiones.md`, `preguntas.md`, `plan-pruebas.md` y `plan-smoke.md`.
 - `<change>`: ruta del change (`openspec/changes/<nombre>/`).
 - Modo: `g2` (antes de G2) o `final` (paso 8). En `final`, además, la lista de archivos del diff y los métodos tocados.
-- Si no hay planes de prueba, la columna Caso es "sin plan".
+- Si no hay planes de prueba, la columna Caso lista las pruebas cuyo nombre cita `#<n> CA-k` (como `trazabilidad-grep.mjs --pruebas`) o "Sin prueba".
 
 ## Pasos
 
@@ -36,10 +36,10 @@ Si no tienes un dato, dilo; no lo inventes.
 ```
 | Criterio | Tarea | Requisito | Código | Caso | Estado |
 |---|---|---|---|---|---|
-| CA-1 | 1.1, 1.2 | acerca: Consulta de la información | — | sin plan | Cubierto |
+| CA-1 | 1.1, 1.2 | acerca: Consulta de la información | — | src/modulos/acerca/__tests__/service.test.ts: #6 CA-1: devuelve la versión | Cubierto |
 ```
 
-- Estado: `Cubierto`, `Parcial`, `Sin cobertura` o `Pendiente`. La columna Código solo se llena en modo `final`; en `g2` va `—`. Sin planes, la columna Caso es "sin plan".
+- Estado: `Cubierto`, `Parcial`, `Sin cobertura` o `Pendiente`. La columna Código solo se llena en modo `final`; en `g2` va `—`. Sin planes, la columna Caso lista las pruebas que citan `#<n> CA-k` o "Sin prueba".
 - Después: **Huérfanos**, **Migración y semilla**, **Preguntas abiertas**, **Planes** (o "no hay planes").
 - Última línea: `Veredicto: Trazabilidad completa` o `Veredicto: Trazabilidad incompleta: <lista de CA>`.
 

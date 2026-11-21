@@ -28,13 +28,17 @@ rules:
     - design.md es obligatorio si el change modifica contracts/openapi.yaml o agrega una migración en db/migration/.
   tasks:
     - 'Cada tarea cita su CA-n o "Derivado: decisión #k".'
-    - "Agrupa por capa según CLAUDE.md §7 (migración, repo, service, schema, handler, página/ui, menu.ts, contrato). Cada grupo incluye sus pruebas unitarias o de integración; el grupo final de pruebas es solo para integración y aceptación de toda la historia."
+    - "Agrupa por capa según CLAUDE.md §7 (migración, repo, service, schema, handler + contrato, página/ui, menu.ts). Cada grupo incluye sus pruebas unitarias o de integración; el grupo final es solo para integración y aceptación de toda la historia."
+    - "Abrir el PR, esperar el CI y archivar no son tareas con casilla: van como viñetas en ## Workflow follow-up, al final."
+    - "Escribir una prueba e2e sí es tarea (se verifica con npx playwright test --list); correrla contra la app levantada no: va en ## Workflow follow-up como verificada en el CI."
 
 operations:
   apply:
     guidance:
-      - "Marca [x] solo lo hecho; deja [ ] con su motivo y no reformatees líneas no tocadas."
+      - "Marca [x] solo lo hecho; deja [ ] con su motivo en <trabajo>/decisiones.md (citando el número X.Y de la tarea) y no reformatees líneas no tocadas."
       - "Usa los nombres reales de <trabajo>/contexto.md; si algo no existe y el change no lo crea, pregúntalo."
+      - "TDD: en cada tarea escribe primero la prueba que la verifica y luego el código que la hace pasar."
+      - "El nombre de cada it/test/describe nuevo cita el issue y el CA que verifica: it(\"#<n> CA-2: rechaza un umbral negativo con 400\"). Varios: \"#<n> CA-1, CA-3: ...\". Las páginas que son Server Components solo se prueban con Playwright (Vitest no las renderiza): su CA se cita en un test(\"#<n> CA-k: ...\") de e2e/."
   archive:
     guidance:
       - "Archiva solo con todas las tareas en [x], en un PR propio, después del merge y uno a la vez."

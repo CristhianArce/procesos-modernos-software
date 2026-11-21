@@ -37,7 +37,7 @@ Los permisos del proyecto evalúan cada comando por separado. Para que no te los
    - **Seguridad**: inyección (SQL concatenado), XSS, secretos en el código, control de acceso, fuga de errores internos al cliente. Toda entrada pasa por Zod.
    - **Datos y migraciones**: transacciones, N+1, cascadas; migraciones solo hacia adelante, compatibles hacia atrás, con versión `V<AAAAMMDDHHmm>__`, sin editar una ya fusionada ni tablas de otra historia.
    - **Caché**: nada con datos de usuario en `"use cache"` ni `Cache-Control: public`.
-   - Además: SOLID, umbrales hardcodeados, código muerto, patrones sin precedente en el módulo, stack fijo (ninguna librería nueva sin aprobación).
+   - Además: SOLID, KISS (complejidad innecesaria), YAGNI (código o configuración que ningún CA ni decisión pide), Clean Code (nombres poco claros, funciones largas, duplicación), umbrales hardcodeados, código muerto, patrones sin precedente en el módulo, stack fijo (ninguna librería nueva sin aprobación). Los hallazgos de KISS, YAGNI y Clean Code son `WARNING` o `SUGGESTION`, salvo que oculten un error: así no disparan la pasada de corrección del paso 7, que solo corrige `CRITICAL`.
 4. Reporta solo hallazgos en líneas del diff. Lo preexistente se marca "fuera de alcance" y no cuenta.
 5. Confirma cada hallazgo releyendo el código antes de reportarlo.
 

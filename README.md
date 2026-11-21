@@ -114,16 +114,16 @@ Se escribe a mano: Claude no lo invoca por su cuenta. Durante la corrida:
 
 - Te pregunta las dudas de negocio (las preguntas abiertas del issue y las que surjan al proponer). Tus respuestas quedan en `decisiones.md` con `Decidió: Persona`.
 - Claude Code puede pedirte aprobar algún comando que no esté en `.claude/settings.json`.
-- Si una puerta o el build fallan, corrige una sola vez. Si sigue fallando, se detiene en **Bloqueado**.
+- Si una puerta o el build fallan, corrige una sola vez. Si sigue fallando, se detiene en **Bloqueado**. También se detiene si al implementar queda una tarea `[ ]` sin su motivo en `decisiones.md`.
 
 ### 3. Qué deja
 
 | Dónde | Qué |
 |---|---|
-| Rama `feature/issue-<n>-<slug>` | El código, las pruebas, la migración y la semilla si aplican |
+| Rama `feature/issue-<n>-<slug>` | El código, las pruebas (cada una nombrada `#<n> CA-k: ...`), la migración y la semilla si aplican |
 | `openspec/changes/<change>/` | proposal, specs, design y tasks, cada uno citando su `CA-n` |
-| PR en borrador | `Closes #<n>`, `Change: <change>` y la tabla de `CA` |
-| `evidencias/issue-<n>/` | issue, contexto, decisiones, G2 (`gates.md`), trazabilidad CA → requisito/escenario → tarea, verificación y agentes |
+| PR en borrador | `Closes #<n>`, `Change: <change>`, la tabla de `CA` con la prueba de cada uno (o "Sin prueba") y las tareas que quedaron pendientes con su motivo |
+| `evidencias/issue-<n>/` | issue, contexto, decisiones, G2 (`gates.md`), trazabilidad CA → requisito/escenario → tarea → prueba, verificación y agentes |
 | `.flujo/issue-<n>/` | El `<trabajo>` completo de la corrida (fuera de git) |
 
 Al final muestra en el chat el tiempo por paso, la URL del PR, los veredictos y las decisiones.
@@ -143,5 +143,5 @@ Para practicar está el issue #6 "[PRUEBA] Página Acerca de" (etiqueta `prueba`
 
 ## Evidencias
 
-- `evidencias/issue-<n>/`: contexto, decisiones, puerta de calidad G2 (`gates.md`), trazabilidad CA → requisito/escenario → tarea (`trazabilidad.md`), verificación y agentes que intervinieron en cada historia.
+- `evidencias/issue-<n>/`: contexto, decisiones, puerta de calidad G2 (`gates.md`), trazabilidad CA → requisito/escenario → tarea → prueba (`trazabilidad.md`), verificación y agentes que intervinieron en cada historia.
 - `AGENTS_LOG.md`: índice de todas las historias con sus rechazos y correcciones; se regenera al archivar cada change.
