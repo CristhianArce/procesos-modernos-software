@@ -51,7 +51,7 @@ Es la parte de **configuración de IA** de la HU 1 de la propuesta (sección 5):
 
 - HU 1b (#2, herramientas de desarrollo): necesaria para las pruebas de `build-test`, `commit` y el modo `demo` (CA-6 y CA-7). CA-1 a CA-5 no dependen de ella.
 - HU 2 (infraestructura y CI/CD): necesaria solo para CA-6 y la parte de Docker de CA-7.
-- 3 issues de práctica (plan, sección 2.0) para las pruebas del orquestador.
+- El issue de práctica #6 (plan, sección 2.0) para las pruebas del orquestador.
 
 ## Preguntas abiertas
 

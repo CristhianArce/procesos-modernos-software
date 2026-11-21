@@ -148,9 +148,9 @@ Todos se crean con el skill `crea-hu` (criterios `CA-n` ya numerados, que el pre
 | HU 1b "Preparar las herramientas de desarrollo del proyecto" (#2) | Fase 1B | Creado | Criterios `CA-n`; change `herramientas-desarrollo` |
 | HU 1a "Configurar la IA del flujo SDD (OpenSpec, agentes, skills)" (#1) | Fases 1A, 3 y 4 | Creado | Criterios `CA-n`; change `configuracion-ia-sdd` (un change por historia, propuesta §8) |
 | HU 2 "Infraestructura y CI/CD" | Fase 2 | Sáb 21 | Criterios `CA-n` |
-| 3 issues de práctica | Fases 3 y 4 | Sáb 21 (la fase 3.6 los necesita ese mismo día) | Cada prueba consume uno: modo `demo`, modo normal reducido y salidas de error. Para la salida "ya resuelto" basta cerrar el issue con `gh issue close`, sin fusionar su PR |
+| 1 issue de práctica: #6 "PRÁCTICA: Página Acerca de" | Fases 3 y 4 | Creado (sáb 21) | Uno solo para todas las pruebas: `preparador`, modo `demo` y salidas de error (se cierra con `gh issue close` y se reabre). Para repetir una corrida se cierra sin fusionar el PR anterior y se borra su rama. |
 | HU 3 a 10 | Fase 5 y clase | Dom 22 | Criterios `CA-n` |
-| 1 issue de práctica por integrante | Fase 5 | Dom 22 | Para el ensayo cronometrado |
+| (ensayo) | Fase 5 | — | Cada integrante reutiliza el #6 por turnos, cerrando el PR anterior sin fusionar |
 
 **Forma de los issues de práctica:** un módulo autocontenido que no toque el núcleo. Por ejemplo, "Página Acerca de" con `src/modulos/acerca/` (`menu.ts`, `service.ts`, `schema.ts`), `src/app/api/acerca/route.ts` y `src/app/(tablero)/acerca/page.tsx`, con variantes (otra ruta, otro texto) para cada issue. Así se prueban los puntos de extensión sin que `revisor-reglas` marque `CRITICAL` por editar el layout del tablero. Sus PR se fusionan, sus changes se archivan y queda evidencia; si el equipo no quiere el módulo en el producto, se retira después con otro change.
 
@@ -160,7 +160,7 @@ Todos se crean con el skill `crea-hu` (criterios `CA-n` ya numerados, que el pre
 2. `git config --global core.longpaths true`: las rutas de `node_modules` dentro de `Documents\EAFIT\...` superan el límite de Windows.
 3. En Claude Code, confirmar acceso a sonnet y haiku (el modo `demo` corre con sonnet; opus solo se usa en el modo normal si la cuenta lo tiene). Habilitar "Dynamic workflows" es opcional: el decisor usa por defecto la alternativa sin workflow (1.4).
 4. La noche antes de la demo: `docker compose pull` y `npm ci` en el checkout principal, para no depender de la red.
-5. Una sola persona (A), al empezar: crear con `crea-hu` los issues de HU 2 y los 3 de práctica (2.0). Los de HU 1b (#2) y HU 1a (#1) ya existen, en [el backlog](backlog/README.md).
+5. Una sola persona (A), al empezar: crear con `crea-hu` el issue de HU 2 (2.0). El de práctica ya existe (#6). Los de HU 1b (#2) y HU 1a (#1) ya existen, en [el backlog](backlog/README.md).
 
 **Hecho cuando:** los cinco portátiles pasan `node -v`, `docker compose version`, `gh auth status` y `openspec --version`, y existen los 6 issues del sábado.
 
@@ -223,7 +223,7 @@ Change `infraestructura-ci-cd`. Puede arrancar el 21 en cuanto la HU 1b (fase 1B
    - `cd.yml`: el de flujo-orquestador.md, paso 10, con `actions/checkout@v6`, `docker/login-action@v4` y `docker/build-push-action@v7`.
 5. **GitHub:** plantillas de issue y PR, CODEOWNERS, protección de `main` y las etiquetas de 1.1 creadas antes de usarlas (`gh` falla si la etiqueta no existe).
 6. **Imagen:** marcar público el paquete de `ghcr.io` tras el primer CD.
-7. **Issues:** crear con `crea-hu` los issues de las HU 3 a 10 y uno de práctica por integrante (2.0); los de práctica de las fases 3 y 4 ya existen desde el sábado.
+7. **Issues:** crear con `crea-hu` los issues de las HU 3 a 10 (2.0); el de práctica (#6) ya existe.
 
 **Hecho cuando:**
 - `docker compose up` funciona en un portátil que no es el de quien lo preparó;
@@ -245,7 +245,7 @@ Se construyen de abajo hacia arriba y cada pieza tiene una prueba aislada antes 
 | 3.3 | `revisor-salida` | Con el change en español, G2 devuelve `CORREGIR` por formato, como texto con la cabecera `## G2 — intento 1` lista para pegar en `gates.md`; G3 sobre el change de ejemplo no intenta compilar | 3.0 | Imprescindible |
 | 3.4 | `revisor-reglas` | Con el parche de ejemplo aplicado, devuelve `CRITICAL` | 3.0 | Imprescindible |
 | 3.5 | 4 agentes del decisor | Una pregunta de umbral ("¿a partir de qué voltaje se alerta?") con los 3 agentes en paralelo y el consolidador; devuelve el formato de 3.4 | 3.1 | Para nota máxima (`decisor.js`: pospuesto) |
-| 3.6 | `preparador` | Sobre el issue de práctica 1: en `demo` crea la rama `feature/issue-<n>-<slug>` en el checkout principal; en modo normal crea el worktree en `.claude/worktrees/` sin pedir permiso, copia `.env` y escribe `issue.md` con `CA-n`; una segunda corrida reutiliza lo existente | 3.1, issue de práctica | Imprescindible |
+| 3.6 | `preparador` | Sobre el issue de práctica #6: en `demo` crea la rama `feature/issue-<n>-<slug>` en el checkout principal; en modo normal crea el worktree en `.claude/worktrees/` sin pedir permiso, copia `.env` y escribe `issue.md` con `CA-n`; una segunda corrida reutiliza lo existente | 3.1, issue de práctica | Imprescindible |
 | 3.7 | `build-test` + `build-test.mjs` | Verde sobre el issue de práctica; rompiendo un tipo devuelve `BUILD FAILURE` clasificado como **código**; con Docker apagado, como **entorno**; la variante `demo` (typecheck, `test:unit`, `test:integration`) termina en menos de 2 minutos | compose mínimo de la HU 2 (`db` + `flyway`) | Imprescindible |
 | 3.8 | `entorno-docker` + `entorno-docker.mjs` | `levantar` (db → flyway → seed → app) devuelve `BASE_URL`; con ella, `npm run e2e -- --grep @smoke` pasa el smoke de `/api/health`; dos issues a la vez sin chocar de puertos; `bajar` deja `docker ps` limpio | HU 2 (con `app` y `Dockerfile`) | Imprescindible |
 | 3.9 | `generar-planes-prueba`, `ejecutor-e2e` | Plan del issue de práctica y ejecución del smoke contra `entorno-docker` | 3.8 | Pospuesto |
@@ -264,7 +264,7 @@ Se construyen de abajo hacia arriba y cada pieza tiene una prueba aislada antes 
    - la tabla de modelos de la Parte 1 (qué `model` pasar a cada `Agent`);
    - los prompts del paso 5 (3.13) y del revisor cruzado (3.12);
    - la regla de 2.7 de prefijar los comandos sobre el worktree con `cd "<raiz>" && `, y la de usar la herramienta Bash, no PowerShell, para que coincidan los permisos de 4.3.
-2. **Modo `demo`** (secuencia de 12 pasos en `flujo-orquestador.md`, "Secuencias por modo"), con el issue de práctica 1. Debe terminar con el PR en borrador y `evidencias/issue-<n>/` commiteado en **7 minutos o menos**. Para lograrlo:
+2. **Modo `demo`** (secuencia de 12 pasos en `flujo-orquestador.md`, "Secuencias por modo"), con el issue de práctica #6. Debe terminar con el PR en borrador y `evidencias/issue-<n>/` commiteado en **7 minutos o menos**. Para lograrlo:
    - trabaja en el checkout principal, en la rama `feature/issue-<n>-<slug>`, sin worktree y sin `npm ci` (los `node_modules` ya están);
    - `db` ya levantada y migrada antes de empezar;
    - sin explorar: antes de proponer, `contexto.mjs` escribe `contexto.md` (tablas, módulos, semillas y rutas existentes) y `openspec-propose` lo recibe junto con `issue.md`;
@@ -276,8 +276,8 @@ Se construyen de abajo hacia arriba y cada pieza tiene una prueba aislada antes 
    - como máximo 1 `CORREGIR` por puerta;
    - sesión y agentes con sonnet, salvo `trazabilidad` en haiku;
    - al final, `copiar-evidencias.mjs` y commit de `evidencias/issue-<n>/`.
-3. **Modo normal reducido** (secuencia de 9 pasos en `flujo-orquestador.md`: pasos 1 y 3 a 6, sin explorar pero con `contexto.md`, con G2, G3, los dos revisores, el decisor de 3 agentes y el smoke local de 3.13 paso 7: `entorno-docker levantar` → `npm run e2e -- --grep @smoke` → `bajar`; luego el paso 8 reducido: `trazabilidad` final y `copiar-evidencias.mjs`; `revisor-pr` comenta el PR si está listo) con el issue de práctica 2. El ciclo del PR, el reporte y el cierre automáticos quedan pospuestos: el archivo se hace a mano con los comandos del paso 10.
-4. **Salidas de error**, provocadas una vez cada una con el issue de práctica 3:
+3. **Modo normal reducido** (secuencia de 9 pasos en `flujo-orquestador.md`: pasos 1 y 3 a 6, sin explorar pero con `contexto.md`, con G2, G3, los dos revisores, el decisor de 3 agentes y el smoke local de 3.13 paso 7: `entorno-docker levantar` → `npm run e2e -- --grep @smoke` → `bajar`; luego el paso 8 reducido: `trazabilidad` final y `copiar-evidencias.mjs`; `revisor-pr` comenta el PR si está listo) con el issue de práctica #6. El ciclo del PR, el reporte y el cierre automáticos quedan pospuestos: el archivo se hace a mano con los comandos del paso 10.
+4. **Salidas de error**, provocadas una vez cada una con el issue de práctica #6:
    - issue ya resuelto: cerrarlo con `gh issue close` (sin fusionar nada) y comprobar que el preparador devuelve `BLOQUEAR`; luego reabrirlo;
    - `build-test` con Docker apagado: error de **entorno**, el item se detiene.
 
@@ -559,7 +559,7 @@ El cuerpo de cada agente contiene:
 5. **Puertos efímeros** (`ports: ["5432"]`, `["3000"]`) para que `docker compose port` funcione. Resuelto en la propuesta §4 y en la HU 2.
 6. **La HU 1 se divide en dos issues** con su change cada uno: HU 1b `herramientas-desarrollo` (#2, herramientas de desarrollo) y HU 1a `configuracion-ia-sdd` (#1, OpenSpec, `CLAUDE.md`, `settings.json`, agentes y skills). La 1a arranca primero (fase 1A) y entra a `main` con un PR de arranque (`Refs #1`), porque el change de la 1b necesita `openspec/`. Resuelto en la propuesta §5.
 7. **Las tablas de dominio** las crean las HU 3 a 5, no la línea base (1.5), y cada historia agrega su `db/seed/<modulo>.sql`.
-8. **Issues de práctica:** se mantienen, 3 para las pruebas y 1 por integrante, como módulo autocontenido (2.0); no cuentan entre las historias.
+8. **Un solo issue de práctica (#6)**, módulo autocontenido "Página Acerca de", para todas las pruebas y el ensayo (2.0); no cuenta entre las historias.
 9. **El smoke de la línea base** cubre solo `/api/health`; el del login llega con la HU 3.
 10. **`import.meta.glob`:** se decide en la HU 1b con tope de 30 minutos; si falla, `registro.ts` manual.
 11. **Hook `guardia.mjs`:** pospuesto; el mínimo es la lista `deny` de `settings.json` (4.3).

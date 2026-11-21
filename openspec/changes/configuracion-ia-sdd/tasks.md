@@ -36,9 +36,9 @@
 
 ## 5. Preparador (B5)
 
-- [ ] 5.1 Crear los 3 issues de práctica con `crea-hu` (plan 2.0) y verificar que existen con la etiqueta `practica` (CA-6, CA-7)
-- [ ] 5.2 Escribir `.claude/agents/preparador.md` (sonnet / medium, ficha 3.1) y verificar con el issue de práctica 1 en `demo` que crea `feature/issue-<n>-<slug>` y `.flujo/issue-<n>/issue.md` con `CA-n`, y que una segunda corrida reutiliza todo; guardar en `evidencias/issue-1/pruebas/preparador.md` (CA-6)
-- [ ] 5.3 Verificar que con un issue de práctica cerrado el `preparador` devuelve `BLOQUEAR: ya resuelto` sin crear rama ni worktree, y reabrir el issue; guardar en la misma evidencia (CA-7)
+- [x] 5.1 Crear el issue de práctica (uno solo: #6 "PRÁCTICA: Página Acerca de") y verificar que existe con las etiquetas `historia` y `practica` (CA-6, CA-7)
+- [ ] 5.2 Escribir `.claude/agents/preparador.md` (sonnet / medium, ficha 3.1) y verificar con el issue de práctica #6 en `demo` que crea `feature/issue-<n>-<slug>` y `.flujo/issue-<n>/issue.md` con `CA-n`, y que una segunda corrida reutiliza todo; guardar en `evidencias/issue-1/pruebas/preparador.md` (CA-6)
+- [ ] 5.3 Verificar que con el issue de práctica #6 cerrado el `preparador` devuelve `BLOQUEAR: ya resuelto` sin crear rama ni worktree, y reabrir el issue; guardar en la misma evidencia (CA-7)
 
 ## 6. Compilación, entorno, commit y PR (B6 a B8; requiere la HU 1b y el compose mínimo)
 
@@ -50,8 +50,8 @@
 ## 7. Orquestador en modo demo (C1 a C3)
 
 - [ ] 7.1 Escribir `.claude/skills/orquestador/SKILL.md` con `disable-model-invocation: true` (argumentos de 3.0; secuencia de 12 pasos del modo `demo` de `docs/flujo-orquestador.md`: `contexto.mjs` antes de propose, `trazabilidad` antes de G2, G3 sin build, `build-test` en paralelo con `revisor-reglas`, segundo `build-test` solo si hubo correcciones, `copiar-evidencias.mjs` al final; máquina de estados con `estado.mjs`, presupuesto 2.5, reglas de Bloqueado y Escalado, tabla de modelos, `cd "<raiz>" &&` con Bash) y verificar con la prueba de frontmatter que la invocación por el modelo está deshabilitada (CA-2)
-- [ ] 7.2 Correr `/orquestador <práctica 1> demo` cronometrado y verificar que en 7 minutos o menos queda un único PR en borrador que cita `#<n>` y el change, con `evidencias/issue-<n>/` commiteado; guardar tiempo y salida en `evidencias/issue-1/pruebas/demo.md` (CA-6)
-- [ ] 7.3 Provocar las salidas de error con el issue de práctica 3 (issue cerrado da `BLOQUEAR`; Docker apagado da error de **entorno** y el item se detiene) y guardar el resultado en `evidencias/issue-1/pruebas/errores.md` (CA-7)
+- [ ] 7.2 Correr `/orquestador 6 demo` cronometrado y verificar que en 7 minutos o menos queda un único PR en borrador que cita `#<n>` y el change, con `evidencias/issue-<n>/` commiteado; guardar tiempo y salida en `evidencias/issue-1/pruebas/demo.md` (CA-6)
+- [ ] 7.3 Provocar las salidas de error con el issue de práctica #6 (cerrado temporalmente da `BLOQUEAR`; Docker apagado da error de **entorno** y el item se detiene) y guardar el resultado en `evidencias/issue-1/pruebas/errores.md` (CA-7)
 
 ## 8. Verificación integral y cierre (C4 a C6)
 
