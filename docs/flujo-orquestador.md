@@ -10,12 +10,12 @@ Un agente de Claude orquesta subagentes; GitHub Actions solo hace CI/CD; una per
 
 0. **Entrada** — Ejecuta: orquestador
    - Recibe `<n>` y las opciones (`probar`, modo `automatico`, `manual` o `demo`).
-   - Modo `demo` (demostración individual, meta de 7 minutos o menos; sesión en sonnet): trabaja en el checkout principal sobre la rama `feature/issue-<n>-<slug>` (sin worktree ni `npm ci`; la BD ya está levantada y migrada antes de empezar). 1 → 3 (con `issue.md`, sin explorar ni G1) → G2 → 4 → G3 → `build-test` en variante demo (`typecheck`, `test:unit` y `test:integration`; `lint` y `next build` quedan para el CI) con `revisor-reglas` (sonnet / medium) en paralelo → corregir CRITICAL → `build-test` → 6 (push y PR opcionales si no hay red) → trazabilidad y commit de evidencias. Máximo un CORREGIR por puerta. Sin decisor (las dudas de negocio las responde la persona), sin planes E2E, sin esperar el CI; el PR queda en borrador.
+   - Modo `demo` (demostración individual, meta de 7 minutos o menos; sesión en sonnet): trabaja en el checkout principal sobre la rama `feature/issue-<n>-<slug>` (sin worktree ni `npm ci`; la BD ya está levantada y migrada antes de empezar). 1 → 3 (con `issue.md`, sin explorar ni G1) → trazabilidad (haiku) → G2 → 4 → G3 → `build-test` en variante demo (`typecheck`, `test:unit` y `test:integration`; `lint` y `next build` quedan para el CI) con `revisor-reglas` (sonnet / medium) en paralelo → corregir CRITICAL → `build-test` → 6 (push y PR opcionales si no hay red) → trazabilidad y commit de evidencias. Máximo un CORREGIR por puerta. Sin decisor (las dudas de negocio las responde la persona), sin planes E2E, sin esperar el CI; el PR queda en borrador.
    - Decisor por defecto: 3 agentes en paralelo más un consolidador; el workflow guardado es opcional.
    - La sesión llega hasta el paso 8 (`PR listo`). Tras el merge humano, el paso 10 se retoma con `/orquestador <n> desde=cierre`; si la persona pide cambios, con `desde=pr`.
 
 1. **Preparar** — Ejecuta: agente `preparador`
-   - Crea el worktree y su rama desde `<base>` (permite trabajar varias historias a la vez), copia `.env` y verifica la línea base de OpenSpec (si falta, Bloqueado; `openspec init` se hizo una vez en la HU 1).
+   - Crea el worktree y su rama desde `<base>` (permite trabajar varias historias a la vez), copia `.env` y verifica la línea base de OpenSpec (si falta, Bloqueado; `openspec init` se hizo una vez en la HU 1a).
    - Vuelca el issue y las preguntas abiertas a `<trabajo>`.
 
 2. **Explorar** [OpenSpec] — Ejecuta: skill `openspec-explore`, agentes `preguntas-tecnicas` y decisor
@@ -28,7 +28,7 @@ Un agente de Claude orquesta subagentes; GitHub Actions solo hace CI/CD; una per
 
 4. **Implementar** [OpenSpec] — Ejecuta: skill `openspec-apply-change`
    - Ejecuta `tasks.md` con pruebas unitarias y de integración, y las migraciones versionadas.
-   - **Puerta de calidad G3** (agente `revisor-salida`): build, linters, tareas hechas y código fiel al spec; decide si sigue, se corrige o se bloquea.
+   - **Puerta de calidad G3** (agente `revisor-salida`): tareas hechas, código fiel al spec y migraciones correctas (sin compilar: el build y las pruebas son del paso 5); decide si sigue, se corrige o se bloquea.
 
 5. **Verificación local** — Ejecuta: skills `build-test` y `entorno-docker`, agentes `revisor-reglas`, `Plan` y ejecutor E2E
    - Sincroniza con la base, build + pruebas, dos revisores y E2E en Docker (con las migraciones aplicadas a la BD efímera y la app sana según `/api/health`).

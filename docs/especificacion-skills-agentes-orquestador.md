@@ -62,7 +62,7 @@ Cada fase escribe su salida antes de cerrar y la siguiente la lee de disco, nunc
 | `preguntas.md` | preparador, explorar, propuesta, implementar | `\| # \| Tipo \| Pregunta \| Estado \| Respuesta \|` |
 | `decisiones.md` | quien decide, en el momento | `\| # \| Fecha \| Fase \| Decisión \| Decidió \| Votos \| Evidencia \| Alternativas descartadas \| Revisar \|` |
 | `explore.md` | paso 2 | por CA: archivos y métodos; preguntas técnicas con evidencia; alcance y lo que queda fuera |
-| `gates.md` | revisor-salida | una sección por ejecución de G1–G4 con veredicto y hallazgos |
+| `gates.md` | orquestador, pegando textual la salida de `revisor-salida` (el agente no escribe archivos) | una sección por ejecución de G1–G4 con veredicto y hallazgos |
 | `plan-pruebas.md`, `plan-smoke.md` | generar-planes-prueba | ver ficha |
 | `verificacion.md` | paso 5 | una sección por vuelta: build, pruebas, tabla de hallazgos, E2E |
 | `ciclo-pr.md` | paso 7 | una sección por ronda: CI, smoke, comentarios y su clasificación, veredicto de `revisor-pr` |
@@ -94,7 +94,7 @@ Siempre `CRITICAL`, `WARNING` o `SUGGESTION`. Si un agente usa otra, el orquesta
 ### 2.6 Reglas del proyecto
 Las reglas del proyecto viven en `CLAUDE.md` (sección 8 de `propuesta.md`). El orquestador las lee al empezar cada item y las pasa **textuales** a todo agente que edite o revise código; no se confía en que se carguen solas: los agentes con `isolation: worktree` usan el `CLAUDE.md` del checkout principal y los integrados `Explore` y `Plan` no lo cargan.
 
-En `openspec/config.yaml` (OpenSpec 2.1) las reglas se escriben **una sola vez, en la HU 1**, no en cada item:
+En `openspec/config.yaml` (OpenSpec 2.1) las reglas se escriben **una sola vez, en la HU 1a**, no en cada item:
 - `context:` (texto libre, ya lo crea `openspec init --language es`): se le agregan el stack, la estructura y las reglas generales.
 - `rules:` es un mapa por artefacto (`proposal`, `specs`, `design`, `tasks`), cada uno con una lista de reglas. Un id distinto genera una advertencia y se ignora.
 - `operations:` solo admite `apply` y `archive`, cada uno con `guidance:`.
@@ -121,8 +121,8 @@ Consecuencia: las HU 1 (proyecto y entorno SDD) y 2 (Docker, CI/CD, imagen en `g
   2. Con `desde=`, leer `estado.md` y saltar a esa fase; si falta una salida previa, detenerse indicando desde dónde retomar.
   3. Ejecutar los pasos 1 a 8 en orden; al iniciar cada fase leer `estado.md` y sus entradas; al cerrarla, escribir su salida y actualizar `estado.md`. Tras cada invocación de agente, agregar una fila a `agentes-log.md`. En el paso 6, antes de `abrir-pr`, escribir el `pr-body.md` mínimo (ver 2.1). La sesión termina en `PR listo`: el merge (paso 9) lo hace la persona, quizá horas después. El paso 10 se retoma con `/orquestador <n> desde=cierre` (ver 3.22); si en el paso 9 la persona pide cambios, con `desde=pr`.
   4. En automático no pregunta: las dudas de negocio van al decisor y se registran. En `manual`, cada puerta y cada edición pide aprobación.
-  5. En `demo` (demostración individual, objetivo ≤ 7 minutos en el ensayo cronometrado): antes de empezar, la BD de desarrollo ya está levantada y migrada (`docker compose up -d --wait db` y `docker compose run --rm flyway migrate info`) y `node_modules` ya existe en el checkout principal. Pasos: 1 (rama `feature/issue-<n>-<slug>` en el checkout principal, sin worktree ni `npm ci`) → 3 (con `issue.md`) → G2 → 4 → G3 → `build-test` en variante `demo` con `revisor-reglas` (sonnet / medium) en paralelo → corregir CRITICAL → `build-test` → 6 → `trazabilidad` (modo final, haiku / low) → commit de `evidencias/issue-<n>/`. Diferencias con el modo normal:
-     - La sesión usa sonnet, no opus.
+  5. En `demo` (demostración individual, objetivo ≤ 7 minutos en el ensayo cronometrado): antes de empezar, la BD de desarrollo ya está levantada y migrada (`docker compose up -d --wait db` y `docker compose run --rm flyway migrate info`) y `node_modules` ya existe en el checkout principal. Pasos: 1 (rama `feature/issue-<n>-<slug>` en el checkout principal, sin worktree ni `npm ci`) → 3 (con `issue.md`) → `trazabilidad` (haiku / low) → G2 → 4 → G3 (sin build: lo cubre el paso 5) → `build-test` en variante `demo` con `revisor-reglas` (sonnet / medium) en paralelo → corregir CRITICAL → `build-test` → 6 → `trazabilidad` (modo final, haiku / low) → commit de `evidencias/issue-<n>/`. Diferencias con el modo normal:
+     - La sesión y los agentes usan sonnet, no opus; solo `trazabilidad` baja a haiku / low.
      - Sin explorar ni G1: la propuesta usa `issue.md` en lugar de `explore.md`.
      - Sin decisor: las dudas de negocio se le preguntan a la persona y se registran con `Decidió: Persona`.
      - Máximo 1 `CORREGIR` por puerta.
@@ -143,8 +143,8 @@ Consecuencia: las HU 1 (proyecto y entorno SDD) y 2 (Docker, CI/CD, imagen en `g
   2. `git fetch origin`. Si `<rama>` o la ruta del worktree ya existen y el worktree está limpio, reutilizarlos; si tienen cambios, detenerse e informar.
   3. Modo normal: `git worktree add -b <rama> .claude/worktrees/issue-<n>-<slug> origin/<base>`. En `demo`: `git switch -c <rama> origin/<base>` en el checkout principal (que debe estar limpio), sin worktree, para reutilizar `node_modules`.
   4. Modo normal: copiar `.env` desde el repo principal al worktree (no imprimir su contenido). En `demo` ya está.
-  5. Verificar que existan `openspec/config.yaml` y `.claude/skills/openspec-propose/` (los deja la HU 1). Si faltan, detenerse con `BLOQUEAR: falta la línea base de OpenSpec`; el preparador no corre `openspec init` ni edita `config.yaml` (ver 2.6).
-  6. Crear `<trabajo>` y escribir `issue.md`: cabecera, cuerpo íntegro sin recortar, imágenes descargadas y enlazadas, y al final `## Criterios numerados` con un `CA-n` por elemento de la lista de criterios, texto literal. Sin criterios, derivarlos del cuerpo y registrar la pregunta "Los CA-n son un supuesto derivado de <fuente>".
+  5. Verificar que existan `openspec/config.yaml` y `.claude/skills/openspec-propose/` (los deja la HU 1a). Si faltan, detenerse con `BLOQUEAR: falta la línea base de OpenSpec`; el preparador no corre `openspec init` ni edita `config.yaml` (ver 2.6).
+  6. Crear `<trabajo>` y escribir `issue.md`: cabecera, cuerpo íntegro sin recortar, imágenes enlazadas (no se descargan: requeriría `curl`, que no está permitido; si un dato clave está solo en una imagen, se registra como pregunta), y al final `## Criterios numerados` con un `CA-n` por elemento de la lista de criterios, texto literal. Si el issue ya trae los criterios numerados `CA-n` (formato del skill `crea-hu`, sección `## Criterios de aceptación`), se conserva su numeración; sus "Preguntas abiertas" pasan a `preguntas.md` como preguntas de negocio. Sin criterios, derivarlos del cuerpo y registrar la pregunta "Los CA-n son un supuesto derivado de <fuente>".
   7. Crear `decisiones.md` con la cabecera vacía, `agentes-log.md` con su cabecera y `preguntas.md` con cada laguna como pregunta de negocio abierta (sin descripción, sin criterios, dato clave solo en imagen ilegible).
 - **Salida**: ruta del worktree (o del checkout en `demo`), rama, archivos creados, preguntas abiertas.
 - **Prohibido**: commits, build, BD, modificar el issue.
@@ -193,10 +193,10 @@ Consecuencia: las HU 1 (proyecto y entorno SDD) y 2 (Docker, CI/CD, imagen en `g
 - **Criterios por puerta**:
   - **G1**: cada `CA-n` aparece en `explore.md` con archivos y métodos; ninguna pregunta en `preguntas.md` queda `abierta`; cada respuesta técnica tiene evidencia; cada decisión de negocio tiene fila en `decisiones.md`.
   - **G2**: `openspec validate <change> --strict --type change --no-interactive` termina con código 0 e imprime `Change '<change>' is valid`; las specs respetan el formato de 2.6 (encabezados y palabras clave en inglés; `## Purpose` real si crea una capacidad); la salida de `trazabilidad` (CA → requisito/escenario → tarea → caso de prueba), que el orquestador corre antes de G2 (haiku / low) porque un subagente no puede lanzar otro, no deja CA sin cobertura; `tasks.md` incluye tareas de pruebas unitarias/integración y de migración cuando el cambio toca esquema o datos semilla; la migración es solo hacia adelante y compatible hacia atrás; no hay tareas fuera de alcance sin `Derivado: decisión #k`; coherencia de proposal/design/specs/tasks contra el código real.
-  - **G3**: lee el último resultado de `build-test` en `estado.md` (verde y posterior a la última edición; no vuelve a compilar); todas las tareas `[x]`, y las `[ ]` con motivo en `decisiones.md`; el diff implementa lo que dicen las specs (sin extra ni faltante); migraciones con versión timestamp y no editan una ya existente en `<base>`.
+  - **G3**: no compila ni exige build (G3 corre antes del primer `build-test`; el build y las pruebas son responsabilidad del paso 5, y `commit` se niega sin build verde); todas las tareas `[x]`, y las `[ ]` con motivo en `decisiones.md`; el diff implementa lo que dicen las specs (sin extra ni faltante); migraciones con versión timestamp y no editan una ya existente en `<base>`.
   - **G4** (paso 10, en el worktree `archivar-<change>`): `openspec validate --specs --strict --json` con código 0 y `summary.totals.failed == 0` (sin `--json` el texto es `✓ spec/<cap>` y `Totals: N passed, 0 failed`; no imprime "is valid"); ninguna spec con `Purpose: TBD`; change movido a `openspec/changes/archive/<fecha>-<change>/` y sus deltas presentes en `openspec/specs/`; sin tareas pendientes; `evidencias/issue-<n>/trazabilidad.md` sin CA `Pendiente`.
 - **Reglas**: confirmar cada hallazgo leyendo el archivo antes de reportarlo; no repetir hallazgos ya resueltos; `BLOQUEAR` solo cuando el problema no se arregla repitiendo el comando (requiere algo prohibido, contradicción irresoluble en el issue, entorno caído).
-- **Salida** (sección en `gates.md`):
+- **Salida** (la devuelve como texto; el agente no tiene `Write` y el orquestador la agrega **textual**, sin resumir, a `gates.md`, para que la evidencia sea la salida propia del agente):
   ```
   ## G<k> — intento <i>
   Veredicto: APROBADO | CORREGIR | BLOQUEAR
@@ -232,9 +232,9 @@ Consecuencia: las HU 1 (proyecto y entorno SDD) y 2 (Docker, CI/CD, imagen en `g
 
 ### 3.9 Skill `build-test`
 
-- **Tipo**: skill con script; lo usa la sesión principal. G3 lee su último resultado en `estado.md`.
+- **Tipo**: skill con script; lo usa la sesión principal en el paso 5. Su último resultado queda en `estado.md`, donde lo lee `commit`.
 - **Entrada**: `<n>`, `<raiz>`, variante (`completa` o `demo`).
-- **Scripts que fija la HU 1 en `package.json`**: `lint` (`eslint .`; Next.js 16 ya no trae `next lint`), `typecheck`, `test:unit`, `test:integration`, `build`, `seed`, `e2e`.
+- **Scripts que fija la HU 1b en `package.json`**: `lint` (`eslint .`; Next.js 16 ya no trae `next lint`), `typecheck`, `test:unit`, `test:integration`, `build`, `seed`, `e2e`.
 - **Pasos (variante `completa`)**:
   1. Ejecutar en `<raiz>` `npm ci`, `npm run lint`, `npm run typecheck` y `npm run test:unit` (Vitest, sin BD).
   2. Pruebas de integración (necesitan Postgres): `docker compose -p issue-<n>-test up -d --wait db` → `docker compose -p issue-<n>-test run --rm flyway migrate info` → `DATABASE_URL` apuntando al puerto publicado (`docker compose -p issue-<n>-test port db 5432`) → `npm run test:integration` → al terminar, `docker compose -p issue-<n>-test down -v`. Usa un proyecto de compose distinto del de `entorno-docker` para no pisar su BD.
@@ -291,7 +291,7 @@ Una **vuelta** = build → revisión → confirmación → corrección. El tope 
 4. **Confirmar** cada hallazgo leyendo el método; descartar los que no se sostienen; deuda preexistente se descarta salvo que el diff la agrave (entonces se corrige solo la parte agravada); los que cambian regla de negocio → decisor.
 5. **Corregir** CRITICAL y WARNING confirmados dentro del diff; SUGGESTION solo si es trivial y está en líneas ya tocadas.
 6. **Revisión de cierre** tras la última corrección (sonnet / medium, solo lo tocado). Si deja CRITICAL/WARNING y quedan vueltas, otra vuelta; si no quedan, aplicar correcciones triviales (1–3 líneas, sin cambiar regla de negocio ni contrato compartido) como `aplicado sin re-revisión`.
-7. **E2E local**: `entorno-docker levantar` → `ejecutor-e2e` con el smoke → clasificar fallas (ver 3.14) → corregir las de código y volver a 2.
+7. **E2E local**: `entorno-docker levantar` → `ejecutor-e2e` con el smoke → clasificar fallas (ver 3.14) → corregir las de código y volver a 2. Para la entrega (modo normal reducido), en lugar de `ejecutor-e2e`: `entorno-docker levantar` → `BASE_URL=<la devuelta> npm run e2e -- --grep @smoke` → `entorno-docker bajar`; el resultado va a la tabla E2E de `verificacion.md`. No corre en `demo`.
 8. **Salida del paso**: verde (build, pruebas, sin CRITICAL/WARNING abiertos, smoke OK) → `verificado`. Sin vueltas y pruebas en rojo → Bloqueado. Sin vueltas con hallazgos abiertos o sin E2E → `verificado con hallazgos`, PR con revisión especializada.
 9. Cada vuelta deja su sección en `verificacion.md`: build, pruebas, `| # | Vuelta | Revisor | Severidad | Archivo | Método | Hallazgo | Estado | Motivo |`, tabla E2E.
 
@@ -367,7 +367,7 @@ Una **vuelta** = build → revisión → confirmación → corrección. El tope 
 
 ### 3.20 Agente `trazabilidad`
 
-- **Cuándo**: antes de G2 (modo normal, haiku / low; el orquestador pasa su salida a `revisor-salida`) y paso 8 (modo final, sonnet / medium; haiku / low en `demo`).
+- **Cuándo**: antes de G2 (modo normal y `demo`, haiku / low; el orquestador pasa su salida a `revisor-salida`) y paso 8 (modo final, sonnet / medium; haiku / low en `demo`).
 - **Herramientas**: `Read Grep Glob`.
 - **Entrada**: `<raiz>`, `<trabajo>`, `<change>`; en modo final, lista de archivos del diff y métodos tocados.
 - **Verificaciones**:
