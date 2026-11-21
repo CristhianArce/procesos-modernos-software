@@ -30,12 +30,14 @@ Es la parte de **configuración de IA** de la HU 1 de la propuesta (sección 5):
 - Docker, `docker compose`, CI/CD, las plantillas de GitHub, CODEOWNERS y las etiquetas del repo (HU 2).
 - Las piezas pospuestas: `esperar-ci`, `validador-comentarios`, `generar-planes-prueba`, `ejecutor-e2e`, `reporte-historia`, `solicitar-revision-humana`, la automatización de `cierre-post-merge`, el modo `manual`, el workflow `decisor.js` y el hook `guardia.mjs`.
 - Redactar los issues de las HU 3 a 10 (los crea el skill `crea-hu`).
+- El modo normal reducido del orquestador (pasos 1 a 6 con G2, G3, los dos revisores y el decisor): se prueba con la HU 3 y no bloquea esta historia.
 
 ## Notas técnicas (no vinculantes)
 
 - Change de OpenSpec: `configuracion-ia-sdd` (antes `orquestador-sdd`).
-- Primera tarea: `openspec init --tools claude --language es --scope project`, porque desbloquea el change de la HU 1b. Luego, `openspec/config.yaml` según el plan 4.1, comprobado con `node -e "require('yaml').parse(require('fs').readFileSync('openspec/config.yaml','utf8'),{uniqueKeys:true})"`. Revisar si los skills `openspec-*` traen `disable-model-invocation: true`.
-- `CLAUDE.md` según el plan 4.2. `.claude/settings.json` con su lista `deny` según el plan 4.3, comprobando la sintaxis de permisos de la versión instalada de Claude Code.
+- Primera tarea: `openspec init --tools claude --language es --scope project`, porque desbloquea el change de la HU 1b. Luego, el ajuste mínimo de `openspec/config.yaml` según el plan 4.1 (solo las reglas de formato de specs, `CA-n` y `## Purpose`; el resto va en `CLAUDE.md`), comprobado con `node -e "require('yaml').parse(require('fs').readFileSync('openspec/config.yaml','utf8'),{uniqueKeys:true})"`. Revisar si los skills `openspec-*` traen `disable-model-invocation: true`.
+- `CLAUDE.md` según el plan 4.2. `.claude/settings.json` con su lista `deny` según el plan 4.3, comprobando la sintaxis de permisos de la versión instalada de Claude Code. El `deny` incluye `Bash(git reset)` sin argumentos y `Edit`/`Write` de `.claude/worktrees/**/.github/**`. En modo `demo` (checkout principal) la protección de `.github/` depende de las instrucciones del agente, hasta que exista `guardia.mjs`.
+- Pruebas de los scripts `.mjs` y de la configuración con `node --test`, sin dependencias nuevas y sin esperar el Vitest de la HU 1b. Las pruebas de los agentes (CA-4 a CA-7) son corridas reproducibles: fixture fija, prompt fijo y salida guardada en `evidencias/issue-1/pruebas/`.
 - Agentes en `.claude/agents/<nombre>.md`, con `model`/`effort`/`tools` según la tabla 1.3 del plan y `disallowedTools: Agent`.
 - Skills en `.claude/skills/<nombre>/SKILL.md`. Scripts Node en `.claude/skills/orquestador/scripts/`: `estado.mjs`, `puerto.mjs`, `trazabilidad-grep.mjs`, `migracion-timestamp.mjs` y `copiar-evidencias.mjs`. Plantillas de `<trabajo>` en `.claude/skills/orquestador/plantillas/`.
 - `.claude/orquestador.json` con `base`, `owner`, `repo`, `revisor`, `revisorEspecializado` y `limpiarTrabajo`.
@@ -52,7 +54,7 @@ Es la parte de **configuración de IA** de la HU 1 de la propuesta (sección 5):
 
 ## Preguntas abiertas
 
-- ¿Basta con el modo `demo` (nivel Imprescindible) o también entra el modo normal reducido (pasos 1 a 6 con G2, G3, los dos revisores y el decisor)? Opciones: a) solo `demo` / b) `demo` más el modo normal reducido, probado con el issue de práctica 2.
+- Ninguna. Resuelta: la historia cierra con el modo `demo`; el modo normal reducido queda fuera de alcance.
 
 ## Definición de hecho
 
