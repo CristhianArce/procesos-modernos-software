@@ -5,14 +5,36 @@ context: |
   All artifacts must be written in es.
   Keep OpenSpec structural headings and SHALL/MUST keywords in English.
   Escribe todo en español, salvo los encabezados y palabras clave de las specs.
+
+  Dominio: tablero de sensores de una red eléctrica. Glosario:
+  - Nodo: punto de la red; agrupa sensores y tiene un estado (conectado o desconectado).
+  - Sensor: mide voltaje, corriente o potencia en un nodo y tiene umbrales.
+  - Lectura: valor medido por un sensor; las genera el simulador (POST /api/simulador).
+  - Alerta: se registra cuando una lectura supera el umbral de su sensor; otros módulos se suscriben con on-alerta.ts.
+  - Roles: administrador y técnico. Lo que puede hacer cada rol lo fijan los CA de cada historia; no lo supongas.
+  Detalle del producto y del backlog: docs/propuesta.md y docs/backlog/.
+  Lo que ya existe (tablas, módulos, rutas, capacidades) lo lista <trabajo>/contexto.md en cada historia.
   Las reglas del proyecto (stack, estructura, capas, datos, seguridad) están en CLAUDE.md: respétalas.
 
 # Ajuste mínimo (plan de construcción, sección 4.1): solo las reglas sin las cuales
 # el flujo falla. Todo lo demás vive en CLAUDE.md. Cada clave aparece una sola vez.
+# rules llega solo al crear cada artefacto; operations llega a apply y archive.
 rules:
   specs:
     - "Encabezados y palabras clave en inglés: ## ADDED|MODIFIED|REMOVED|RENAMED Requirements, ### Requirement:, #### Scenario:, SHALL/MUST, **WHEN**/**THEN**. Nunca ### Requisito:, DEBE ni **CUANDO**."
     - Cada requisito y cada escenario cita su criterio CA-n del issue.
     - "Si el change crea una capacidad nueva, su delta specs/<cap>/spec.md empieza con ## Purpose y un texto real."
+  design:
+    - design.md es obligatorio si el change modifica contracts/openapi.yaml o agrega una migración en db/migration/.
   tasks:
     - 'Cada tarea cita su CA-n o "Derivado: decisión #k".'
+    - "Agrupa por capa según CLAUDE.md §7 (migración, repo, service, schema, handler, página/ui, menu.ts, contrato). Cada grupo incluye sus pruebas unitarias o de integración; el grupo final de pruebas es solo para integración y aceptación de toda la historia."
+
+operations:
+  apply:
+    guidance:
+      - "Marca [x] solo lo hecho; deja [ ] con su motivo y no reformatees líneas no tocadas."
+      - "Usa los nombres reales de <trabajo>/contexto.md; si algo no existe y el change no lo crea, pregúntalo."
+  archive:
+    guidance:
+      - "Archiva solo con todas las tareas en [x], en un PR propio, después del merge y uno a la vez."

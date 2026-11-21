@@ -20,7 +20,7 @@ Este plan ordena todo lo que hay que construir antes de implementar la primera h
 | Archivo | Lo crea | Contenido | Fuente |
 |---|---|---|---|
 | `CLAUDE.md` | HU 1a (arranque, fase 1A) | Reglas del proyecto (sección 8 de la propuesta), estructura, comandos `npm run *`, prohibiciones de agentes, formato de specs | propuesta §8, especificación 2.6 y 2.7 |
-| `openspec/config.yaml` | HU 1a (arranque, fase 1A): `openspec init` + edición única | `context:` con stack y reglas generales; `rules:` por artefacto; `operations.apply/archive.guidance` | especificación 2.6, borrador en 4.1 |
+| `openspec/config.yaml` | HU 1a (arranque, fase 1A): `openspec init` + edición única | `context:` con idioma, glosario de dominio y enlaces (las reglas técnicas solo en `CLAUDE.md`); `rules:` por artefacto; `operations.apply/archive.guidance` | especificación 2.6, borrador en 4.1 |
 | `.claude/settings.json` | HU 1a (arranque, fase 1A) | Permisos (worktrees, git, gh, npm, openspec, docker compose) con su lista `deny`, que es el mínimo que hace cumplir las prohibiciones | especificación 2.7, contenido en 4.3 |
 | `.claude/hooks/guardia.mjs` | Pospuesto | Hook que hace cumplir las prohibiciones con más precisión que `deny` | especificación 2.7, diseño en 4.4 |
 | `.claude/orquestador.json` | HU 1a | `base` (`main`), `owner`, `repo`, `revisor`, `revisorEspecializado`, `limpiarTrabajo` (`archivar`/`borrar`) | especificación 3.21 paso 4, 3.22 paso 5 |
@@ -326,7 +326,7 @@ Solo exige el nivel **Imprescindible**; lo de nota máxima se suma después sin 
 
 ### 4.1 `openspec/config.yaml` (ajuste mínimo)
 
-`openspec/config.yaml` es la configuración del proyecto que crea `openspec init`, no un archivo interno de OpenSpec. Solo se le agregan las **tres reglas sin las cuales el flujo falla**. Todo lo demás (stack, estructura, capas, datos, seguridad, guía de `apply`/`archive`) vive **solo en `CLAUDE.md`** (4.2), para no mantener dos copias ni arriesgar claves duplicadas.
+`openspec/config.yaml` es la configuración del proyecto que crea `openspec init`, no un archivo interno de OpenSpec. Lleva poco: el idioma, un glosario corto del dominio con enlaces a `docs/`, las reglas de formato sin las cuales el flujo falla y, en `operations`, la guía de `apply`/`archive` (el único canal de OpenSpec que llega a esas operaciones). Las reglas técnicas (stack, estructura, capas, datos, seguridad) viven **solo en `CLAUDE.md`** (4.2), para no mantener dos copias ni arriesgar claves duplicadas. La versión vigente es `openspec/config.yaml`; el bloque de abajo es el ajuste inicial.
 
 | Regla | Si falta |
 |---|---|
@@ -349,7 +349,7 @@ rules:
     - 'Cada tarea cita su CA-n o "Derivado: decisión #k".'
 ```
 
-Las reglas que antes iban en `rules.design`, `rules.tasks` (agrupar por capa, pruebas, migraciones) y `operations` pasan a las secciones 4 a 7 de `CLAUDE.md`.
+Después se agregaron (revisión SDD/OpenSpec): el glosario de dominio en `context:`; `rules.design` (obligatorio si cambia el contrato o hay migración); en `rules.tasks`, la agrupación por capa conciliada con el schema `spec-driven`, que pide no juntar las pruebas en un grupo final; y `operations.apply/archive.guidance`, porque `rules:` no llega a `apply`.
 
 ### 4.2 `CLAUDE.md` (esqueleto)
 

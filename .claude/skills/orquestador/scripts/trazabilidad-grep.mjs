@@ -1,9 +1,10 @@
-// Busca cada CA-n de issue.md en las specs y tareas de un change (apoyo para G2 y el agente trazabilidad).
-// Uso: node .claude/skills/orquestador/scripts/trazabilidad-grep.mjs <issue.md> <dir-del-change>
-// Salida: JSON { criterios: { "CA-1": { requisitos, escenarios, tareas } }, sinCobertura, tareasSinCriterio }
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+// Busca cada CA-n de issue.md en las specs y tareas de un change (apoyo para G2).
+// Uso: node .claude/skills/orquestador/scripts/trazabilidad-grep.mjs <issue.md> <dir-del-change> [--salida <trabajo>/trazabilidad.md]
+// Salida: JSON { criterios: { "CA-1": { requisitos, escenarios, tareas } }, sinCobertura, tareasSinCriterio,
+//   bloquesSinCriterio, criteriosInexistentes, tareasSinNumero }. Con --salida, además escribe la tabla en Markdown.
+import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
-import { esPrincipal, fallar } from "./comun.mjs";
+import { esPrincipal, fallar, opciones } from "./comun.mjs";
 
 export function criteriosDelIssue(textoIssue) {
   const ids = new Set();
@@ -13,8 +14,9 @@ export function criteriosDelIssue(textoIssue) {
 }
 
 const citas = (texto) => new Set([...texto.matchAll(/\bCA-(\d+)\b/g)].map((m) => `CA-${m[1]}`));
+const DERIVADO = /Derivado: decisión #\d+/;
 
-// Recorre un spec.md y devuelve [{ tipo: requisito|escenario, nombre, criterios }].
+// Recorre un spec.md y devuelve [{ tipo: requisito|escenario, nombre, criterios, derivado }].
 export function bloquesDeSpec(texto) {
   const bloques = [];
   let actual = null;
@@ -30,7 +32,7 @@ export function bloquesDeSpec(texto) {
     if (actual) actual.texto += `\n${linea}`;
   }
   if (actual) bloques.push(actual);
-  return bloques.map(({ tipo, nombre, texto }) => ({ tipo, nombre, criterios: citas(texto) }));
+  return bloques.map(({ tipo, nombre, texto }) => ({ tipo, nombre, criterios: citas(texto), derivado: DERIVADO.test(texto) }));
 }
 
 function specsDe(dirChange) {
@@ -51,35 +53,80 @@ function specsDe(dirChange) {
 export function analizar(textoIssue, dirChange) {
   const ids = criteriosDelIssue(textoIssue);
   const criterios = Object.fromEntries(ids.map((id) => [id, { requisitos: [], escenarios: [], tareas: [] }]));
+  const inexistentes = new Set();
+  const bloquesSinCriterio = [];
   for (const spec of specsDe(dirChange)) {
     const cap = relative(join(dirChange, "specs"), spec).replace(/\\/g, "/").replace(/\/spec\.md$/, "");
     for (const b of bloquesDeSpec(readFileSync(spec, "utf8"))) {
+      if (b.criterios.size === 0 && !b.derivado) bloquesSinCriterio.push(`${cap}: ${b.tipo} "${b.nombre}"`);
       for (const id of b.criterios) {
-        if (!criterios[id]) continue;
+        if (!criterios[id]) {
+          inexistentes.add(id);
+          continue;
+        }
         criterios[id][b.tipo === "requisito" ? "requisitos" : "escenarios"].push(`${cap}: ${b.nombre}`);
       }
     }
   }
   const tareasSinCriterio = [];
+  const tareasSinNumero = [];
   const rutaTareas = join(dirChange, "tasks.md");
   if (existsSync(rutaTareas)) {
     for (const linea of readFileSync(rutaTareas, "utf8").split(/\r?\n/)) {
+      if (!/^\s*- \[[ xX]\]/.test(linea)) continue;
       const t = linea.match(/^\s*- \[[ xX]\]\s*(\d+(?:\.\d+)*)\s/);
-      if (!t) continue;
+      if (!t) {
+        tareasSinNumero.push(linea.trim());
+        continue;
+      }
       const ca = citas(linea);
-      if (ca.size === 0 && !/Derivado: decisión #\d+/.test(linea)) tareasSinCriterio.push(t[1]);
-      for (const id of ca) criterios[id]?.tareas.push(t[1]);
+      if (ca.size === 0 && !DERIVADO.test(linea)) tareasSinCriterio.push(t[1]);
+      for (const id of ca) {
+        if (criterios[id]) criterios[id].tareas.push(t[1]);
+        else inexistentes.add(id);
+      }
     }
   }
-  const sinCobertura = ids.filter((id) => {
-    const c = criterios[id];
-    return (c.requisitos.length === 0 && c.escenarios.length === 0) || c.tareas.length === 0;
-  });
-  return { criterios, sinCobertura, tareasSinCriterio };
+  // Un CA queda cubierto solo con al menos un escenario (que vive dentro de un requisito) y al menos una tarea.
+  const sinCobertura = ids.filter((id) => criterios[id].escenarios.length === 0 || criterios[id].tareas.length === 0);
+  const criteriosInexistentes = [...inexistentes].sort((a, b) => Number(a.slice(3)) - Number(b.slice(3)));
+  return { criterios, sinCobertura, tareasSinCriterio, bloquesSinCriterio, criteriosInexistentes, tareasSinNumero };
+}
+
+// Tabla de <trabajo>/trazabilidad.md (plantilla trazabilidad.md). Código y Caso los completa una revisión posterior.
+export function aMarkdown(r) {
+  const lista = (xs) => (xs.length ? xs.join("; ") : "—");
+  const huerfanos = [
+    ...r.bloquesSinCriterio.map((b) => `- Sin CA ni decisión: ${b}`),
+    ...r.tareasSinCriterio.map((t) => `- Tarea sin CA ni decisión: ${t}`),
+    ...r.tareasSinNumero.map((t) => `- Tarea sin número: ${t}`),
+    ...r.criteriosInexistentes.map((c) => `- Cita a un criterio que no está en el issue: ${c}`),
+  ];
+  const ok = r.sinCobertura.length === 0 && huerfanos.length === 0;
+  return [
+    "# Trazabilidad",
+    "",
+    "Generado por `trazabilidad-grep.mjs` (CA → requisito/escenario → tarea). Código y Caso: pendientes de la trazabilidad final (pospuesta).",
+    "",
+    "| Criterio | Tarea | Requisito | Escenario | Código | Caso | Estado |",
+    "|---|---|---|---|---|---|---|",
+    ...Object.entries(r.criterios).map(([id, c]) =>
+      `| ${id} | ${lista(c.tareas)} | ${lista(c.requisitos)} | ${lista(c.escenarios)} | — | — | ${r.sinCobertura.includes(id) ? "Pendiente" : "Cubierto en spec y tareas"} |`),
+    "",
+    "## Huérfanos",
+    "",
+    ...(huerfanos.length ? huerfanos : ["- (ninguno)"]),
+    "",
+    `Veredicto: ${ok ? "completa" : "incompleta"}`,
+    "",
+  ].join("\n");
 }
 
 if (esPrincipal(import.meta.url)) {
-  const [issue, change] = process.argv.slice(2);
-  if (!issue || !change) fallar("Uso: trazabilidad-grep.mjs <issue.md> <dir-del-change>", 2);
-  console.log(JSON.stringify(analizar(readFileSync(issue, "utf8"), change), null, 2));
+  const o = opciones(process.argv.slice(2));
+  const [issue, change] = o._;
+  if (!issue || !change) fallar("Uso: trazabilidad-grep.mjs <issue.md> <dir-del-change> [--salida <ruta.md>]", 2);
+  const r = analizar(readFileSync(issue, "utf8"), change);
+  if (typeof o.salida === "string") writeFileSync(o.salida, aMarkdown(r));
+  console.log(JSON.stringify(r, null, 2));
 }

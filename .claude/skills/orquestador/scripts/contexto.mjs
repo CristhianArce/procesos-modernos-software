@@ -1,6 +1,6 @@
 // Escribe <trabajo>/contexto.md con lo que ya existe en el repo, para que la propuesta no suponga tablas ni módulos.
 // Uso: node .claude/skills/orquestador/scripts/contexto.mjs <n> [--raiz <raiz>] [--trabajo <dir>]
-// Sin agentes ni BD: lee db/migration/, src/modulos/, db/seed/ y contracts/openapi.yaml.
+// Sin agentes ni BD: lee openspec/specs/, openspec/changes/, db/migration/, src/modulos/, db/seed/ y contracts/openapi.yaml.
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { dirTrabajo, esPrincipal, fallar, opciones, raizRepo } from "./comun.mjs";
@@ -61,15 +61,46 @@ export function rutasDelContrato(rutaContrato) {
   return rutas;
 }
 
+// Capacidades ya especificadas en openspec/specs/<cap>/spec.md: su Purpose y sus requisitos (fuente de verdad del comportamiento).
+export function capacidadesEspecificadas(dirSpecs) {
+  return listar(dirSpecs)
+    .filter((c) => existsSync(join(dirSpecs, c, "spec.md")))
+    .map((c) => {
+      const texto = readFileSync(join(dirSpecs, c, "spec.md"), "utf8");
+      const proposito = (texto.split(/^## Purpose\s*$/m)[1] ?? "").split(/^##\s/m)[0].trim().split(/\r?\n\r?\n/)[0].replace(/\s+/g, " ");
+      const requisitos = [...texto.matchAll(/^### Requirement:\s*(.+)$/gm)].map((m) => m[1].trim());
+      return { capacidad: c, proposito, requisitos };
+    });
+}
+
+// Changes de OpenSpec en curso (sin archivar): otra historia puede estar tocando lo mismo.
+export const changesActivos = (dirChanges) =>
+  listar(dirChanges).filter((c) => c !== "archive" && statSync(join(dirChanges, c)).isDirectory());
+
 export function generarContexto(raiz) {
   const tablas = tablasDeMigraciones(join(raiz, "db", "migration"));
   const modulos = modulosConExtension(join(raiz, "src", "modulos"));
   const semillas = listar(join(raiz, "db", "seed")).filter((a) => a.endsWith(".sql"));
   const rutas = rutasDelContrato(join(raiz, "contracts", "openapi.yaml"));
+  const capacidades = capacidadesEspecificadas(join(raiz, "openspec", "specs"));
+  const changes = changesActivos(join(raiz, "openspec", "changes"));
   const l = [
     "# Contexto del repositorio",
     "",
     "Generado por `contexto.mjs`. Toda tabla, columna o módulo que use la propuesta debe aparecer aquí; si no aparece, es una pregunta, no un supuesto.",
+    "",
+    "## Capacidades especificadas",
+    "",
+    "Comportamiento ya especificado en `openspec/specs/`. Si la historia cambia una de estas capacidades, su delta usa `## MODIFIED Requirements` con el nombre exacto del requisito; no se crea otra capacidad para lo mismo.",
+    "",
+    "| Capacidad | Propósito | Requisitos |",
+    "|---|---|---|",
+    ...capacidades.map((c) => `| ${c.capacidad} | ${c.proposito || "(sin Purpose)"} | ${c.requisitos.join("; ") || "(ninguno)"} |`),
+    ...(capacidades.length ? [] : ["| (ninguna) | | |"]),
+    "",
+    "## Changes activos",
+    "",
+    ...(changes.length ? changes.map((c) => `- openspec/changes/${c}/`) : ["- (ninguno)"]),
     "",
     "## Tablas y columnas",
     "",

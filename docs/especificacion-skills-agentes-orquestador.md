@@ -65,7 +65,7 @@ Cada fase escribe su salida antes de cerrar y la siguiente la lee de disco, nunc
 | `issue.md` | preparador | issue completo + `## Criterios numerados` (`CA-1`, `CA-2`…) |
 | `preguntas.md` | preparador, explorar, propuesta, implementar | `\| # \| Tipo \| Pregunta \| Estado \| Respuesta \|` |
 | `decisiones.md` | quien decide, en el momento | `\| # \| Fecha \| Fase \| Decisión \| Decidió \| Votos \| Evidencia \| Alternativas descartadas \| Revisar \|` |
-| `contexto.md` | orquestador, con `contexto.mjs` (sin agentes), antes del paso 3 (explorar está pospuesto) | tablas y columnas que crean las migraciones de `db/migration/` (de sus `CREATE TABLE` / `ALTER TABLE`), módulos de `src/modulos/` con sus puntos de extensión (`menu.ts`, `paneles.ts`, `on-alerta.ts`, `metrics.ts`), semillas de `db/seed/` y rutas de `contracts/openapi.yaml` |
+| `contexto.md` | orquestador, con `contexto.mjs` (sin agentes), antes del paso 3 (explorar está pospuesto) | tablas y columnas que crean las migraciones de `db/migration/` (de sus `CREATE TABLE` / `ALTER TABLE`), módulos de `src/modulos/` con sus puntos de extensión (`menu.ts`, `paneles.ts`, `on-alerta.ts`, `metrics.ts`), semillas de `db/seed/`, rutas de `contracts/openapi.yaml`, capacidades de `openspec/specs/` (Purpose y requisitos) y changes activos de `openspec/changes/` |
 | `explore.md` | paso 2 | por CA: archivos y métodos; preguntas técnicas con evidencia; alcance y lo que queda fuera |
 | `gates.md` | orquestador, pegando textual la salida de `revisor-salida` (el agente no escribe archivos) | una sección por ejecución de G1–G4 con veredicto y hallazgos |
 | `plan-pruebas.md`, `plan-smoke.md` | generar-planes-prueba | ver ficha |
@@ -100,9 +100,10 @@ Siempre `CRITICAL`, `WARNING` o `SUGGESTION`. Si un agente usa otra, el orquesta
 Las reglas del proyecto viven en `CLAUDE.md` (sección 8 de `propuesta.md`). El orquestador las lee al empezar cada item y las pasa **textuales** a todo agente que edite o revise código; no se confía en que se carguen solas: los agentes con `isolation: worktree` usan el `CLAUDE.md` del checkout principal y los integrados `Explore` y `Plan` no lo cargan.
 
 En `openspec/config.yaml` (OpenSpec 2.1) las reglas se escriben **una sola vez, en la HU 1a**, no en cada item:
-- `context:` (texto libre, ya lo crea `openspec init --language es`): se le agregan el stack, la estructura y las reglas generales.
+- `context:` (texto libre, ya lo crea `openspec init --language es`; OpenSpec lo inyecta en todos los artefactos y en `apply`): idioma, un glosario corto del dominio (nodo, sensor, lectura, alerta, roles) y enlaces a `docs/propuesta.md` y `CLAUDE.md`. No se copian aquí el stack ni las reglas técnicas, que viven solo en `CLAUDE.md`: la documentación oficial pide no duplicar la documentación del proyecto ni lo que el agente aprende leyendo el código.
 - `rules:` es un mapa por artefacto (`proposal`, `specs`, `design`, `tasks`), cada uno con una lista de reglas. Un id distinto genera una advertencia y se ignora.
-- `operations:` solo admite `apply` y `archive`, cada uno con `guidance:`.
+- `operations:` solo admite `apply` y `archive`, cada uno con `guidance:`. Es el único canal de OpenSpec que llega a `apply` y `archive` (`rules:` solo llega al crear cada artefacto), así que ahí van las reglas de marcar `[x]` y de archivar.
+- El schema `spec-driven` pide no juntar las pruebas en un grupo final de `tasks.md`; `rules.tasks` lo concilia con la agrupación por capa de `CLAUDE.md` §7 (cada grupo con sus pruebas; el grupo final, solo integración y aceptación).
 - Una clave repetida (dos `context:` o dos `rules:`) invalida **todo** el archivo: al proponer, OpenSpec lo ignora mostrando solo una advertencia (`could not parse … ignoring it`) que es fácil pasar por alto, y `openspec validate` falla.
 
 Formato de las specs en español: el cuerpo va en español, pero `## ADDED|MODIFIED|REMOVED|RENAMED Requirements`, `### Requirement:`, `#### Scenario:`, `SHALL`/`MUST` y `**WHEN**`/`**THEN**` (o `**GIVEN**`) quedan en inglés. Con `### Requisito:`, `DEBE` o `**CUANDO**`, `--strict` falla. Si el change crea una capacidad nueva, su delta `specs/<cap>/spec.md` empieza con `## Purpose` y un texto real: si falta, `openspec archive` deja `Purpose: TBD` y G4 (`--strict`) falla. Ambas reglas van en `rules.specs`.
@@ -128,7 +129,7 @@ Consecuencia: las HU 1 (proyecto y entorno SDD) y 2 (Docker, CI/CD, imagen en `g
   4. Las dudas de negocio se le preguntan a la persona y se registran en `decisiones.md` con `Decidió: Persona` (el decisor está pospuesto).
   5. **Flujo único** (meta ≤ 5 minutos; tabla con tiempos en `flujo-orquestador.md`, "Secuencia única"). Precondición: la BD de desarrollo ya está levantada y migrada (`docker compose up -d --wait db` y `docker compose run --rm flyway migrate info`), `node_modules` ya existe y el checkout principal está limpio. La sesión y los agentes usan sonnet. `<raiz>` es la raíz del repo, así que los comandos van sin `cd`.
      1. `preparador` (sonnet / medium): rama `feature/issue-<n>-<slug>` en el checkout principal (sin worktree ni `npm ci`) y `<trabajo>/issue.md` con los `CA-n`; bloquea si el issue está cerrado o ya tiene PR.
-     2. `contexto.mjs` (script, sin agentes): escribe `contexto.md` (tablas, módulos con sus puntos de extensión, semillas y rutas del contrato), para que la propuesta no suponga tablas, columnas o módulos que no existen.
+     2. `contexto.mjs` (script, sin agentes): escribe `contexto.md` (capacidades ya especificadas, changes activos, tablas, módulos con sus puntos de extensión, semillas y rutas del contrato), para que la propuesta no suponga tablas, columnas o módulos que no existen y use `MODIFIED` sobre una capacidad existente en vez de duplicarla.
      3. `/openspec-propose` (sesión) con `issue.md` + `contexto.md`; las dudas de negocio se le preguntan a la persona y se registran con `Decidió: Persona`.
      4. G2: `revisor-salida` (sonnet / medium) con `openspec validate --strict` y la salida del script `trazabilidad-grep.mjs`. Máximo 1 `CORREGIR`.
      5. `/openspec-apply-change` (sesión).
@@ -427,7 +428,8 @@ Para la entrega del 24 de noviembre esta automatización queda pospuesta: el arc
   3. Si pasa: `gh issue close <n> --comment "Resuelto en #<pr>"` (si `Closes #<n>` no lo cerró).
   4. Archivar, uno a la vez (si hay otro PR `chore/archivar-*` abierto, detenerse con `escalado: archivo en cola` y reintentar con `desde=cierre` cuando se fusione):
      1. `git fetch origin` y `git worktree add -b chore/archivar-<change> .claude/worktrees/archivar-<change> origin/<base>`.
-     2. `openspec archive <change> --yes` (CLI, sin preguntas; el skill `openspec-archive-change` pide confirmación y no sirve en automático).
+     2. Comprobar que no quedan tareas: `openspec instructions apply --change <change> --json` con `progress.remaining == 0`; si no, `escalado: tareas pendientes`. `openspec archive --yes` archiva aunque queden tareas y solo muestra una advertencia.
+     3. `openspec archive <change> --yes` (CLI, sin preguntas; el skill `openspec-archive-change` pide confirmación y no sirve en automático). Cada historia se archiva antes de proponer otra que modifique sus capacidades, para que `openspec/specs/` (y `contexto.md`) las muestre.
      3. G4 con `revisor-salida` (ver 3.5). Con CORREGIR, corregir las specs y repetir; al agotar, `escalado: archivo`. Agregar la sección de G4 a `evidencias/issue-<n>/gates.md` y su fila a `evidencias/issue-<n>/agentes.md`.
      4. Regenerar el índice `AGENTS_LOG.md` desde `evidencias/*/agentes.md` (ver 2.1).
      5. `git add openspec/ AGENTS_LOG.md evidencias/issue-<n>/`, commit `chore: archivar <change> (#<n>)`, push y `gh pr create --base <base>` (con `--draft` si G4 no aprobó). La persona lo fusiona; el orquestador nunca hace merge. `cd.yml` ignora cambios que solo tocan `openspec/**`, `evidencias/**`, `AGENTS_LOG.md` y `docs/**`, así que este merge no vuelve a publicar la imagen.

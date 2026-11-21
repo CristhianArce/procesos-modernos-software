@@ -8,10 +8,10 @@ import { join } from "node:path";
 import { leer, RAIZ } from "./util.mjs";
 import { escribirCampo, leerCampo } from "../skills/orquestador/scripts/estado.mjs";
 import { extraerPuerto } from "../skills/orquestador/scripts/puerto.mjs";
-import { analizar, criteriosDelIssue } from "../skills/orquestador/scripts/trazabilidad-grep.mjs";
+import { aMarkdown, analizar, criteriosDelIssue } from "../skills/orquestador/scripts/trazabilidad-grep.mjs";
 import { planRenombres } from "../skills/orquestador/scripts/migracion-timestamp.mjs";
 import { agentesDesdeLog, copiarEvidencias } from "../skills/orquestador/scripts/copiar-evidencias.mjs";
-import { generarContexto, rutasDelContrato, tablasDeMigraciones } from "../skills/orquestador/scripts/contexto.mjs";
+import { capacidadesEspecificadas, changesActivos, generarContexto, rutasDelContrato, tablasDeMigraciones } from "../skills/orquestador/scripts/contexto.mjs";
 
 const FIX = join(RAIZ, ".claude", "fixtures");
 const SCRIPTS = join(RAIZ, ".claude", "skills", "orquestador", "scripts");
@@ -77,6 +77,52 @@ test("CA-6: trazabilidad-grep.mjs señala un CA sin cobertura", () => {
   const issue = "## Criterios numerados\n\n- CA-1: a\n- CA-4: criterio sin specs ni tareas\n";
   const r = analizar(issue, join(FIX, "change-ok"));
   assert.deepEqual(r.sinCobertura, ["CA-4"]);
+  assert.deepEqual(r.criteriosInexistentes, ["CA-2", "CA-3"]);
+});
+
+test("CA-6: trazabilidad-grep.mjs exige escenario por CA y señala huérfanos", () => {
+  const dir = temporal();
+  try {
+    mkdirSync(join(dir, "specs", "acerca"), { recursive: true });
+    writeFileSync(join(dir, "specs", "acerca", "spec.md"), [
+      "## ADDED Requirements",
+      "### Requirement: Solo requisito",
+      "El sistema SHALL algo (CA-1).",
+      "#### Scenario: Escenario sin cita",
+      "- **WHEN** x",
+      "- **THEN** y",
+      "### Requirement: Derivado",
+      "El sistema SHALL otra cosa (Derivado: decisión #2).",
+      "#### Scenario: Cita un CA inexistente (CA-9)",
+      "- **WHEN** x",
+      "- **THEN** y",
+    ].join("\n"));
+    writeFileSync(join(dir, "tasks.md"), "## 1. Capa\n\n- [ ] 1.1 Hacer algo (CA-1)\n- [ ] Tarea sin número (CA-1)\n");
+    const r = analizar("## Criterios numerados\n\n- CA-1: a\n", dir);
+    assert.deepEqual(r.sinCobertura, ["CA-1"], "un requisito sin escenario no cubre el CA");
+    assert.deepEqual(r.bloquesSinCriterio, ['acerca: escenario "Escenario sin cita"']);
+    assert.deepEqual(r.criteriosInexistentes, ["CA-9"]);
+    assert.deepEqual(r.tareasSinNumero, ["- [ ] Tarea sin número (CA-1)"]);
+    const md = aMarkdown(r);
+    assert.match(md, /\| CA-1 \| 1\.1 \| acerca: Solo requisito \| — \| — \| — \| Pendiente \|/);
+    assert.match(md, /Veredicto: incompleta/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("CA-6: trazabilidad-grep.mjs con --salida escribe trazabilidad.md", () => {
+  const dir = temporal();
+  try {
+    const salida = join(dir, "trazabilidad.md");
+    const r = spawnSync(process.execPath, [join(RAIZ, ".claude", "skills", "orquestador", "scripts", "trazabilidad-grep.mjs"),
+      join(FIX, "trabajo-ejemplo", "issue.md"), join(FIX, "change-ok"), "--salida", salida], { encoding: "utf8" });
+    assert.equal(r.status, 0, r.stderr);
+    assert.deepEqual(JSON.parse(r.stdout).sinCobertura, []);
+    assert.match(readFileSync(salida, "utf8"), /Veredicto: completa/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test("CA-6: migracion-timestamp.mjs renombra la migración del change con versión menor que la base", () => {
@@ -144,6 +190,22 @@ test("CA-6: contexto.mjs lista módulos, semillas y rutas del contrato", () => {
     { ruta: "/api/acerca", metodos: ["GET"] },
     { ruta: "/api/nodos/{id}", metodos: ["GET", "PATCH"] },
   ]);
+});
+
+test("CA-6: contexto.mjs lista capacidades de openspec/specs/ y changes activos sin archive", () => {
+  const raiz = join(FIX, "repo-ejemplo");
+  const caps = capacidadesEspecificadas(join(raiz, "openspec", "specs"));
+  assert.equal(caps.length, 1);
+  assert.equal(caps[0].capacidad, "acerca");
+  assert.match(caps[0].proposito, /^Muestra a los usuarios autenticados/);
+  assert.deepEqual(caps[0].requisitos, ["Consulta de la información de la aplicación", "Página Acerca de en el menú", "Acceso sin sesión rechazado"]);
+  assert.deepEqual(changesActivos(join(raiz, "openspec", "changes")), ["aislar-nodo"]);
+  const md = generarContexto(raiz);
+  assert.match(md, /## Capacidades especificadas/);
+  assert.match(md, /MODIFIED Requirements/);
+  assert.match(md, /\| acerca \| Muestra a los usuarios autenticados[^|]*\| Consulta de la información de la aplicación; /);
+  assert.match(md, /- openspec\/changes\/aislar-nodo\//);
+  assert.doesNotMatch(md, /changes\/archive/);
 });
 
 test("CA-6: contexto.mjs sobre un repo vacío no falla y lo dice", () => {

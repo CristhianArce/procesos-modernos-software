@@ -15,9 +15,9 @@ Antes de empezar: BD de desarrollo levantada y migrada (`docker compose up -d --
 | # | Pieza | Qué hace | Modelo | Tiempo aprox. | Deja en `<trabajo>` o en el repo |
 |---|---|---|---|---|---|
 | 1 | agente `preparador` | Crea la rama `feature/issue-<n>-<slug>` en el checkout principal (sin worktree ni `npm ci`) y vuelca el issue; bloquea si el issue está cerrado o ya tiene PR | sonnet / medium | 20 s | `issue.md` con `CA-n`, `preguntas.md`, `decisiones.md`, `agentes-log.md` |
-| 2 | script `contexto.mjs` | Lista tablas y columnas de `db/migration/`, módulos de `src/modulos/` con sus puntos de extensión, semillas y rutas de `contracts/openapi.yaml` (sin agentes) | — | 2 s | `contexto.md` |
-| 3 | skill `openspec-propose` | Genera proposal, specs, design y tasks desde `issue.md` y `contexto.md`; las dudas de negocio se le preguntan a la persona y se registran con `Decidió: Persona` | sesión (sonnet) | 90 s | `openspec/changes/<change>/`; `<change>` en `estado.md` |
-| 4 | **G2**: agente `revisor-salida` | `openspec validate --strict`, formato de specs, alcance y la salida del script `trazabilidad-grep.mjs` (CA → requisito/escenario → tarea); con CORREGIR vuelve a 3, máximo una vez | sonnet / medium | 40 s | sección en `gates.md` |
+| 2 | script `contexto.mjs` | Lista capacidades de `openspec/specs/` y changes activos, tablas y columnas de `db/migration/`, módulos de `src/modulos/` con sus puntos de extensión, semillas y rutas de `contracts/openapi.yaml` (sin agentes) | — | 2 s | `contexto.md` |
+| 3 | skill `openspec-propose` | Resuelve con la persona las preguntas abiertas de `preguntas.md` y genera proposal, specs, design y tasks desde `issue.md`, `contexto.md` y `decisiones.md`; las dudas de negocio se registran con `Decidió: Persona` | sesión (sonnet) | 90 s | `openspec/changes/<change>/`; `<change>` en `estado.md` |
+| 4 | **G2**: agente `revisor-salida` | `openspec validate --strict`, formato de specs, alcance, uso de `contexto.md` y `decisiones.md`, y la salida del script `trazabilidad-grep.mjs` (CA → requisito/escenario → tarea, que también escribe `trazabilidad.md`); con CORREGIR vuelve a 3, máximo una vez | sonnet / medium | 40 s | sección en `gates.md`; `trazabilidad.md` |
 | 5 | skill `openspec-apply-change` | Ejecuta `tasks.md`: código, pruebas, migración y semilla | sesión (sonnet) | 90 s | código en la rama; tareas `[x]` |
 | 6 | script `build-test` en paralelo con agente `revisor-reglas` | `typecheck`, `test:unit` y `test:integration` contra la BD de desarrollo ya migrada (lint y `next build` quedan para el CI), mientras se revisa el diff | sonnet / medium (revisor) | 60 s | último build en `estado.md`; hallazgos en `verificacion.md` |
 | 7 | sesión + `build-test` | Si hay CRITICAL confirmados: una sola pasada de corrección y se repite `build-test`; si no, se salta | sesión (sonnet) | 0-40 s | build en verde |
@@ -296,6 +296,7 @@ Verificar después del CD: `docker buildx imagetools inspect ghcr.io/<owner>/<re
 git fetch origin
 git worktree add -b chore/archivar-<change> .claude/worktrees/archivar-<change> origin/<base>
 cd .claude/worktrees/archivar-<change>
+openspec instructions apply --change <change> --json   # exigir progress.remaining == 0: archive --yes no lo exige
 openspec archive <change> --yes
 # regenerar el índice AGENTS_LOG.md desde evidencias/*/agentes.md
 openspec validate --specs --strict --json        # G4

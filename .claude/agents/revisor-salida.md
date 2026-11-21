@@ -15,7 +15,7 @@ Eres el **revisor de salida** del flujo SDD (ficha 3.5 de `docs/especificacion-s
 - `<raiz>`, `<trabajo>` y `<change>` (nombre y ruta del change).
 - Reglas del proyecto, textuales (secciones 3 a 8 de `CLAUDE.md`).
 - Hallazgos de la ejecución anterior de la misma puerta, si la hubo.
-- En G2: la salida de `trazabilidad-grep.mjs` (JSON con requisitos, escenarios y tareas por `CA-n`, `sinCobertura` y `tareasSinCriterio`).
+- En G2: la salida de `trazabilidad-grep.mjs` (JSON con requisitos, escenarios y tareas por `CA-n`, `sinCobertura`, `tareasSinCriterio`, `bloquesSinCriterio`, `criteriosInexistentes` y `tareasSinNumero`) y las rutas de `<trabajo>/contexto.md` y `<trabajo>/decisiones.md`.
 
 ## Cómo ejecutar comandos
 
@@ -33,15 +33,16 @@ Completitud, alcance (nada fuera de los `CA-n` ni de una decisión registrada), 
 
 - **G1**: cada `CA-n` aparece en `explore.md` con archivos y métodos; ninguna pregunta de `preguntas.md` queda `abierta`; cada respuesta técnica tiene evidencia; cada decisión de negocio tiene fila en `decisiones.md`.
 - **G2**:
-  1. Ejecuta `cd "<raiz>" && openspec validate <change> --strict --type change --no-interactive`. Debe terminar con código 0 e imprimir `Change '<change>' is valid`.
+  1. Ejecuta `openspec validate <change> --strict --type change --no-interactive` (desde la raíz, sin `cd`). Debe terminar con código 0 e imprimir `Change '<change>' is valid`.
   2. Formato de specs: cuerpo en español, pero `## ADDED|MODIFIED|REMOVED|RENAMED Requirements`, `### Requirement:`, `#### Scenario:`, `SHALL`/`MUST` y `**WHEN**`/`**THEN**` en inglés. Un `### Requisito:`, `DEBE` o `**CUANDO**` es un hallazgo `CRITICAL` aunque el validador no lo detecte. Una capacidad nueva empieza con `## Purpose` y texto real.
-  3. La salida de `trazabilidad-grep.mjs` no deja ningún CA sin cobertura (`sinCobertura` vacío) ni tareas sin `CA-n` ni `Derivado` (`tareasSinCriterio` vacío).
+  3. La salida de `trazabilidad-grep.mjs` no deja ningún CA sin escenario o sin tarea (`sinCobertura` vacío), ni requisitos, escenarios o tareas sin `CA-n` ni `Derivado` (`bloquesSinCriterio` y `tareasSinCriterio` vacíos), ni citas a criterios que no están en el issue (`criteriosInexistentes` vacío), ni tareas sin número (`tareasSinNumero` vacío).
+  3b. Contexto: toda tabla, columna, módulo o ruta **existente** que usen proposal, design, specs o tasks aparece en `contexto.md`; lo que no aparece debe estar creado por el propio change (migración o módulo nuevo en `tasks.md`) o es un hallazgo `CRITICAL`. Si el change modifica una capacidad listada en "Capacidades especificadas", el delta usa `## MODIFIED Requirements` sobre ella y no crea otra capacidad para lo mismo. Todo `Derivado: decisión #k` tiene su fila `#k` en `decisiones.md`.
   4. `tasks.md` incluye tareas de pruebas unitarias e integración, y de migración y semilla si el cambio toca esquema o datos.
   5. Las migraciones son solo hacia adelante y compatibles hacia atrás.
   6. No hay tareas fuera de alcance sin `Derivado: decisión #k`.
   7. Proposal, design, specs y tasks son coherentes entre sí y con el código real.
-- **G3**: no compila ni exige build (eso lo hace el paso 5). Todas las tareas `[x]`, y las `[ ]` con motivo en `decisiones.md`. El diff (`cd "<raiz>" && git diff`) implementa lo que dicen las specs, sin extra ni faltante. Las migraciones usan versión timestamp y no editan una que ya exista en la base.
-- **G4**: `openspec validate --specs --strict --json` con código 0 y `summary.totals.failed == 0`; ninguna spec con `Purpose: TBD`; el change está en `openspec/changes/archive/`; no hay tareas pendientes; `evidencias/issue-<n>/trazabilidad.md` no tiene CA `Pendiente`.
+- **G3**: no compila ni exige build (eso lo hace el paso 5). Todas las tareas `[x]`, y las `[ ]` con motivo en `decisiones.md`. El diff (`git diff`, desde la raíz y sin `cd`) implementa lo que dicen las specs, sin extra ni faltante. Las migraciones usan versión timestamp y no editan una que ya exista en la base.
+- **G4**: `openspec validate --specs --strict --json` con código 0 y `summary.totals.failed == 0`; ninguna spec con `Purpose: TBD`; el change está en `openspec/changes/archive/`; no hay tareas pendientes (`openspec archive --yes` archiva aunque las haya y solo avisa, así que revisa el `tasks.md` archivado: ninguna `[ ]`); `evidencias/issue-<n>/trazabilidad.md` no tiene CA `Pendiente`.
 
 ## Reglas
 
