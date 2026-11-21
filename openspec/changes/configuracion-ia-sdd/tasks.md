@@ -20,12 +20,12 @@
 
 ## 3. Configuración, plantillas y scripts del orquestador (B1)
 
-- [ ] 3.1 Crear `.claude/orquestador.json` (`base`, `owner`, `repo`, `revisor`, `revisorEspecializado`, `limpiarTrabajo`) y las plantillas de `<trabajo>` en `.claude/skills/orquestador/plantillas/` (especificación 2.1), y verificar con una prueba que existe una plantilla por archivo de la especificación 2.1 (CA-6)
-- [ ] 3.2 Implementar `estado.mjs` (`leer`/`escribir` campos de `estado.md`) y `puerto.mjs` (parseo de `docker compose port`), y verificar con `node --test` sobre `trabajo-ejemplo` y salidas `0.0.0.0:NNNN` y `[::]:NNNN` (CA-6)
-- [ ] 3.3 Implementar `trazabilidad-grep.mjs` y verificar que sobre `change-ok` encuentra cada `CA-n` en requisitos, escenarios y tareas (CA-6)
-- [ ] 3.4 Implementar `migracion-timestamp.mjs` y verificar con `node --test` que renombra una migración de fixture con timestamp menor que la última de la base (CA-6)
-- [ ] 3.5 Implementar `copiar-evidencias.mjs` y verificar con `node --test` que genera `evidencias/issue-<n>/` con `agentes.md` desde `agentes-log.md` y sin logs (CA-6)
-- [ ] 3.6 Implementar `contexto.mjs` (sustituye a explorar en `demo`) y verificar con `node --test` sobre `repo-ejemplo` que escribe `<trabajo>/contexto.md` con las tablas y columnas de la migración (`CREATE TABLE` y `ALTER TABLE … ADD COLUMN`), los módulos con sus `menu.ts`/`paneles.ts`/`on-alerta.ts`/`metrics.ts`, las semillas y las rutas del contrato (CA-6)
+- [x] 3.1 Crear `.claude/orquestador.json` (`base`, `owner`, `repo`, `revisor`, `revisorEspecializado`, `limpiarTrabajo`) y las plantillas de `<trabajo>` en `.claude/skills/orquestador/plantillas/` (especificación 2.1), y verificar con una prueba que existe una plantilla por archivo de la especificación 2.1 (CA-6)
+- [x] 3.2 Implementar `estado.mjs` (`leer`/`escribir` campos de `estado.md`) y `puerto.mjs` (parseo de `docker compose port`), y verificar con `node --test` sobre `trabajo-ejemplo` y salidas `0.0.0.0:NNNN` y `[::]:NNNN` (CA-6)
+- [x] 3.3 Implementar `trazabilidad-grep.mjs` y verificar que sobre `change-ok` encuentra cada `CA-n` en requisitos, escenarios y tareas (CA-6)
+- [x] 3.4 Implementar `migracion-timestamp.mjs` y verificar con `node --test` que renombra una migración de fixture con timestamp menor que la última de la base (CA-6)
+- [x] 3.5 Implementar `copiar-evidencias.mjs` y verificar con `node --test` que genera `evidencias/issue-<n>/` con `agentes.md` desde `agentes-log.md` y sin logs (CA-6)
+- [x] 3.6 Implementar `contexto.mjs` (sustituye a explorar en `demo`) y verificar con `node --test` sobre `repo-ejemplo` que escribe `<trabajo>/contexto.md` con las tablas y columnas de la migración (`CREATE TABLE` y `ALTER TABLE … ADD COLUMN`), los módulos con sus `menu.ts`/`paneles.ts`/`on-alerta.ts`/`metrics.ts`, las semillas y las rutas del contrato (CA-6)
 
 ## 4. Agentes de revisión (B2 a B4)
 
