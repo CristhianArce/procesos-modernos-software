@@ -224,35 +224,37 @@ Las dos primeras historias crean el proyecto y la infraestructura sobre la que c
 
 La colaboración es real solo si hay trabajo de al menos dos agentes distintos, un rechazo genuino del agente de calidad y la corrección posterior, todo con evidencia en el repositorio.
 
-La arquitectura de agentes es la del [flujo del orquestador](flujo-orquestador.md), y cada pieza está detallada en la [especificación de skills y agentes](especificacion-skills-agentes-orquestador.md). Los skills y agentes son de Claude Code, viven en `.claude/skills/` y `.claude/agents/` y se versionan en el repo. El orquestador es un skill que corre en la sesión principal: cada historia (un issue de GitHub) avanza por sus pasos en su propio worktree, con un change de OpenSpec y un PR con el código; tras el merge, un segundo PR pequeño (`chore/archivar-<change>`) archiva el change. Varios estudiantes pueden trabajar historias en paralelo, cada uno en su worktree.
+La arquitectura de agentes es la del [flujo del orquestador](flujo-orquestador.md), y cada pieza está detallada en la [especificación de skills y agentes](especificacion-skills-agentes-orquestador.md). Los skills y agentes son de Claude Code, viven en `.claude/skills/` y `.claude/agents/` y se versionan en el repo. El orquestador es un skill que corre en la sesión principal: cada historia (un issue de GitHub) avanza por sus pasos en su propia rama, con un change de OpenSpec y un PR con el código; tras el merge, un segundo PR pequeño (`chore/archivar-<change>`) archiva el change. Para la entrega tiene **un solo modo**, de 8 pasos y 5 minutos o menos, que trabaja en el checkout principal; el diseño completo (worktrees para trabajar varias historias en paralelo, decisor, ciclo del PR) queda documentado y pospuesto. La tabla marca qué corre en la entrega.
 
-| Agente o skill | Paso | Responsabilidad | Rechaza cuando |
-| --- | --- | --- | --- |
-| `orquestador` (skill, sesión principal) | 0–10 | Encadena los pasos, aplica topes y reglas de Bloqueado y Escalado; corre los skills de OpenSpec (`/openspec-explore`, `/openspec-propose`, `/openspec-apply-change`) | Falta la línea base, se agota el presupuesto o se requiere algo prohibido |
-| `preparador` | 1 | Worktree, rama, volcado del issue con criterios numerados `CA-n` | El issue ya está resuelto, el worktree tiene cambios o falta la línea base de OpenSpec |
-| `preguntas-tecnicas` | 2–4 | Responde dudas técnicas con evidencia del código y separa las de negocio | — (clasifica, no rechaza) |
-| `decisor` (3 agentes + consolidador) | 2–5, 7 | Decide las dudas de negocio por votación; por defecto, 3 llamadas `Agent` en paralelo y un consolidador (el workflow guardado es opcional) | La pregunta exige algo prohibido |
-| `revisor-salida` | G1–G4 | Puertas de calidad tras cada comando de OpenSpec | Criterios sin mapear, `openspec validate` inválido, tareas sin hacer o código que no sigue la spec (`CORREGIR` o `BLOQUEAR`) |
-| `generar-planes-prueba` | 3 | Planes E2E y smoke derivados de `specs/` | — |
-| `revisor-reglas` y revisor cruzado (`Plan`) | 5 | Revisan el diff contra las reglas del proyecto, seguridad y corrección | Hallazgos `CRITICAL` o `WARNING` |
-| `ejecutor-e2e` | 5, 7 | Smoke con Playwright contra Docker | Un caso falla |
-| `revisor-pr` y `validador-comentarios` | 7, 9 | `revisor-pr` comenta el PR con evento `COMMENT` (nunca aprueba ni pide cambios: es la misma cuenta que lo abrió) y `validador-comentarios` valida los comentarios, también los de la persona en el paso 9 | Comentario confirmado sin resolver |
-| `trazabilidad` | G2, 8 | CA → requisito → tarea → código → prueba | Criterio sin cobertura |
+| Agente o skill | Paso | Responsabilidad | Rechaza cuando | Entrega |
+| --- | --- | --- | --- | --- |
+| `orquestador` (skill, sesión principal) | 0–10 | Encadena los pasos, aplica topes y reglas de Bloqueado y Escalado; corre los skills de OpenSpec (`/openspec-explore`, `/openspec-propose`, `/openspec-apply-change`) | Falta la línea base, se agota el presupuesto o se requiere algo prohibido | Sí (flujo único; sin `/openspec-explore`) |
+| `preparador` | 1 | Rama en el checkout principal (worktree: pospuesto), volcado del issue con criterios numerados `CA-n` | El issue está cerrado o ya tiene PR, la rama tiene cambios o falta la línea base de OpenSpec | Sí |
+| `preguntas-tecnicas` | 2–4 | Responde dudas técnicas con evidencia del código y separa las de negocio | — (clasifica, no rechaza) | Pospuesto |
+| `decisor` (3 agentes + consolidador) | 2–5, 7 | Decide las dudas de negocio por votación; por defecto, 3 llamadas `Agent` en paralelo y un consolidador (el workflow guardado es opcional) | La pregunta exige algo prohibido | Pospuesto (las dudas de negocio se le preguntan a la persona) |
+| `revisor-salida` | G1–G4 | Puertas de calidad tras cada comando de OpenSpec | Criterios sin mapear, `openspec validate` inválido, tareas sin hacer o código que no sigue la spec (`CORREGIR` o `BLOQUEAR`) | Solo G2, con `openspec validate --strict` y la salida del script `trazabilidad-grep.mjs` |
+| `generar-planes-prueba` | 3 | Planes E2E y smoke derivados de `specs/` | — | Pospuesto |
+| `revisor-reglas` y revisor cruzado (`Plan`) | 5 | Revisan el diff contra las reglas del proyecto, seguridad y corrección | Hallazgos `CRITICAL` o `WARNING` | Solo `revisor-reglas`, en paralelo con `build-test` |
+| `ejecutor-e2e` | 5, 7 | Smoke con Playwright contra Docker | Un caso falla | Pospuesto |
+| `revisor-pr` y `validador-comentarios` | 7, 9 | `revisor-pr` comenta el PR con evento `COMMENT` (nunca aprueba ni pide cambios: es la misma cuenta que lo abrió) y `validador-comentarios` valida los comentarios, también los de la persona en el paso 9 | Comentario confirmado sin resolver | Pospuesto |
+| `trazabilidad` | G2, 8 | CA → requisito → tarea → código → prueba | Criterio sin cobertura | Pospuesto (lo reemplaza el script `trazabilidad-grep.mjs`) |
 
-**Flujo por historia (resumen)**
+**Flujo por historia (flujo único de la entrega)**
 
-1. `preparador` crea el worktree y vuelca el issue.
-2. Explorar y proponer con OpenSpec; las puertas G1 y G2 pueden devolver el trabajo.
-3. Implementar con `/openspec-apply-change` (pruebas, contrato `contracts/openapi.yaml` y migración Flyway); G3.
-4. Verificación local: build, pruebas, dos revisores y E2E en Docker; se corrige hasta verde o tope.
-5. Commit, PR en borrador, CI, revisión del PR y reporte; la persona aprueba y fusiona.
-6. Tras el merge, el CD publica la imagen en `ghcr.io` y el orquestador archiva el change en un PR propio (G4).
+1. `preparador` crea la rama en el checkout principal y vuelca el issue.
+2. `contexto.mjs` lista tablas, módulos, semillas y rutas existentes, sin agentes.
+3. `/openspec-propose` desde el issue y ese contexto; las dudas de negocio se le preguntan a la persona.
+4. G2 (`revisor-salida`, con `openspec validate --strict` y `trazabilidad-grep.mjs`) puede devolver el trabajo una vez.
+5. `/openspec-apply-change` (pruebas, contrato `contracts/openapi.yaml` y migración Flyway).
+6. `build-test` (typecheck, unitarias e integración) en paralelo con `revisor-reglas`.
+7. Si hay `CRITICAL`, una sola pasada de corrección y otro `build-test`.
+8. Commit, push, PR en borrador y commit de `evidencias/issue-<n>/`. La persona marca el PR listo, lo revisa otra cuenta y se fusiona; tras el merge, el CD publica la imagen en `ghcr.io` y el change se archiva a mano en un PR propio (G4).
 
 **Evidencia exigible (Modalidad B)**
 
-- `evidencias/issue-<n>/` en el PR de cada historia: `issue.md`, `decisiones.md`, `gates.md`, `verificacion.md`, `ciclo-pr.md`, `trazabilidad.md` y `agentes.md`.
+- `evidencias/issue-<n>/` en el PR de cada historia: `issue.md`, `decisiones.md`, `gates.md`, `verificacion.md` y `agentes.md` (`ciclo-pr.md` y `trazabilidad.md` llegan con el ciclo del PR y la trazabilidad final, pospuestos).
 - Registro por invocación: tras cada agente, el orquestador agrega una fila a `<trabajo>/agentes-log.md` (fecha y hora, paso, agente, modelo/effort, id del agente, veredicto, rechazos). En el paso 8 se construye `evidencias/issue-<n>/agentes.md` a partir de ese registro, y se copian también las salidas propias de cada agente (las secciones de `gates.md` que escribe `revisor-salida`, las tablas de hallazgos de los revisores), no un resumen del orquestador.
-- Evidencia externa: los comentarios de `revisor-pr` quedan visibles en el PR de GitHub.
+- Evidencia externa (pospuesta con `revisor-pr`): sus comentarios quedarían visibles en el PR de GitHub.
 - `AGENTS_LOG.md`: índice de todas las historias, regenerado desde los `agentes.md` en cada PR de archivo.
 - Al menos un rechazo real (un `CORREGIR` de `revisor-salida` o un `CRITICAL` de `revisor-reglas`) con su corrección posterior.
 - Commits y PR que citan el issue (`#<n>`) y el change (`Change: <nombre>`).
@@ -260,7 +262,7 @@ La arquitectura de agentes es la del [flujo del orquestador](flujo-orquestador.m
 
 ## 7. Flujo SDD y demostración individual
 
-El flujo completo del orquestador es demasiado largo para la demo de 5 a 10 minutos, así que tiene un modo `demo` reducido. Cada historia queda trazada en su propia carpeta `openspec/changes/<nombre>/`.
+El flujo completo del orquestador es demasiado largo para la demo de 5 a 10 minutos, así que para la entrega tiene un solo modo, reducido a 8 pasos, que termina en 5 minutos o menos; es el mismo con el que se construyen las HU 3 a 5. Cada historia queda trazada en su propia carpeta `openspec/changes/<nombre>/`.
 
 **Flujo OpenSpec (OpenSpec 2.1, skills de Claude Code)**
 
@@ -270,16 +272,17 @@ El flujo completo del orquestador es demasiado largo para la demo de 5 a 10 minu
 4. `/openspec-apply-change`: implementa las tareas y marca el checklist de `tasks.md`.
 5. `openspec archive <nombre> --yes`: fusiona los deltas en `openspec/specs/` y mueve el change a `openspec/changes/archive/`.
 
-**En la demo individual:** `/orquestador <n> demo` encadena preparar → contexto (un script lista las tablas, módulos y rutas que ya existen, sin agentes) → `/openspec-propose` (desde el issue y ese contexto, sin explorar) → trazabilidad → G2 → `/openspec-apply-change` → G3 → `build-test` en paralelo con una revisión de `revisor-reglas` → corregir CRITICAL → `build-test` → commit y PR en borrador → trazabilidad y commit de evidencias. Las dudas de negocio se le preguntan al estudiante. Si el orquestador falla, el respaldo es correr a mano los skills de OpenSpec en el mismo orden. El archivo lo hace el orquestador después de fusionar el PR, uno a la vez y en un PR propio, para que los deltas de varios estudiantes no choquen.
+**El orquestador (también en la demo individual):** `/orquestador <n>` encadena preparar → contexto (un script lista las tablas, módulos y rutas que ya existen, sin agentes) → `/openspec-propose` (desde el issue y ese contexto, sin explorar) → G2 con la salida del script `trazabilidad-grep.mjs` → `/openspec-apply-change` → `build-test` en paralelo con una revisión de `revisor-reglas` → corregir CRITICAL y repetir `build-test` solo si hubo → commit, PR en borrador y commit de evidencias. Las dudas de negocio se le preguntan al estudiante. Si el orquestador falla, el respaldo es correr a mano los skills de OpenSpec en el mismo orden. El archivo se hace a mano después de fusionar el PR, uno a la vez y en un PR propio, para que los deltas de varios estudiantes no choquen.
 
-Ajustes del modo `demo` para que quepa en el tiempo (meta: 7 minutos o menos en el ensayo):
+Ajustes para que quepa en el tiempo (meta: 5 minutos o menos en el ensayo):
 
 - Trabaja en el checkout principal, en la rama `feature/issue-<n>-<slug>`, sin worktree: reutiliza `node_modules` y no corre `npm ci`.
 - `db` ya está levantada y migrada antes de empezar.
-- `build-test` en su variante de demo: `typecheck`, `test:unit` y `test:integration`; el lint y `next build` los corre el CI.
+- `build-test` reducido: `typecheck`, `test:unit` y `test:integration`; el lint y `next build` los corre el CI.
 - `revisor-reglas` (sonnet / medium) corre en paralelo con `build-test`.
-- Máximo un `CORREGIR` por puerta.
-- La sesión corre con sonnet, sin depender del workflow del decisor.
+- Solo G2, con máximo un `CORREGIR`; G3 está pospuesto.
+- Una sola pasada de corrección, y solo si hay `CRITICAL`.
+- La sesión y los agentes corren con sonnet, sin decisor.
 - Si no hay red, el push y el PR son opcionales y la evidencia queda local.
 
 **Preparación de la demo individual**
@@ -323,23 +326,24 @@ Hoy es el sábado 21 de noviembre de 2026 y la entrega es el martes 24 a las 18:
 - **Imprescindible:**
   - Arranque de la HU 1a: `openspec init`, `openspec/config.yaml`, `CLAUDE.md` y `.claude/settings.json`.
   - HU 1b (herramientas de desarrollo) y HU 2, con el CD que publica en `ghcr.io`.
-  - Orquestador en modo `demo` con `preparador`, `revisor-salida` (G2 y G3), `revisor-reglas`, `trazabilidad`, `build-test`, `entorno-docker`, `commit`, `abrir-pr` y la copia de evidencias.
-  - HU 3 a 5 construidas con el orquestador, cada una con su `evidencias/issue-<n>/` y un rechazo real.
+  - Orquestador con un solo modo (8 pasos, 5 minutos o menos) con `preparador`, `revisor-salida` (G2), `revisor-reglas`, `build-test`, `commit`, `abrir-pr`, los scripts `estado`, `contexto`, `trazabilidad-grep`, `copiar-evidencias`, `migracion-timestamp` y `puerto`, y la copia de evidencias.
+  - Prueba de punta a punta con un solo issue, el #6 "[PRUEBA] Página Acerca de" (etiqueta `prueba`, fuera del backlog; su PR se cierra sin fusionar).
+  - HU 3 a 5 construidas con ese mismo flujo, cada una con su `evidencias/issue-<n>/` y un rechazo real.
   - Issues de las historias 6 a 10 con criterios `CA-n`.
   - Ensayo por estudiante, rama de respaldo y video.
-- **Para nota máxima** (solo cuando lo imprescindible esté en verde):
-  - Revisor cruzado `Plan`.
-  - Decisor como 3 agentes en paralelo más un consolidador (el workflow guardado es opcional).
-  - Revisiones `COMMENT` de `revisor-pr` en los PR de las HU 3 a 5.
+- **Para nota máxima** (solo cuando lo imprescindible esté en verde; fuera del orquestador):
   - 2 smoke de Playwright en el CI.
   - `/api/metrics`.
   - Índice `AGENTS_LOG.md`.
 - **Pospuesto** (queda documentado en el flujo y la especificación, pero no se construye para la entrega):
-  - El ciclo del paso 7: automatización de `esperar-ci`, `validador-comentarios` y resolución de hilos por GraphQL.
-  - `generar-planes-prueba` y `ejecutor-e2e` con capturas por verificación, reemplazados por los 2 smoke escritos a mano.
+  - El agente `trazabilidad` (lo reemplaza el script `trazabilidad-grep.mjs`; el archivo del agente existe pero el flujo no lo usa), la puerta G3 y la trazabilidad final del paso 8.
+  - Worktrees, `entorno-docker` (solo servía al smoke local) y `openspec-explore` con `preguntas-tecnicas`.
+  - Decisor (3 agentes en paralelo más consolidador) y revisor cruzado `Plan`.
+  - El ciclo del paso 7: `revisor-pr`, automatización de `esperar-ci`, `validador-comentarios` y resolución de hilos por GraphQL.
+  - `generar-planes-prueba` y `ejecutor-e2e` con capturas por verificación, reemplazados por los 2 smoke escritos a mano en el CI.
   - `reporte-historia` y `solicitar-revision-humana`.
   - La automatización de `cierre-post-merge`. El archivo se hace a mano con los mismos comandos, igual después del merge y uno a la vez.
-  - El modo `manual` y el hook `guardia`.
+  - El hook `guardia`.
   - Prometheus y Grafana.
   - El despliegue.
 
@@ -348,9 +352,9 @@ Hoy es el sábado 21 de noviembre de 2026 y la entrega es el martes 24 a las 18:
 | Fecha | Entregable | Hito de verificación |
 | --- | --- | --- |
 | Sáb 21 nov | Arranque de la HU 1a (`configuracion-ia-sdd`): `openspec init`, `config.yaml`, `CLAUDE.md` y `settings.json`; HU 1b (`herramientas-desarrollo`): app Next.js, puntos de extensión y base de observabilidad | `npm run lint`, `typecheck`, `test:unit` y `build` en verde; `openspec/config.yaml` sin claves duplicadas; la lista `deny` rechaza los comandos prohibidos |
-| Dom 22 nov | HU 2 (compose con `db`, `flyway` y `app`, CI, CD a `ghcr.io` con paquete público, etiquetas del repo); issues de las historias 3 a 10 con criterios `CA-n` (sin change: el orquestador lo crea en el paso 3; los de HU 1b (#2) y 1a (#1) ya existen, y los de HU 2 y práctica se crean el sábado con el skill `crea-hu`); resto de la HU 1a (`configuracion-ia-sdd`): agentes y skills del nivel imprescindible | Arranque local en una máquina limpia; CI en verde; imagen del esqueleto publicada; el orquestador corre en modo `demo` sobre el issue de práctica |
-| Lun 23 nov | HU 3 a 5 con el orquestador en modo "normal reducido" (G2 y G3, `revisor-reglas`, revisor cruzado `Plan`, decisor con 3 agentes en paralelo y `revisor-pr` con `COMMENT`); piezas para nota máxima si hay tiempo; en la noche, ensayo cronometrado por estudiante | Login, CRUD y simulador, dashboard y alertas en local; cada historia con su `evidencias/issue-<n>/` y un rechazo real |
-| Mar 24 nov (hasta las 18:00) | Ensayo con una historia no vista, ramas de respaldo, video por estudiante, README, `AGENTS_LOG.md` y matriz de seguridad; ninguna funcionalidad nueva después de las 12:00 | Instrucciones de instalación probadas desde cero; cada integrante termina una demo en 7 minutos o menos |
+| Dom 22 nov | HU 2 (compose con `db`, `flyway` y `app`, CI, CD a `ghcr.io` con paquete público, etiquetas del repo); issues de las historias 3 a 10 con criterios `CA-n` (sin change: el orquestador lo crea en el paso 3; los de HU 1b (#2) y 1a (#1) ya existen, el de HU 2 se crea el sábado con el skill `crea-hu` y el de prueba #6 ya existe); resto de la HU 1a (`configuracion-ia-sdd`): agentes, skills y scripts del nivel imprescindible | Arranque local en una máquina limpia; CI en verde; imagen del esqueleto publicada; el orquestador corre de punta a punta sobre el #6 en 5 minutos o menos |
+| Lun 23 nov | HU 3 a 5 con el mismo flujo único del orquestador; piezas para nota máxima si hay tiempo; en la noche, ensayo cronometrado por estudiante | Login, CRUD y simulador, dashboard y alertas en local; cada historia con su `evidencias/issue-<n>/` y un rechazo real |
+| Mar 24 nov (hasta las 18:00) | Ensayo con una historia no vista, ramas de respaldo, video por estudiante, README, `AGENTS_LOG.md` y matriz de seguridad; ninguna funcionalidad nueva después de las 12:00 | Instrucciones de instalación probadas desde cero; cada integrante termina una demo en 5 minutos o menos |
 
 ## 10. Evidencias por criterio de rúbrica
 
@@ -359,10 +363,10 @@ Cada criterio de la rúbrica tiene evidencias concretas que se guardan en el rep
 | Criterio | Evidencias |
 | --- | --- |
 | Producto funcional (30 %) | Imagen publicada en `ghcr.io`, arranque local probado (healthcheck en verde), datos semilla, pruebas automatizadas en verde con el resumen de `vitest --coverage` y el reporte de Playwright como artefactos del CI, badge del CI en el README, salida de `/api/metrics` y logs JSON durante la demo |
-| Aplicación de SDD (30 %) | Un change de OpenSpec por historia (activo o archivado), `openspec/specs/` actualizado, matriz de trazabilidad CA → requisito → tarea → código → caso de prueba (la que produce el agente `trazabilidad`), reglas del proyecto |
+| Aplicación de SDD (30 %) | Un change de OpenSpec por historia (activo o archivado), `openspec/specs/` actualizado, matriz de trazabilidad CA → requisito → tarea (la que produce el script `trazabilidad-grep.mjs` para G2; el tramo a código y caso de prueba, del agente `trazabilidad`, está pospuesto), reglas del proyecto |
 | Demostración individual (40 %) | Prompt-plantilla por historia, ensayo cronometrado por integrante (también con una historia no vista), rama de respaldo y video pregrabado obligatorio |
 | Seguridad | Reportes de gitleaks, `npm audit` y CodeQL (no bloqueante); pruebas de integración que demuestran los controles (401 sin sesión, 403 con rol incorrecto, 400 por Zod, 429 por rate limit en login, cabeceras de seguridad presentes); matriz `evidencias/seguridad.md` (control → prueba → evidencia) |
-| Multiagente | `evidencias/issue-<n>/` por historia (con `agentes.md` construido del registro por invocación y las salidas propias de cada agente), comentarios de `revisor-pr` en los PR, `AGENTS_LOG.md`, un rechazo real de una puerta o un revisor documentado con su corrección |
+| Multiagente | `evidencias/issue-<n>/` por historia (con `agentes.md` construido del registro por invocación y las salidas propias de cada agente), `AGENTS_LOG.md`, un rechazo real de una puerta o un revisor documentado con su corrección |
 | Entrega | Repositorio, backlog, instrucciones de instalación y ejecución, enlace a la imagen en `ghcr.io`, descripción de la arquitectura multiagente |
 
 ## 11. Riesgos y mitigaciones
@@ -371,15 +375,15 @@ Los dos riesgos con mayor probabilidad de afectar la nota son que la demo indivi
 
 | Riesgo | Mitigación |
 | --- | --- |
-| Cuota de IA agotada durante la demo individual | Cuenta propia por estudiante con reserva de cuota; la demo corre solo con sonnet y sin el workflow del decisor; rama de respaldo con la historia ya resuelta |
+| Cuota de IA agotada durante la demo individual | Cuenta propia por estudiante con reserva de cuota; el orquestador corre solo con sonnet y sin decisor; rama de respaldo con la historia ya resuelta |
 | `docker compose` falla en algún portátil | Ensayar en máquinas ajenas el lunes 23, documentar requisitos y tener devcontainer o Codespaces como alternativa |
 | Wi-Fi caído en el salón | La demo necesita internet (Claude Code, `gh`, push), así que no hay modo sin red: hotspot del celular por estudiante, dependencias e imágenes ya descargadas, demo que tolera no hacer push (evidencia local) y video pregrabado |
-| La demo no cabe en 10 minutos | Ajustes del modo `demo` (sección 7): checkout principal sin `npm ci`, BD ya migrada, `build-test` reducido en paralelo con `revisor-reglas`, un solo `CORREGIR` por puerta; meta de 7 minutos en el ensayo |
-| Rutas largas en Windows (`node_modules` dentro de `Documents\EAFIT\...`) | `git config --global core.longpaths true` y `LongPathsEnabled`; en demo no se crean worktrees |
+| La demo no cabe en 10 minutos | Flujo único de 8 pasos (sección 7): checkout principal sin `npm ci`, BD ya migrada, `build-test` reducido en paralelo con `revisor-reglas`, solo G2 con un `CORREGIR`, una sola pasada de corrección; meta de 5 minutos en el ensayo |
+| Rutas largas en Windows (`node_modules` dentro de `Documents\EAFIT\...`) | `git config --global core.longpaths true` y `LongPathsEnabled`; el orquestador no crea worktrees (pospuestos) |
 | Conflictos entre historias desarrolladas en paralelo | Puntos de extensión en la línea base, un archivo y una migración por historia y reglas de nombres en las reglas del proyecto |
 | La rúbrica exige despliegue y está pospuesto | La imagen publicada en `ghcr.io` permite desplegar en cualquier proveedor de contenedores sin cambiar el build (la opción evaluada es Render, sección 12); mientras tanto, la fase 1 se presenta con `docker compose` sobre esa imagen |
-| La multiagencia resulta ser teatro | Puertas G1–G4 y revisores con veredicto propio, `evidencias/issue-<n>/`, `AGENTS_LOG.md` y al menos un rechazo real con su corrección |
-| El flujo completo del orquestador no cabe en la demo de 10 minutos | Modo `demo` reducido y respaldo con los skills de OpenSpec a mano |
+| La multiagencia resulta ser teatro | Puerta G2 y `revisor-reglas` con veredicto propio, `evidencias/issue-<n>/`, `AGENTS_LOG.md` y al menos un rechazo real con su corrección |
+| El flujo completo del orquestador no cabe en la demo de 10 minutos | Un solo modo reducido a 8 pasos (≤ 5 minutos), lo demás pospuesto, y respaldo con los skills de OpenSpec a mano |
 
 ## 12. Puntos por verificar y fuentes
 
