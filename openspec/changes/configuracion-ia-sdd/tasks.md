@@ -15,7 +15,7 @@
 ## 2. Fixtures y validación del formato de specs (B0)
 
 - [ ] 2.1 Crear `.claude/fixtures/change-ok/` (un change con `## Purpose`, `### Requirement:` y escenarios que citan `CA-n`) y `.claude/fixtures/change-espanol/` (el mismo con `### Requisito:`) (CA-1, CA-4)
-- [ ] 2.2 Crear `.claude/fixtures/parche-violaciones.diff` (SQL en un `service.ts` y `fetch('/api/...')` en un `page.tsx`) y `.claude/fixtures/trabajo-ejemplo/` con `estado.md`, `issue.md` y `agentes-log.md` (CA-5, CA-6)
+- [ ] 2.2 Crear `.claude/fixtures/parche-violaciones.diff` (SQL en un `service.ts` y `fetch('/api/...')` en un `page.tsx`), `.claude/fixtures/trabajo-ejemplo/` con `estado.md`, `issue.md` y `agentes-log.md`, y `.claude/fixtures/repo-ejemplo/` con una migración (`CREATE TABLE` y `ALTER TABLE … ADD COLUMN`), un módulo con `menu.ts`, una semilla y un `contracts/openapi.yaml` (CA-5, CA-6)
 - [ ] 2.3 Agregar a `.claude/tests/` una prueba que copia cada change de ejemplo a un directorio temporal con su `openspec/` y verifica que `change-ok` pasa `openspec validate --strict` y `change-espanol` falla (CA-1)
 
 ## 3. Configuración, plantillas y scripts del orquestador (B1)
@@ -25,6 +25,7 @@
 - [ ] 3.3 Implementar `trazabilidad-grep.mjs` y verificar que sobre `change-ok` encuentra cada `CA-n` en requisitos, escenarios y tareas (CA-6)
 - [ ] 3.4 Implementar `migracion-timestamp.mjs` y verificar con `node --test` que renombra una migración de fixture con timestamp menor que la última de la base (CA-6)
 - [ ] 3.5 Implementar `copiar-evidencias.mjs` y verificar con `node --test` que genera `evidencias/issue-<n>/` con `agentes.md` desde `agentes-log.md` y sin logs (CA-6)
+- [ ] 3.6 Implementar `contexto.mjs` (sustituye a explorar en `demo`) y verificar con `node --test` sobre `repo-ejemplo` que escribe `<trabajo>/contexto.md` con las tablas y columnas de la migración (`CREATE TABLE` y `ALTER TABLE … ADD COLUMN`), los módulos con sus `menu.ts`/`paneles.ts`/`on-alerta.ts`/`metrics.ts`, las semillas y las rutas del contrato (CA-6)
 
 ## 4. Agentes de revisión (B2 a B4)
 
@@ -48,7 +49,7 @@
 
 ## 7. Orquestador en modo demo (C1 a C3)
 
-- [ ] 7.1 Escribir `.claude/skills/orquestador/SKILL.md` con `disable-model-invocation: true` (argumentos de 3.0, máquina de estados con `estado.mjs`, presupuesto 2.5, reglas de Bloqueado y Escalado, tabla de modelos, `cd "<raiz>" &&` con Bash) y verificar con la prueba de frontmatter que la invocación por el modelo está deshabilitada (CA-2)
+- [ ] 7.1 Escribir `.claude/skills/orquestador/SKILL.md` con `disable-model-invocation: true` (argumentos de 3.0; secuencia de 12 pasos del modo `demo` de `docs/flujo-orquestador.md`: `contexto.mjs` antes de propose, `trazabilidad` antes de G2, G3 sin build, `build-test` en paralelo con `revisor-reglas`, segundo `build-test` solo si hubo correcciones, `copiar-evidencias.mjs` al final; máquina de estados con `estado.mjs`, presupuesto 2.5, reglas de Bloqueado y Escalado, tabla de modelos, `cd "<raiz>" &&` con Bash) y verificar con la prueba de frontmatter que la invocación por el modelo está deshabilitada (CA-2)
 - [ ] 7.2 Correr `/orquestador <práctica 1> demo` cronometrado y verificar que en 7 minutos o menos queda un único PR en borrador que cita `#<n>` y el change, con `evidencias/issue-<n>/` commiteado; guardar tiempo y salida en `evidencias/issue-1/pruebas/demo.md` (CA-6)
 - [ ] 7.3 Provocar las salidas de error con el issue de práctica 3 (issue cerrado da `BLOQUEAR`; Docker apagado da error de **entorno** y el item se detiene) y guardar el resultado en `evidencias/issue-1/pruebas/errores.md` (CA-7)
 

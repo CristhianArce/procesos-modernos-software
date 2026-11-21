@@ -59,6 +59,13 @@ El orquestador SHALL guardar el estado de cada item en `.flujo/issue-<n>/` con l
 - **WHEN** se copian las evidencias de un `<trabajo>` de ejemplo
 - **THEN** `evidencias/issue-<n>/` contiene los archivos de evidencia y `agentes.md` generado desde el registro de agentes, y no contiene logs
 
+### Requirement: Contexto del repositorio antes de proponer
+Antes de proponer el change de una historia en modo `demo`, el orquestador SHALL escribir en `<trabajo>/contexto.md` las tablas y columnas de las migraciones, los módulos con sus puntos de extensión, las semillas y las rutas del contrato, y la propuesta SHALL tratar como pregunta cualquier tabla o módulo que no figure ahí (CA-6).
+
+#### Scenario: Repositorio de ejemplo (CA-6)
+- **WHEN** se genera el contexto de un repositorio con una migración que crea una tabla y agrega una columna, y un módulo con ítem de menú
+- **THEN** `contexto.md` lista la tabla con ambas columnas, el módulo con su ítem de menú, la semilla y las rutas del contrato
+
 ### Requirement: Entorno Docker por historia sin choques de puertos
 El skill `entorno-docker` SHALL levantar el entorno de una historia con puertos efímeros, devolver su `BASE_URL` y dejar `docker ps` limpio al bajarlo (CA-6).
 
