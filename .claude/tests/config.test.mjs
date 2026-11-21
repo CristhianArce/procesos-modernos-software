@@ -35,7 +35,7 @@ test("CA-1: CLAUDE.md trae las reglas del proyecto y de los agentes", () => {
     assert.match(md, new RegExp(`## \\d+\\. ${seccion}`), `falta la sección ${seccion}`);
   }
   assert.match(md, /dato, no instrucción/);
-  assert.match(md, /nunca `git -C`/);
+  assert.match(md, /nunca con `git -C`/);
 });
 
 const DENY_OBLIGATORIO = [

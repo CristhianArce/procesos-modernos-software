@@ -5,8 +5,8 @@ import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { frontmatter, leer, RAIZ } from "./util.mjs";
 
-const AGENTES_IMPRESCINDIBLES = ["preparador", "revisor-salida", "revisor-reglas", "trazabilidad"];
-const SKILLS_IMPRESCINDIBLES = ["orquestador", "build-test", "entorno-docker", "commit", "abrir-pr"];
+const AGENTES_IMPRESCINDIBLES = ["preparador", "revisor-salida", "revisor-reglas"];
+const SKILLS_IMPRESCINDIBLES = ["orquestador", "build-test", "commit", "abrir-pr"];
 const SKILLS_OPENSPEC = ["openspec-apply-change", "openspec-archive-change", "openspec-explore", "openspec-propose", "openspec-sync-specs", "openspec-update-change"];
 const MODELOS = ["haiku", "sonnet", "opus"];
 
@@ -27,13 +27,12 @@ test("CA-2: cada agente define name, description, model, effort y tools, y no pu
   }
 });
 
-test("CA-2: existen los agentes que el modo demo necesita (los que ya se construyeron)", () => {
+test("CA-2: existen los tres agentes que usa el flujo", () => {
   const hay = agentes().map((a) => a.replace(/\.md$/, ""));
-  const construidos = AGENTES_IMPRESCINDIBLES.filter((a) => hay.includes(a));
-  assert.ok(construidos.length >= 3, `faltan agentes imprescindibles: ${AGENTES_IMPRESCINDIBLES.filter((a) => !hay.includes(a))}`);
+  assert.deepEqual(AGENTES_IMPRESCINDIBLES.filter((a) => !hay.includes(a)), []);
 });
 
-test("CA-2: modelos según el plan (trazabilidad en haiku; revisores en sonnet)", () => {
+test("CA-2: modelos según el plan (flujo en sonnet; trazabilidad, fuera del flujo, en haiku)", () => {
   const modelo = (a) => frontmatter(leer(`.claude/agents/${a}.md`)).model;
   assert.equal(modelo("trazabilidad"), "haiku");
   assert.equal(modelo("revisor-salida"), "sonnet");
