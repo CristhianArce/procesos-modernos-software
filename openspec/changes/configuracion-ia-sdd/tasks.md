@@ -9,7 +9,7 @@
 - [x] 1.5 Escribir `.claude/settings.json` con `allow` y `deny` (plan 4.3 más `git reset` sin argumentos y `.github/` en worktrees) y `.gitignore` con `.flujo/`, `.claude/worktrees/`, `.env*` y `!.env.example`; verificar que el JSON es válido (CA-3)
 - [x] 1.6 Crear `.claude/tests/config.test.mjs` con `node --test`: `config.yaml` sin claves duplicadas y con todas las reglas como texto; `settings.json` con cada regla `deny` obligatoria; `.gitignore` con `.flujo/` y `.claude/worktrees/`. Verificar que `node --test ".claude/tests/*.test.mjs"` pasa (CA-1, CA-3)
 - [x] 1.7 Verificación manual en una sesión nueva: `gh pr merge`, `git commit --amend`, `git rebase`, `git reset` y `git push --force` se rechazan; crear y borrar `.claude/worktrees/prueba` no pide confirmación. Anotar el resultado en `evidencias/issue-1/pruebas/permisos.md` (CA-3)
-- [ ] 1.8 CI mínimo `.github/workflows/ci.yml` (job `configuracion-ia`: OpenSpec 2.1, `node --test ".claude/tests/*.test.mjs"`, `openspec validate --all --strict --no-interactive`; job `proyecto` condicionado a `package.json`) y verificar que el CI del PR de arranque termina en verde (CA-1, CA-3; Derivado: decisión #21)
+- [x] 1.8 CI mínimo `.github/workflows/ci.yml` (job `configuracion-ia`: OpenSpec 2.1, `node --test ".claude/tests/*.test.mjs"`, `openspec validate --all --strict --no-interactive`; job `proyecto` condicionado a `package.json`) y verificar que el CI del PR de arranque termina en verde (CA-1, CA-3; Derivado: decisión #21)
 - [ ] 1.9 Abrir y fusionar el PR de arranque a `main` con `Refs #1`, y verificar que `main` contiene `openspec/`, `CLAUDE.md` y `.claude/settings.json` (Derivado: decisión #22)
 
 ## 2. Fixtures y validación del formato de specs (B0)
