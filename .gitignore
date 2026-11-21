@@ -1,0 +1,59 @@
+# ── Claude Code ──────────────────────────────────────────────
+# Se versionan: CLAUDE.md, .claude/settings.json, .claude/agents/, .claude/skills/,
+# .claude/tests/, .claude/fixtures/ y .claude/orquestador.json.
+.claude/settings.local.json
+.claude/worktrees/
+CLAUDE.local.md
+
+# ── Flujo SDD (orquestador) ──────────────────────────────────
+# <trabajo> de cada historia y borradores locales; las evidencias van en evidencias/.
+.flujo/
+# OpenSpec no se ignora: openspec/ se versiona completo. specs/ es la fuente de verdad,
+# changes/ son las propuestas que se revisan en cada PR y changes/archive/ es el historial
+# de trazabilidad. OpenSpec no genera cachés ni temporales en el repo. Los skills que crea
+# `openspec init` (.claude/skills/openspec-*, .agents/skills/) también se versionan para
+# que un clon limpio los tenga; se regeneran con `openspec update`.
+
+# ── Variables de entorno y secretos ──────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ── Node / npm ───────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+.npm/
+.pnp.*
+
+# ── Next.js ──────────────────────────────────────────────────
+.next/
+out/
+build/
+next-env.d.ts
+
+# ── TypeScript ───────────────────────────────────────────────
+*.tsbuildinfo
+
+# ── Pruebas (Vitest y Playwright) ────────────────────────────
+coverage/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# ── Logs ─────────────────────────────────────────────────────
+logs/
+*.log
+
+# ── Sistema operativo ────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Editores ─────────────────────────────────────────────────
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
