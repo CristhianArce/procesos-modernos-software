@@ -53,6 +53,19 @@ test("CA-6: build-test en verde escribe BUILD SUCCESS en estado.md", () => {
   }
 });
 
+test("CA-6: build-test --sin-bd (modo práctica) no corre test:integration", () => {
+  const dir = proyecto({ typecheck: ok, "test:unit": ok, "test:integration": [1, "Error: connect ECONNREFUSED 127.0.0.1:5432"] });
+  try {
+    const trabajo = join(dir, ".flujo", "issue-900");
+    const r = spawnSync(process.execPath, [BUILD, "900", "--sin-bd", "--raiz", dir, "--trabajo", trabajo], { encoding: "utf8" });
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+    assert.match(r.stdout, /BUILD SUCCESS\nPasos: typecheck, test:unit\n/);
+    assert.equal(correr(dir).codigo, 2, "sin --sin-bd la integración sí corre");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test("CA-7: un error de tipos se clasifica como código (salida 1)", () => {
   const dir = proyecto({ typecheck: [1, "src/a.ts(3,5): error TS2322: tipo incorrecto"], "test:unit": ok, "test:integration": ok });
   try {

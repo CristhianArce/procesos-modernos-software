@@ -7,6 +7,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { leer, RAIZ } from "./util.mjs";
 import { escribirCampo, leerCampo } from "../skills/orquestador/scripts/estado.mjs";
+import { calcular, componer, leerMarcas, resumenMarkdown } from "../skills/orquestador/scripts/tiempos.mjs";
 import { extraerPuerto } from "../skills/orquestador/scripts/puerto.mjs";
 import { aMarkdown, analizar, criteriosDelIssue, pruebasDeHistoria, pruebasDeTexto } from "../skills/orquestador/scripts/trazabilidad-grep.mjs";
 import { planRenombres } from "../skills/orquestador/scripts/migracion-timestamp.mjs";
@@ -166,6 +167,38 @@ test("CA-6: trazabilidad-grep.mjs --pruebas llena Caso y señala los CA sin prue
     assert.match(md, /Pruebas: 2 de 3 CA con prueba \(sin prueba: CA-2\)/);
     assert.match(md, /Veredicto: completa/, "la falta de prueba no cambia el veredicto de cobertura");
     assert.equal(analizar(issue, join(FIX, "change-ok")).sinPrueba, undefined, "sin --pruebas, la salida de G2 no cambia");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("CA-6: tiempos.mjs calcula la duración de cada paso y el total contra la meta de 5 minutos", () => {
+  const marcas = [{ paso: 1, hora: "2026-11-21T10:00:20Z" }, { paso: 2, hora: "2026-11-21T10:00:22Z" }, { paso: 3, hora: "2026-11-21T10:01:52Z" }];
+  const r = calcular("2026-11-21T10:00:00Z", marcas, new Date("2026-11-21T10:02:30Z"));
+  assert.deepEqual(r.pasos.map((p) => [p.paso, p.segundos]), [[1, 20], [2, 2], [3, 90], [4, 38]]);
+  assert.match(r.pasos[3].nombre, /G2 \(hasta el resumen\)/);
+  assert.equal(r.total, 150);
+  assert.equal(r.dentro, true);
+  assert.match(resumenMarkdown(r), /Total: 2 min 30 s \(150 s\)\. Meta: ≤ 5 min 00 s\. Dentro de la meta\./);
+  const fuera = calcular("2026-11-21T10:00:00Z", [], new Date("2026-11-21T10:06:01Z"));
+  assert.match(resumenMarkdown(fuera), /\*\*Fuera de la meta por 1 min 01 s\.\*\*/);
+});
+
+test("CA-6: estado.mjs registra en tiempos.md la hora de cada paso cerrado, sin perder marcas tras un resumen", () => {
+  const dir = temporal();
+  try {
+    const run = (...a) => spawnSync(process.execPath, a, { encoding: "utf8" });
+    const T = join(SCRIPTS, "tiempos.mjs");
+    const E = join(SCRIPTS, "estado.mjs");
+    assert.equal(run(E, "escribir", "900", "Última fase cerrada", "1", "--trabajo", dir).status, 0);
+    assert.ok(!existsSync(join(dir, "tiempos.md")), "sin inicio, la corrida no se mide");
+    assert.equal(run(T, "inicio", "900", "--trabajo", dir).status, 0);
+    assert.equal(run(E, "escribir", "900", "Última fase cerrada", "1", "--trabajo", dir).status, 0);
+    assert.equal(run(T, "resumen", "900", "--trabajo", dir).status, 0);
+    assert.equal(run(E, "escribir", "900", "Última fase cerrada", "2", "--trabajo", dir).status, 0);
+    const { marcas } = leerMarcas(readFileSync(join(dir, "tiempos.md"), "utf8"));
+    assert.deepEqual(marcas.map((m) => m.paso), [1, 2]);
+    assert.match(componer("Inicio: x", marcas), /\| 2 \| \d{4}-/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

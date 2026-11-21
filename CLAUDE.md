@@ -53,7 +53,7 @@ TypeScript, una sola app Next.js 16 (App Router) para interfaz y API, Route Hand
 - `tasks.md` va agrupado por capa (migración, repo, service, schema, handler + contrato, página/ui, `menu.ts`). Cada grupo incluye sus pruebas: unitarias (sin BD) o de integración (handlers con `Request`). El grupo final es solo para la integración y aceptación de toda la historia. Cada tarea dice cómo se verifica. Abrir el PR, esperar el CI, archivar y correr las pruebas e2e contra la app levantada no son tareas con casilla: van como viñetas en `## Workflow follow-up` (escribir la prueba e2e sí es tarea, verificable con `npx playwright test --list`).
 - BDD: cada CA del issue (Dado/Cuando/Entonces) se vuelve al menos un escenario `**WHEN**`/`**THEN**` y al menos una prueba automatizada.
 - TDD: en cada tarea se escribe primero la prueba que la verifica y luego el código que la hace pasar.
-- El nombre de cada prueba nueva cita el issue y el CA que verifica: `it("#<n> CA-2: rechaza un umbral negativo con 400")`. El número del issue hace única la referencia (todas las historias tienen un CA-1). Las páginas que son Server Components solo se prueban con Playwright, porque Vitest no las renderiza.
+- El nombre de cada prueba nueva cita el issue y el CA que verifica: `it("#<n> CA-2: rechaza un umbral negativo con 400")`. El número del issue hace única la referencia (todas las historias tienen un CA-1). Las páginas que son Server Components asíncronos o leen datos solo se prueban con Playwright, porque Vitest no las renderiza; los componentes síncronos sin datos se renderizan a HTML con `react-dom/server` en Vitest.
 - Al aplicar: marcar `[x]` solo lo hecho, dejar `[ ]` lo pendiente con su motivo en `decisiones.md` (citando el número de la tarea), y no reformatear líneas no tocadas.
 - Las pruebas de aceptación de la historia pasan antes de fusionar, también en el CI del PR (integración continua).
 - Commits y PR citan el issue (`#<n>`) y el change (`Change: <nombre>`).
@@ -71,4 +71,4 @@ TypeScript, una sola app Next.js 16 (App Router) para interfaz y API, Route Hand
 
 ## 9. Historias habilitadoras
 
-Las HU 1a (configuración de IA), 1b (herramientas de desarrollo) y 2 (infraestructura y CI/CD) no las ejecuta el orquestador. Se construyen en modo interactivo. El orquestador trabaja desde la HU 3.
+Las HU 1a (configuración de IA), 1b (herramientas de desarrollo) y 2 (infraestructura y CI/CD) no las ejecuta el orquestador. Se construyen en modo interactivo. El orquestador trabaja desde la HU 3, salvo las historias de práctica (etiqueta `practica`), que corre en modo práctica sin BD ni Docker para probarse a sí mismo; su PR no se fusiona.

@@ -28,6 +28,7 @@
       "Bash(npm ci)",
       "Bash(npm ci *)",
       "Bash(npm run *)",
+      "Bash(npm install)",
       "Bash(npx playwright *)",
       "Bash(npx vitest *)",
       "Bash(node --test *)",

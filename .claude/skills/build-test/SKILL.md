@@ -19,7 +19,7 @@ Se ejecuta desde la raíz del repo, sin `cd`. Precondición: `node_modules` inst
 
 ## Qué hace
 
-1. Corre en orden `npm run typecheck`, `npm run test:unit` y `npm run test:integration`. Se detiene en el primer paso que falla.
+1. Corre en orden `npm run typecheck`, `npm run test:unit` y `npm run test:integration`. Se detiene en el primer paso que falla. Con `--sin-bd` (modo práctica, sin BD) corre solo `typecheck` y `test:unit`.
 2. Guarda toda la salida en `.flujo/issue-<n>/build-<fecha>.log`.
 3. Escribe en `.flujo/issue-<n>/estado.md` los campos `Último build`, `Log del último build` y `Fecha del último build`.
 4. Imprime:

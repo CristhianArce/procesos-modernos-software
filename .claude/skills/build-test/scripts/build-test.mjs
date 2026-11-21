@@ -1,5 +1,6 @@
 // Compila y prueba la historia: npm run typecheck, test:unit y test:integration (lint y next build quedan para el CI).
-// Uso: node .claude/skills/build-test/scripts/build-test.mjs <n> [--raiz <raiz>] [--trabajo <dir>]
+// Uso: node .claude/skills/build-test/scripts/build-test.mjs <n> [--sin-bd] [--raiz <raiz>] [--trabajo <dir>]
+// --sin-bd (modo práctica): solo typecheck y test:unit; no hay BD ni test:integration.
 // Salida: BUILD SUCCESS | BUILD FAILURE, paso, primer error y clasificación (codigo | entorno).
 // Código de salida: 0 éxito, 1 fallo de código, 2 fallo de entorno.
 import { spawnSync } from "node:child_process";
@@ -9,6 +10,7 @@ import { dirTrabajo, esPrincipal, fallar, opciones, raizRepo } from "../../orque
 import { escribirCampo, rutaEstado } from "../../orquestador/scripts/estado.mjs";
 
 export const PASOS = ["typecheck", "test:unit", "test:integration"];
+export const PASOS_SIN_BD = ["typecheck", "test:unit"];
 
 // Señales de que el fallo no es del código sino del entorno (Node/npm, Docker, BD, red, disco).
 const ENTORNO = [
@@ -34,11 +36,11 @@ export function marcaFecha(d = new Date()) {
   return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
 }
 
-export function buildTest({ raiz, trabajo, log }) {
+export function buildTest({ raiz, trabajo, log, pasos = PASOS }) {
   if (!existsSync(join(raiz, "package.json"))) {
     return { ok: false, paso: "preparación", clasificacion: "entorno", error: "No hay package.json en la raíz (falta el proyecto de la HU 1b)" };
   }
-  for (const paso of PASOS) {
+  for (const paso of pasos) {
     const inicio = Date.now();
     const r = spawnSync("npm", ["run", paso], { cwd: raiz, encoding: "utf8", shell: process.platform === "win32", env: process.env });
     const salida = `${r.stdout ?? ""}${r.stderr ?? ""}${r.error ? String(r.error) : ""}`;
@@ -53,14 +55,15 @@ export function buildTest({ raiz, trabajo, log }) {
 if (esPrincipal(import.meta.url)) {
   const o = opciones(process.argv.slice(2));
   const n = o._[0];
-  if (!n) fallar("Uso: build-test.mjs <n> [--raiz <raiz>] [--trabajo <dir>]", 2);
+  if (!n) fallar("Uso: build-test.mjs <n> [--sin-bd] [--raiz <raiz>] [--trabajo <dir>]", 2);
+  const pasos = o["sin-bd"] ? PASOS_SIN_BD : PASOS;
   const raiz = o.raiz ?? raizRepo();
   const trabajo = o.trabajo ?? dirTrabajo(n, raiz);
   mkdirSync(trabajo, { recursive: true });
   const fecha = new Date();
   const log = join(trabajo, `build-${marcaFecha(fecha)}.log`);
   writeFileSync(log, `build-test del issue #${n} en ${raiz}\n`);
-  const r = buildTest({ raiz, trabajo, log });
+  const r = buildTest({ raiz, trabajo, log, pasos });
   const ruta = rutaEstado(n, trabajo);
   let estado = readFileSync(ruta, "utf8");
   estado = escribirCampo(estado, "Último build", r.ok ? "BUILD SUCCESS" : `BUILD FAILURE (${r.clasificacion})`);
@@ -68,7 +71,7 @@ if (esPrincipal(import.meta.url)) {
   estado = escribirCampo(estado, "Fecha del último build", fecha.toISOString());
   writeFileSync(ruta, estado);
   if (r.ok) {
-    console.log(`BUILD SUCCESS\nPasos: ${PASOS.join(", ")}\nLog: ${log}`);
+    console.log(`BUILD SUCCESS\nPasos: ${pasos.join(", ")}\nLog: ${log}`);
     process.exit(0);
   }
   console.log(`BUILD FAILURE\nPaso: ${r.paso}\nClasificación: ${r.clasificacion}\nPrimer error: ${r.error}\nLog: ${log}`);

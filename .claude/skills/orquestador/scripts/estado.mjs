@@ -2,8 +2,9 @@
 // Uso: node .claude/skills/orquestador/scripts/estado.mjs leer <n> <campo> [--trabajo <dir>]
 //      node .claude/skills/orquestador/scripts/estado.mjs escribir <n> <campo> <valor> [--trabajo <dir>]
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { DIR_PLANTILLAS, dirTrabajo, esPrincipal, fallar, opciones } from "./comun.mjs";
+import { registrarCierre } from "./tiempos.mjs";
 
 const FILA = /^\|\s*([^|]+?)\s*\|\s*(.*?)\s*\|\s*$/;
 
@@ -53,6 +54,8 @@ if (esPrincipal(import.meta.url)) {
     console.log(v);
   } else {
     writeFileSync(ruta, escribirCampo(texto, campo, resto.join(" ")));
+    // Cerrar un paso también deja su hora en tiempos.md (si la corrida se está midiendo).
+    if (campo === "Última fase cerrada") registrarCierre(join(dirname(ruta), "tiempos.md"), resto[0]);
     console.log(`${campo} = ${resto.join(" ")}`);
   }
 }

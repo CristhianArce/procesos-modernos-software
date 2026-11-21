@@ -38,7 +38,7 @@ operations:
       - "Marca [x] solo lo hecho; deja [ ] con su motivo en <trabajo>/decisiones.md (citando el número X.Y de la tarea) y no reformatees líneas no tocadas."
       - "Usa los nombres reales de <trabajo>/contexto.md; si algo no existe y el change no lo crea, pregúntalo."
       - "TDD: en cada tarea escribe primero la prueba que la verifica y luego el código que la hace pasar."
-      - "El nombre de cada it/test/describe nuevo cita el issue y el CA que verifica: it(\"#<n> CA-2: rechaza un umbral negativo con 400\"). Varios: \"#<n> CA-1, CA-3: ...\". Las páginas que son Server Components solo se prueban con Playwright (Vitest no las renderiza): su CA se cita en un test(\"#<n> CA-k: ...\") de e2e/."
+      - "El nombre de cada it/test/describe nuevo cita el issue y el CA que verifica: it(\"#<n> CA-2: rechaza un umbral negativo con 400\"). Varios: \"#<n> CA-1, CA-3: ...\". Las páginas que son Server Components asíncronos o leen datos solo se prueban con Playwright (Vitest no las renderiza): su CA se cita en un test(\"#<n> CA-k: ...\") de e2e/. Los componentes síncronos sin datos se renderizan a HTML con react-dom/server en Vitest."
   archive:
     guidance:
       - "Archiva solo con todas las tareas en [x], en un PR propio, después del merge y uno a la vez."

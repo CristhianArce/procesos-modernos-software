@@ -128,6 +128,10 @@ Se escribe a mano: Claude no lo invoca por su cuenta. Durante la corrida:
 
 Al final muestra en el chat el tiempo por paso, la URL del PR, los veredictos y las decisiones.
 
+El tiempo de la corrida queda medido en `.flujo/issue-<n>/tiempos.md` (y en `evidencias/issue-<n>/tiempos.md`): duración por paso y total contra la meta de 5 minutos.
+
+Para probar el orquestador antes de la HU 1b y la HU 2 hay historias de **práctica** (etiqueta `practica`): corren sin BD ni Docker, instalan sus dependencias durante la implementación y su PR no se fusiona. Para repetir una, cierra el PR y borra la rama (local y remota) y `.flujo/issue-<n>/`.
+
 ### 4. Si se bloquea o se corta
 
 - El motivo queda en `.flujo/issue-<n>/bloqueo.md` y en `estado.md`. No comenta ni etiqueta el issue: eso lo decides tú.
