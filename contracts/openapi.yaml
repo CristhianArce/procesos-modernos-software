@@ -1,0 +1,69 @@
+openapi: 3.1.0
+info:
+  title: Tablero de sensores eléctricos
+  version: 0.1.0
+  description: >-
+    Único archivo compartido entre historias (CLAUDE.md §4). Cada historia agrega sus rutas
+    bajo `paths` y conserva las de las demás.
+components:
+  securitySchemes:
+    sesion:
+      type: apiKey
+      in: cookie
+      name: sesion
+    tokenMetricas:
+      type: http
+      scheme: bearer
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+  responses:
+    NoAutenticado:
+      description: Sin sesión o token válido
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    SinPermiso:
+      description: La sesión no tiene el rol exigido
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+paths:
+  /api/health:
+    get:
+      summary: Salud de la app
+      security: []
+      responses:
+        "200":
+          description: La app responde
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, version]
+                properties:
+                  status:
+                    type: string
+                    enum: [ok]
+                  version:
+                    type: string
+  /api/metrics:
+    get:
+      summary: Métricas en formato Prometheus
+      security:
+        - tokenMetricas: []
+      responses:
+        "200":
+          description: Métricas en formato de texto de Prometheus
+          content:
+            text/plain:
+              schema:
+                type: string
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
