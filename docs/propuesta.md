@@ -270,7 +270,7 @@ El flujo completo del orquestador es demasiado largo para la demo de 5 a 10 minu
 4. `/openspec-apply-change`: implementa las tareas y marca el checklist de `tasks.md`.
 5. `openspec archive <nombre> --yes`: fusiona los deltas en `openspec/specs/` y mueve el change a `openspec/changes/archive/`.
 
-**En la demo individual:** `/orquestador <n> demo` encadena preparar → `/openspec-propose` (desde el issue, sin explorar) → trazabilidad → G2 → `/openspec-apply-change` → G3 → `build-test` en paralelo con una revisión de `revisor-reglas` → corregir CRITICAL → `build-test` → commit y PR en borrador → trazabilidad y commit de evidencias. Las dudas de negocio se le preguntan al estudiante. Si el orquestador falla, el respaldo es correr a mano los skills de OpenSpec en el mismo orden. El archivo lo hace el orquestador después de fusionar el PR, uno a la vez y en un PR propio, para que los deltas de varios estudiantes no choquen.
+**En la demo individual:** `/orquestador <n> demo` encadena preparar → contexto (un script lista las tablas, módulos y rutas que ya existen, sin agentes) → `/openspec-propose` (desde el issue y ese contexto, sin explorar) → trazabilidad → G2 → `/openspec-apply-change` → G3 → `build-test` en paralelo con una revisión de `revisor-reglas` → corregir CRITICAL → `build-test` → commit y PR en borrador → trazabilidad y commit de evidencias. Las dudas de negocio se le preguntan al estudiante. Si el orquestador falla, el respaldo es correr a mano los skills de OpenSpec en el mismo orden. El archivo lo hace el orquestador después de fusionar el PR, uno a la vez y en un PR propio, para que los deltas de varios estudiantes no choquen.
 
 Ajustes del modo `demo` para que quepa en el tiempo (meta: 7 minutos o menos en el ensayo):
 

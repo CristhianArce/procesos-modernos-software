@@ -55,6 +55,7 @@ Scripts compartidos en `.claude/skills/orquestador/scripts/` (se construyen **pr
 - `migracion-timestamp.mjs`: renombra la migración del change si quedó con timestamp menor que la última de `<base>` (3.13 paso 1).
 - `trazabilidad-grep.mjs`: busca `\bCA-n\b` en specs, tasks y planes; apoyo para G2 y el agente `trazabilidad`.
 - `puerto.mjs`: parsea la salida de `docker compose port` (`0.0.0.0:NNNN` o `[::]:NNNN`) y devuelve solo el número.
+- `contexto.mjs`: escribe `<trabajo>/contexto.md` con las tablas y columnas que crean las migraciones de `db/migration/` (parseando `CREATE TABLE` y `ALTER TABLE ... ADD COLUMN`), los módulos de `src/modulos/` y sus puntos de extensión, las semillas de `db/seed/` y las rutas de `contracts/openapi.yaml`. Sustituye a explorar cuando no se corre (`demo` y modo normal reducido); no usa agentes ni BD.
 - `copiar-evidencias.mjs`: copia a `evidencias/issue-<n>/` los archivos de `<trabajo>` de la especificación 2.1 que existan (sin capturas pesadas, sin logs) y genera `agentes.md` desde `agentes-log.md`. Es Imprescindible: sin él no hay evidencia multiagente en el repo.
 
 Plantillas en `.claude/skills/orquestador/plantillas/`, una por cada archivo de la especificación 2.1, con la cabecera de tabla exacta: `estado.md`, `issue.md`, `preguntas.md`, `decisiones.md`, `explore.md`, `gates.md`, `plan-pruebas.md`, `plan-smoke.md`, `verificacion.md`, `ciclo-pr.md`, `trazabilidad.md`, `agentes-log.md` (el orquestador agrega una fila tras cada invocación de un agente; de ella sale `agentes.md` en el paso 8), `agentes.md`, `bloqueo.md`, `pr-body.md` y `review.json`.
@@ -239,7 +240,7 @@ Se construyen de abajo hacia arriba y cada pieza tiene una prueba aislada antes 
 | Orden | Pieza | Prueba aislada | Necesita | Nivel |
 |---|---|---|---|---|
 | 3.0 | Fixtures en `.claude/fixtures/` (excluidas de lint y build): un change de ejemplo con `CA-n` correcto, otro con `### Requisito:` en español, un parche con SQL fuera de `repo.ts` y un `fetch` a la propia API desde una página, y un `<trabajo>` lleno de ejemplo | — | Fase 1A (la exclusión de lint y build, HU 1b) | Imprescindible |
-| 3.1 | Plantillas (1.2), `estado.mjs`, `puerto.mjs`, `trazabilidad-grep.mjs`, `migracion-timestamp.mjs`, `copiar-evidencias.mjs` y `.claude/orquestador.json` | `estado.mjs` lee y escribe sobre el `<trabajo>` de ejemplo; `copiar-evidencias.mjs` genera `evidencias/issue-<n>/` con `agentes.md` desde el `agentes-log.md` de ejemplo y no copia logs; `migracion-timestamp.mjs` renombra una migración de fixture con timestamp menor que la última de la base | 3.0 | Imprescindible |
+| 3.1 | Plantillas (1.2), `estado.mjs`, `puerto.mjs`, `trazabilidad-grep.mjs`, `migracion-timestamp.mjs`, `copiar-evidencias.mjs`, `contexto.mjs` y `.claude/orquestador.json` | `estado.mjs` lee y escribe sobre el `<trabajo>` de ejemplo; `contexto.mjs` lista las tablas de una migración de fixture con `CREATE TABLE` y un `ALTER TABLE ... ADD COLUMN`, y los módulos con su `menu.ts`; `copiar-evidencias.mjs` genera `evidencias/issue-<n>/` con `agentes.md` desde el `agentes-log.md` de ejemplo y no copia logs; `migracion-timestamp.mjs` renombra una migración de fixture con timestamp menor que la última de la base | 3.0 | Imprescindible |
 | 3.2 | `trazabilidad` (y `preguntas-tecnicas`) | Lanzarlos a mano con el change de ejemplo (y con dos preguntas, una técnica y una de negocio), pasando `model` y `effort` en la invocación | 3.0 | Imprescindible (`preguntas-tecnicas`: nota máxima) |
 | 3.3 | `revisor-salida` | Con el change en español, G2 devuelve `CORREGIR` por formato, como texto con la cabecera `## G2 — intento 1` lista para pegar en `gates.md`; G3 sobre el change de ejemplo no intenta compilar | 3.0 | Imprescindible |
 | 3.4 | `revisor-reglas` | Con el parche de ejemplo aplicado, devuelve `CRITICAL` | 3.0 | Imprescindible |
@@ -263,9 +264,11 @@ Se construyen de abajo hacia arriba y cada pieza tiene una prueba aislada antes 
    - la tabla de modelos de la Parte 1 (qué `model` pasar a cada `Agent`);
    - los prompts del paso 5 (3.13) y del revisor cruzado (3.12);
    - la regla de 2.7 de prefijar los comandos sobre el worktree con `cd "<raiz>" && `, y la de usar la herramienta Bash, no PowerShell, para que coincidan los permisos de 4.3.
-2. **Modo `demo`** (camino corto de 3.0 paso 5), con el issue de práctica 1. Debe terminar con el PR en borrador y `evidencias/issue-<n>/` commiteado en **7 minutos o menos**. Para lograrlo:
+2. **Modo `demo`** (secuencia de 12 pasos en `flujo-orquestador.md`, "Secuencias por modo"), con el issue de práctica 1. Debe terminar con el PR en borrador y `evidencias/issue-<n>/` commiteado en **7 minutos o menos**. Para lograrlo:
    - trabaja en el checkout principal, en la rama `feature/issue-<n>-<slug>`, sin worktree y sin `npm ci` (los `node_modules` ya están);
    - `db` ya levantada y migrada antes de empezar;
+   - sin explorar: antes de proponer, `contexto.mjs` escribe `contexto.md` (tablas, módulos, semillas y rutas existentes) y `openspec-propose` lo recibe junto con `issue.md`;
+   - el segundo `build-test` solo corre si hubo correcciones de CRITICAL;
    - `build-test` en su variante `demo`: typecheck, `test:unit` y `test:integration`; `next build` lo corre el CI;
    - `trazabilidad` (haiku / low) antes de G2, porque G2 exige su salida;
    - G3 no compila (el build es del paso 5);
@@ -273,7 +276,7 @@ Se construyen de abajo hacia arriba y cada pieza tiene una prueba aislada antes 
    - como máximo 1 `CORREGIR` por puerta;
    - sesión y agentes con sonnet, salvo `trazabilidad` en haiku;
    - al final, `copiar-evidencias.mjs` y commit de `evidencias/issue-<n>/`.
-3. **Modo normal reducido** (pasos 1 a 6 con G2, G3, los dos revisores, el decisor de 3 agentes y el smoke local de 3.13 paso 7: `entorno-docker levantar` → `npm run e2e -- --grep @smoke` → `bajar`; luego el paso 8 reducido: `trazabilidad` final y `copiar-evidencias.mjs`; `revisor-pr` comenta el PR si está listo) con el issue de práctica 2. El ciclo del PR, el reporte y el cierre automáticos quedan pospuestos: el archivo se hace a mano con los comandos del paso 10.
+3. **Modo normal reducido** (secuencia de 9 pasos en `flujo-orquestador.md`: pasos 1 y 3 a 6, sin explorar pero con `contexto.md`, con G2, G3, los dos revisores, el decisor de 3 agentes y el smoke local de 3.13 paso 7: `entorno-docker levantar` → `npm run e2e -- --grep @smoke` → `bajar`; luego el paso 8 reducido: `trazabilidad` final y `copiar-evidencias.mjs`; `revisor-pr` comenta el PR si está listo) con el issue de práctica 2. El ciclo del PR, el reporte y el cierre automáticos quedan pospuestos: el archivo se hace a mano con los comandos del paso 10.
 4. **Salidas de error**, provocadas una vez cada una con el issue de práctica 3:
    - issue ya resuelto: cerrarlo con `gh issue close` (sin fusionar nada) y comprobar que el preparador devuelve `BLOQUEAR`; luego reabrirlo;
    - `build-test` con Docker apagado: error de **entorno**, el item se detiene.

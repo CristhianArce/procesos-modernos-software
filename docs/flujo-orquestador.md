@@ -4,13 +4,59 @@ Un agente de Claude orquesta subagentes; GitHub Actions solo hace CI/CD; una per
 
 `<n>` issue · `<pr>` PR · `<base>` rama base · `<rama>` = `feature/issue-<n>-<slug>` · `<change>` change de OpenSpec · `<repo>` raíz del repo principal · `<trabajo>` = `<repo>/.flujo/issue-<n>/` (dentro del proyecto pero fuera del worktree; ignorado por git, nunca se commitea) · worktrees en `<repo>/.claude/worktrees/` (ignorados por git), para que Claude Code no pida permiso por salir del directorio del proyecto
 
-**Alcance para la entrega del 24 de noviembre:** solo se construye el nivel "imprescindible" (modo `demo` y los pasos 1, 3, 4, 5 reducido, 6 y 8); los niveles "para nota máxima" y "pospuesto" (entre ellos la automatización del paso 10) se definen en [propuesta.md, "Alcance mínimo para el 24 de noviembre"](propuesta.md). Este documento describe el flujo completo.
+**Alcance para la entrega del 24 de noviembre:** solo se construye el nivel "imprescindible" (modo `demo` y los pasos 1, 3, 4, 5 reducido, 6 y 8); los niveles "para nota máxima" y "pospuesto" (entre ellos la automatización del paso 10) se definen en [propuesta.md, "Alcance mínimo para el 24 de noviembre"](propuesta.md). Este documento describe el flujo completo; las secuencias que se construyen para la entrega están justo debajo.
 
-## Pasos
+## Secuencias por modo
+
+Tras cada invocación de un agente, el orquestador agrega una fila a `<trabajo>/agentes-log.md` (de ahí sale `evidencias/issue-<n>/agentes.md`). Cada fase lee sus entradas de disco y escribe su salida antes de cerrar.
+
+### Modo `demo` (`/orquestador <n> demo`, Imprescindible, meta ≤ 7 minutos)
+
+Antes de empezar: BD de desarrollo levantada y migrada (`docker compose up -d --wait db` y `docker compose run --rm flyway migrate info`), `node_modules` instalado y checkout principal limpio. La sesión y los agentes usan sonnet, salvo `trazabilidad` (haiku).
+
+| # | Paso del flujo | Qué hace | Quién | Deja en `<trabajo>` o en el repo |
+|---|---|---|---|---|
+| 1 | 1 Preparar | Crea la rama `feature/issue-<n>-<slug>` en el checkout principal (sin worktree ni `npm ci`) y vuelca el issue | agente `preparador` | `issue.md` con `CA-n`, `preguntas.md`, `decisiones.md`, `agentes-log.md` |
+| 2 | Contexto | Lista tablas y columnas de `db/migration/`, módulos de `src/modulos/` con sus puntos de extensión, semillas y rutas de `contracts/openapi.yaml` | script `contexto.mjs` (sin agentes, segundos) | `contexto.md` |
+| 3 | 3 Propuesta | Genera proposal, specs, design y tasks desde `issue.md` y `contexto.md`; las dudas de negocio se le preguntan a la persona | skill `openspec-propose` | `openspec/changes/<change>/`; `<change>` en `estado.md` |
+| 4 | Trazabilidad | CA → requisito/escenario → tarea | agente `trazabilidad` (haiku) | salida para G2 |
+| 5 | **G2** | `openspec validate --strict`, formato de specs, trazabilidad, alcance | agente `revisor-salida` | sección en `gates.md`; con CORREGIR vuelve a 3 (una vez) |
+| 6 | 4 Implementar | Ejecuta `tasks.md`: código, pruebas, migración y semilla | skill `openspec-apply-change` | código en la rama; tareas `[x]` |
+| 7 | **G3** | Tareas hechas, diff fiel a las specs, migraciones correctas (no compila) | agente `revisor-salida` | sección en `gates.md`; con CORREGIR vuelve a 6 (una vez) |
+| 8 | 5 Verificación | En paralelo: build (typecheck, `test:unit`, `test:integration`) y revisión del diff | skill `build-test` (variante demo) + agente `revisor-reglas` | último build en `estado.md`; hallazgos en `verificacion.md` |
+| 9 | 5 Corrección | Corrige los CRITICAL confirmados y repite `build-test` **solo si hubo correcciones** | sesión + `build-test` | build en verde |
+| 10 | 6 Commit y PR | Commit con `#<n>` y `Change:`, push y PR en borrador (sin red: queda local) | skills `commit` y `abrir-pr` | commit y PR en borrador |
+| 11 | 8 Trazabilidad final | CA → tarea → código | agente `trazabilidad` (haiku) | `trazabilidad.md` |
+| 12 | 8 Evidencias | Copia a `evidencias/issue-<n>/` y genera `agentes.md`; commit y push | `copiar-evidencias.mjs` + skill `commit` | `evidencias/issue-<n>/` en el PR |
+
+No corren en `demo`: explorar y G1, decisor, revisor cruzado, planes de prueba y E2E, espera del CI, reporte y revisor humano.
+
+### Modo normal reducido (`/orquestador <n>`, para las HU 3 a 5)
+
+Mismas piezas que `demo` más las de nota máxima disponibles. Sesión en opus si la cuenta lo tiene; topes de 2.5 de la especificación (2 CORREGIR por puerta, 2 vueltas en el paso 5).
+
+1. **Preparar** (`preparador`): worktree `.claude/worktrees/issue-<n>-<slug>` desde `origin/<base>`, copia de `.env`, `issue.md`.
+2. **Contexto** (`contexto.mjs`): `contexto.md`. Explorar sigue pospuesto.
+3. **Propuesta** (`openspec-propose`) desde `issue.md` y `contexto.md`; las dudas de negocio van al **decisor** (3 agentes en paralelo + consolidador) y quedan en `decisiones.md`.
+4. **Trazabilidad** (haiku) → **G2** (`revisor-salida`).
+5. **Implementar** (`openspec-apply-change`) → **G3** (`revisor-salida`).
+6. **Verificación local**, en este orden:
+   1. Sincronizar: `git fetch origin && git merge origin/<base>`; renombrar la migración si su timestamp quedó por debajo de la última de `<base>`.
+   2. `build-test` en variante completa (lint, typecheck, unit, integración con BD efímera, `next build`).
+   3. `revisor-reglas` y revisor cruzado `Plan`, en paralelo.
+   4. Confirmar cada hallazgo leyendo el código; los que cambian una regla de negocio van al decisor.
+   5. Corregir CRITICAL y WARNING confirmados y volver a 2 (hasta 2 vueltas).
+   6. Revisión de cierre, solo sobre lo tocado.
+   7. Smoke: `entorno-docker levantar` → `npm run e2e -- --grep @smoke` con su `BASE_URL` → `entorno-docker bajar`.
+7. **Commit y PR en borrador** (`commit`, `abrir-pr`; etiqueta `migracion` si hay migraciones). Si está listo, `revisor-pr` comenta con evento `COMMENT`.
+8. **Cierre reducido**: `trazabilidad` final (sonnet), `copiar-evidencias.mjs`, commit y push de `evidencias/issue-<n>/`.
+9. **A mano**: la persona marca el PR listo, lo revisa una cuenta distinta y se fusiona; luego el archivo del change con los comandos de "10 Archivar tras el merge", uno a la vez.
+
+## Pasos (flujo completo)
 
 0. **Entrada** — Ejecuta: orquestador
    - Recibe `<n>` y las opciones (`probar`, modo `automatico`, `manual` o `demo`).
-   - Modo `demo` (demostración individual, meta de 7 minutos o menos; sesión en sonnet): trabaja en el checkout principal sobre la rama `feature/issue-<n>-<slug>` (sin worktree ni `npm ci`; la BD ya está levantada y migrada antes de empezar). 1 → 3 (con `issue.md`, sin explorar ni G1) → trazabilidad (haiku) → G2 → 4 → G3 → `build-test` en variante demo (`typecheck`, `test:unit` y `test:integration`; `lint` y `next build` quedan para el CI) con `revisor-reglas` (sonnet / medium) en paralelo → corregir CRITICAL → `build-test` → 6 (push y PR opcionales si no hay red) → trazabilidad y commit de evidencias. Máximo un CORREGIR por puerta. Sin decisor (las dudas de negocio las responde la persona), sin planes E2E, sin esperar el CI; el PR queda en borrador.
+   - Modo `demo` y modo normal reducido: ver "Secuencias por modo" arriba. En `demo`, máximo un CORREGIR por puerta y el PR queda en borrador.
    - Decisor por defecto: 3 agentes en paralelo más un consolidador; el workflow guardado es opcional.
    - La sesión llega hasta el paso 8 (`PR listo`). Tras el merge humano, el paso 10 se retoma con `/orquestador <n> desde=cierre`; si la persona pide cambios, con `desde=pr`.
 
@@ -31,7 +77,7 @@ Un agente de Claude orquesta subagentes; GitHub Actions solo hace CI/CD; una per
    - **Puerta de calidad G3** (agente `revisor-salida`): tareas hechas, código fiel al spec y migraciones correctas (sin compilar: el build y las pruebas son del paso 5); decide si sigue, se corrige o se bloquea.
 
 5. **Verificación local** — Ejecuta: skills `build-test` y `entorno-docker`, agentes `revisor-reglas`, `Plan` y ejecutor E2E
-   - Sincroniza con la base, build + pruebas, dos revisores y E2E en Docker (con las migraciones aplicadas a la BD efímera y la app sana según `/api/health`).
+   - En orden: sincronizar con la base → build + pruebas → dos revisores en paralelo → confirmar hallazgos → corregir y volver al build (hasta el tope de vueltas) → revisión de cierre → E2E en Docker (con las migraciones aplicadas a la BD efímera y la app sana según `/api/health`).
    - Corrige hasta verde o tope. Sin build y pruebas en verde no hay commit.
 
 6. **Commit, push y PR** — Ejecuta: skills `commit` y `abrir-pr`
