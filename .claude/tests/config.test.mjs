@@ -74,6 +74,13 @@ test("CA-3: settings.json permite crear y borrar worktrees sin confirmación", (
   }
 });
 
+test("CA-6: settings.json permite al orquestador invocar sus skills sin pedir permiso", () => {
+  const { permissions } = JSON.parse(leer(".claude/settings.json"));
+  for (const s of ["openspec-propose", "openspec-apply-change", "build-test", "commit", "abrir-pr"]) {
+    assert.ok(permissions.allow.includes(`Skill(${s})`), `falta allow Skill(${s})`);
+  }
+});
+
 test("CA-3: .gitignore deja fuera .flujo/, worktrees, secretos y archivos locales de Claude", () => {
   const lineas = leer(".gitignore").split(/\r?\n/).map((l) => l.trim());
   for (const l of [".flujo/", ".claude/worktrees/", ".claude/settings.local.json", ".env", "!.env.example", "node_modules/", ".next/"]) {

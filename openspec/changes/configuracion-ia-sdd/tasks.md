@@ -40,19 +40,25 @@
 - [x] 5.2 Escribir `.claude/agents/preparador.md` (sonnet / medium, ficha 3.1) y verificar con el issue de prueba #6 que crea `feature/issue-<n>-<slug>` en el checkout principal y `.flujo/issue-<n>/issue.md` con `CA-n`, y que una segunda corrida reutiliza todo; guardar en `evidencias/issue-1/pruebas/preparador.md` (CA-6)
 - [x] 5.3 Verificar que con el issue de prueba #6 cerrado el `preparador` devuelve `BLOQUEAR: ya resuelto` sin crear rama ni worktree, y reabrir el issue; guardar en la misma evidencia (CA-7)
 
-## 6. Compilación, commit y PR (requiere la HU 1b y el compose mínimo)
+## 6. Compilación, commit y PR
+
+> La 6.1 espera el proyecto de la HU 1b (#2) y el compose mínimo de la HU 2. Esta historia no los construye (decisión #10 de design.md).
 
 - [ ] 6.1 Escribir el skill `build-test` y su `scripts/build-test.mjs` (ficha 3.9) y verificar: verde sobre el proyecto; un tipo roto se clasifica como **código**; con Docker apagado, como **entorno**; typecheck, unit e integración tardan menos de 2 minutos (CA-7)
-- [ ] 6.3 Escribir los skills `commit` (ficha 3.15) y `abrir-pr` (ficha 3.16) y verificar que `commit` se niega sin build verde en `estado.md` y que una segunda llamada a `abrir-pr` devuelve el mismo PR (CA-6, CA-7)
+- [x] 6.3 Escribir los skills `commit` (ficha 3.15) y `abrir-pr` (ficha 3.16) y verificar que `commit` se niega sin build verde en `estado.md` y que una segunda llamada a `abrir-pr` devuelve el mismo PR (CA-6, CA-7)
 - [x] 6.4 Agregar a la prueba de frontmatter los skills `build-test`, `commit` y `abrir-pr`, con `allowed-tools` acotado (nunca `Bash` a secas) (CA-2)
 
 ## 7. Orquestador: un solo modo, 5 minutos (C1 a C3)
+
+> La 7.2 y la 7.3 esperan la HU 1b (#2) y el compose mínimo de la HU 2: el flujo necesita `typecheck`, `test:unit`, `test:integration` y la BD de desarrollo.
 
 - [x] 7.1 Escribir `.claude/skills/orquestador/SKILL.md` con `disable-model-invocation: true` (argumentos de 3.0 sin modos; los 8 pasos: `preparador` → `contexto.mjs` → propose → `trazabilidad-grep.mjs` y G2 con `revisor-salida` → apply → `build-test` en paralelo con `revisor-reglas` → una corrección solo si hay CRITICAL → `commit`, `abrir-pr` y `copiar-evidencias.mjs`; estado con `estado.mjs`, presupuesto 2.5 con 1 `CORREGIR` por puerta, reglas de Bloqueado, todo con sonnet y comandos sin `cd` desde la raíz) y verificar con la prueba de frontmatter que la invocación por el modelo está deshabilitada (CA-2)
 - [ ] 7.2 Correr `/orquestador 6` cronometrado y verificar que en 5 minutos o menos queda un único PR en borrador que cita `#<n>` y el change, con `evidencias/issue-<n>/` commiteado; guardar tiempo y salida en `evidencias/issue-1/pruebas/orquestador.md`, y cerrar el PR sin fusionar (CA-6)
 - [ ] 7.3 Provocar las salidas de error con el issue de prueba #6 (cerrado temporalmente da `BLOQUEAR`; Docker apagado da error de **entorno** y el item se detiene) y guardar el resultado en `evidencias/issue-1/pruebas/errores.md` (CA-7)
 
 ## 8. Verificación integral y cierre (C4 a C6)
+
+> Se hace cuando terminen la 7.2 y la 7.3. La 8.2 puede adelantarse con lo ya verificado.
 
 - [ ] 8.1 Prueba de clon limpio: clonar el repo en otra carpeta, abrir Claude Code y verificar que aparecen los 3 agentes del flujo, los 4 skills y los 6 de OpenSpec sin instalar nada; anotar en `evidencias/issue-1/pruebas/clon-limpio.md` (CA-2)
 - [ ] 8.2 Escribir `evidencias/issue-1/trazabilidad.md` con la tabla CA → requisito → tarea → archivo → prueba y verificar con `trazabilidad-grep.mjs` que cada CA-1 a CA-7 tiene requisito, tarea y prueba (CA-1 a CA-7)

@@ -41,6 +41,9 @@ Restricciones:
 8. **Modelos.** Todo con sonnet. `model` y `effort` se pasan en cada invocación y quedan en `agentes-log.md`.
 9. **Un solo modo de 8 pasos, 5 minutos o menos** (decisión del usuario, 2026-11-21): preparador → `contexto.mjs` → propose → G2 (`revisor-salida` con `openspec validate` y `trazabilidad-grep.mjs`) → apply → `build-test` en paralelo con `revisor-reglas` → una corrección solo si hay CRITICAL → commit, PR en borrador y evidencias. Se descartó mantener dos modos (`demo` y normal reducido), porque complicaba el flujo. Salen del flujo el agente `trazabilidad` (en su lugar, un script; ahorra unos 30 s), G3, la trazabilidad final, `entorno-docker`, worktrees, decisor, revisor cruzado y explorar.
 
+10. **Alcance: esta historia solo consolida el orquestador** (decisión del usuario, 2026-11-21). No construye nada de la HU 1b (proyecto Next.js) ni de la HU 2 (Docker y CI/CD); las hacen otras personas o sesiones. Las tareas que necesitan el proyecto o la BD (6.1, 7.2, 7.3 y el grupo 8) esperan a esas historias. Todo lo demás se prueba sin ellas: con fixtures, proyectos falsos, el issue de prueba #6 y ramas remotas de prueba.
+11. **Permisos para los skills del flujo.** En una sesión sin persona, la herramienta Skill pide permiso para cada skill del proyecto (verificado en la tarea 6.3). Por eso `settings.json` permite `Skill(openspec-propose)`, `Skill(openspec-apply-change)`, `Skill(build-test)`, `Skill(commit)` y `Skill(abrir-pr)`.
+
 ## Risks / Trade-offs
 
 - [La sintaxis de permisos con espacio no la acepta la versión instalada] → Se comprueba en A8 con comandos reales. Si falla, se convierte a la forma `Bash(cmd:*)`, que es la que usan los skills de OpenSpec.

@@ -34,4 +34,4 @@ Fuera de alcance:
 - Archivos nuevos: `openspec/`, `.agents/skills/`, `.claude/skills/openspec-*`, `CLAUDE.md`, `.claude/settings.json`, `.claude/orquestador.json`, `.claude/agents/*.md`, `.claude/skills/{orquestador,build-test,commit,abrir-pr}/`, `.claude/fixtures/`, `.gitignore`, `.github/workflows/ci.yml` y `evidencias/issue-1/`.
 - No toca código de la aplicación, el esquema ni el contrato OpenAPI.
 - Dependencias: ninguna librería nueva. Las pruebas usan `node --test`. Requiere OpenSpec 2.1 y `gh` en cada portátil.
-- Las pruebas de `build-test`, `commit` y la corrida completa del orquestador (CA-6, CA-7) dependen de la HU 1b (#2) y del compose mínimo de la HU 2.
+- Esta historia solo consolida el orquestador: no construye el proyecto (HU 1b, #2) ni Docker y CI/CD (HU 2). Las pruebas de `build-test` sobre el proyecto real y la corrida completa del orquestador (CA-6, CA-7) dependen de la HU 1b (#2) y del compose mínimo de la HU 2.
