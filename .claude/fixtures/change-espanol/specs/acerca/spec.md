@@ -14,7 +14,7 @@ El sistema SHALL devolver el texto y la versión de la aplicación a un usuario 
 - **THEN** recibe 200 con un JSON que contiene `texto` y `version`
 
 ### Requisito: Página Acerca de en el menú
-El sistema SHALL mostrar el ítem "Acerca de" en el menú y su página a cualquier usuario autenticado (CA-2).
+El sistema SHALL mostrar el ítem "Acerca de" en el menú y su página a un técnico o administrador autenticado (CA-2).
 
 #### Scenario: Ítem de menú visible (CA-2)
 - **WHEN** un técnico autenticado abre el tablero

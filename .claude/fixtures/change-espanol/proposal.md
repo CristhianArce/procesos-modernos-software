@@ -12,7 +12,7 @@ La historia de práctica #900 pide una página "Acerca de" que muestre el texto 
 ## Capabilities
 
 ### New Capabilities
-- `acerca`: información pública de la aplicación (texto y versión) para usuarios autenticados.
+- `acerca`: información de la aplicación (texto y versión) para usuarios autenticados.
 
 ### Modified Capabilities
 - Ninguna.

@@ -29,10 +29,10 @@
 
 ## 4. Agentes de revisión (B2 a B4)
 
-- [ ] 4.1 Escribir `.claude/agents/trazabilidad.md` (haiku / low, `Read, Grep, Glob`, `disallowedTools: Agent`) y verificar con una corrida sobre `change-ok`, pasando `model` y `effort`, que devuelve una fila por `CA-n` sin criterios sin cobertura; guardar en `evidencias/issue-1/pruebas/trazabilidad.md` (CA-6)
-- [ ] 4.2 Escribir `.claude/agents/revisor-salida.md` (sonnet / medium, ficha 3.5) y verificar con corridas que G2 da `CORREGIR` con un hallazgo de formato sobre `change-espanol` y `APROBADO` sobre `change-ok`, con la cabecera `## G2 — intento <n>`; guardar en `evidencias/issue-1/pruebas/revisor-salida.md` (CA-4)
-- [ ] 4.3 Escribir `.claude/agents/revisor-reglas.md` (sonnet / high, ficha 3.11) y verificar con una corrida que el parche de ejemplo da al menos dos `CRITICAL` con archivo y línea, solo con la escala `CRITICAL`/`WARNING`/`SUGGESTION`; guardar en `evidencias/issue-1/pruebas/revisor-reglas.md` (CA-5)
-- [ ] 4.4 Agregar a `.claude/tests/` una prueba de frontmatter: cada agente de `.claude/agents/` tiene `name`, `description`, `model`, `disallowedTools: Agent` y una sección "Prohibido" (CA-2)
+- [x] 4.1 Escribir `.claude/agents/trazabilidad.md` (haiku / low, `Read, Grep, Glob`, `disallowedTools: Agent`) y verificar con una corrida sobre `change-ok`, pasando `model` y `effort`, que devuelve una fila por `CA-n` sin criterios sin cobertura; guardar en `evidencias/issue-1/pruebas/trazabilidad.md` (CA-6)
+- [x] 4.2 Escribir `.claude/agents/revisor-salida.md` (sonnet / medium, ficha 3.5) y verificar con corridas que G2 da `CORREGIR` con un hallazgo de formato sobre `change-espanol` y `APROBADO` sobre `change-ok`, con la cabecera `## G2 — intento <n>`; guardar en `evidencias/issue-1/pruebas/revisor-salida.md` (CA-4)
+- [x] 4.3 Escribir `.claude/agents/revisor-reglas.md` (sonnet / high, ficha 3.11) y verificar con una corrida que el parche de ejemplo da al menos dos `CRITICAL` con archivo y línea, solo con la escala `CRITICAL`/`WARNING`/`SUGGESTION`; guardar en `evidencias/issue-1/pruebas/revisor-reglas.md` (CA-5)
+- [x] 4.4 Agregar a `.claude/tests/` una prueba de frontmatter: cada agente de `.claude/agents/` tiene `name`, `description`, `model`, `disallowedTools: Agent` y una sección "Prohibido" (CA-2)
 
 ## 5. Preparador (B5)
 
