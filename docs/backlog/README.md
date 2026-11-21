@@ -1,6 +1,6 @@
 # Backlog de historias de usuario
 
-Cada historia tiene su archivo en esta carpeta (el cuerpo del issue de GitHub) y una fila en esta tabla. Se crean con el skill `crea-hu`. El número HU es el de [la propuesta](../propuesta.md), sección 5; el issue es el número que asignó GitHub.
+Cada historia tiene su archivo en esta carpeta (el cuerpo del issue de GitHub) y una fila en esta tabla. Se crean con el skill `crear-hu`. El número HU es el de [la propuesta](../propuesta.md), sección 5; el issue es el número que asignó GitHub.
 
 | HU | Título | Fase | Issue | Depende de | CA |
 |---|---|---|---|---|---|

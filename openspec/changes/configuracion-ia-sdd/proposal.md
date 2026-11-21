@@ -2,7 +2,7 @@
 
 ## Why
 
-Las historias 3 a 10 se van a construir con un orquestador de agentes de Claude Code que sigue el flujo SDD con OpenSpec (issue #1, HU 1a). Hoy el repositorio solo tiene documentación y el skill `crea-hu`. Falta la configuración de IA: reglas del proyecto, permisos, agentes, skills y un CI mínimo, todo versionado y probado. Sin eso, cada integrante tendría que armar el entorno a mano, y el orquestador no podría correr de punta a punta en la demo (entrega: martes 24 de noviembre).
+Las historias 3 a 10 se van a construir con un orquestador de agentes de Claude Code que sigue el flujo SDD con OpenSpec (issue #1, HU 1a). Hoy el repositorio solo tiene documentación y el skill `crear-hu`. Falta la configuración de IA: reglas del proyecto, permisos, agentes, skills y un CI mínimo, todo versionado y probado. Sin eso, cada integrante tendría que armar el entorno a mano, y el orquestador no podría correr de punta a punta en la demo (entrega: martes 24 de noviembre).
 
 ## What Changes
 

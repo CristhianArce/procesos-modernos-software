@@ -60,7 +60,7 @@
 
 > Se hace cuando terminen la 7.2 y la 7.3. La 8.2 puede adelantarse con lo ya verificado.
 
-- [ ] 8.1 Prueba de clon limpio: clonar el repo en otra carpeta, abrir Claude Code y verificar que aparecen los 3 agentes del flujo, los 4 skills y los 6 de OpenSpec sin instalar nada; anotar en `evidencias/issue-1/pruebas/clon-limpio.md` (CA-2)
+- [x] 8.1 Prueba de clon limpio: clonar el repo en otra carpeta, abrir Claude Code y verificar que aparecen los 3 agentes del flujo, los 4 skills y los 6 de OpenSpec sin instalar nada; anotar en `evidencias/issue-1/pruebas/clon-limpio.md` (CA-2)
 - [ ] 8.2 Escribir `evidencias/issue-1/trazabilidad.md` con la tabla CA → requisito → tarea → archivo → prueba y verificar con `trazabilidad-grep.mjs` que cada CA-1 a CA-7 tiene requisito, tarea y prueba (CA-1 a CA-7)
 - [ ] 8.3 Abrir el PR de cierre con `Closes #1`, que declare que CA-4 a CA-7 se verifican con corridas reproducibles, y verificar que el CI termina en verde (CA-1 a CA-7)
 

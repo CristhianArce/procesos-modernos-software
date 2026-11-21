@@ -8,6 +8,7 @@ Tablero de sensores eléctricos: nodos, sensores, lecturas simuladas, alertas po
 
 - `npm run lint | typecheck | test:unit | test:integration | build | seed | e2e` (existen desde la HU 1b).
 - `node --test ".claude/tests/*.test.mjs"`: pruebas de la configuración de IA.
+- **Primera vez en un clon:** abre Claude Code en modo interactivo en la raíz y acepta el diálogo de confianza. Si no lo aceptas, Claude Code ignora las reglas `allow` de `.claude/settings.json` y el orquestador pide permiso en cada paso.
 - `docker compose run --rm flyway migrate info` (HU 2).
 - `openspec validate <change> --strict --type change --no-interactive` y `openspec validate --all --strict --no-interactive`.
 
