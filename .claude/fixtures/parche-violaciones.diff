@@ -1,0 +1,32 @@
+diff --git a/src/app/(tablero)/acerca/page.tsx b/src/app/(tablero)/acerca/page.tsx
+new file mode 100644
+index 0000000..763356a
+--- /dev/null
++++ b/src/app/(tablero)/acerca/page.tsx
+@@ -0,0 +1,13 @@
++export const dynamic = "force-dynamic";
++
++export default async function AcercaPage() {
++  const res = await fetch("http://localhost:3000/api/acerca", { cache: "no-store" });
++  const datos = await res.json();
++  return (
++    <main>
++      <h1>Acerca de</h1>
++      <p>{datos.texto}</p>
++      <p>Versión {datos.version}</p>
++    </main>
++  );
++}
+diff --git a/src/modulos/acerca/service.ts b/src/modulos/acerca/service.ts
+new file mode 100644
+index 0000000..f375fdb
+--- /dev/null
++++ b/src/modulos/acerca/service.ts
+@@ -0,0 +1,7 @@
++import "server-only";
++import { pool } from "@/lib/db";
++
++export async function obtenerAcerca() {
++  const { rows } = await pool.query("SELECT texto, version FROM acerca LIMIT 1");
++  return rows[0];
++}

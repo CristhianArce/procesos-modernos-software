@@ -2,16 +2,16 @@
 
 ## Purpose
 
-Lleva una historia de usuario desde su issue hasta un PR en borrador con evidencias, en modo `demo`, combinando OpenSpec, los agentes del flujo y los skills de compilación, entorno, commit y PR, con salidas de error claras cuando algo no se puede continuar.
+Lleva una historia de usuario desde su issue hasta un PR en borrador con evidencias en 5 minutos o menos, en un solo modo, combinando OpenSpec, los agentes del flujo y los skills de compilación, commit y PR, con salidas de error claras cuando algo no se puede continuar.
 
 ## ADDED Requirements
 
 ### Requirement: Skills imprescindibles disponibles en un clon limpio
-Un clon limpio del repositorio SHALL ofrecer, sin instalar nada más, los skills `orquestador`, `build-test`, `entorno-docker`, `commit` y `abrir-pr`, además de los skills de OpenSpec (CA-2).
+Un clon limpio del repositorio SHALL ofrecer, sin instalar nada más, los skills `orquestador`, `build-test`, `commit` y `abrir-pr`, además de los skills de OpenSpec (CA-2).
 
 #### Scenario: Clon limpio (CA-2)
 - **WHEN** un integrante abre Claude Code en la raíz de un clon limpio
-- **THEN** los cinco skills y los seis skills de OpenSpec aparecen disponibles
+- **THEN** los cuatro skills y los seis skills de OpenSpec aparecen disponibles
 
 ### Requirement: El orquestador solo lo invoca la persona
 El skill `orquestador` SHALL declarar que el modelo no puede invocarlo por su cuenta, de modo que solo arranca cuando la persona lo pide (CA-2).
@@ -20,12 +20,12 @@ El skill `orquestador` SHALL declarar que el modelo no puede invocarlo por su cu
 - **WHEN** se verifica la definición versionada del skill `orquestador`
 - **THEN** declara que la invocación por el modelo está deshabilitada
 
-### Requirement: Modo demo de punta a punta
-Con un issue de práctica abierto y la base de datos levantada y migrada, `/orquestador <n> demo` SHALL terminar en 7 minutos o menos con un único PR en borrador que cita el issue y el nombre del change, y con `evidencias/issue-<n>/` commiteado en su rama (CA-6).
+### Requirement: Orquestación de punta a punta en 5 minutos
+Con un issue abierto y la base de datos levantada y migrada, `/orquestador <n>` SHALL terminar en 5 minutos o menos con un único PR en borrador que cita el issue y el nombre del change, y con `evidencias/issue-<n>/` commiteado en su rama (CA-6).
 
-#### Scenario: Issue de práctica (CA-6)
-- **WHEN** la persona ejecuta `/orquestador <n> demo` sobre un issue de práctica abierto
-- **THEN** en 7 minutos o menos existe un PR en borrador cuyo cuerpo cita `#<n>` y el change, y su rama contiene `evidencias/issue-<n>/` con la trazabilidad CA → requisito → tarea → código → prueba
+#### Scenario: Issue de prueba (CA-6)
+- **WHEN** la persona ejecuta `/orquestador <n>` sobre el issue de prueba abierto
+- **THEN** en 5 minutos o menos existe un PR en borrador cuyo cuerpo cita `#<n>` y el change, y su rama contiene `evidencias/issue-<n>/` con la trazabilidad CA → requisito → tarea → código → prueba
 
 ### Requirement: Apertura de PR idempotente
 El skill `abrir-pr` SHALL devolver el PR existente, sin crear otro, cuando ya hay un PR abierto para la rama de la historia (CA-6).
@@ -60,15 +60,19 @@ El orquestador SHALL guardar el estado de cada item en `.flujo/issue-<n>/` con l
 - **THEN** `evidencias/issue-<n>/` contiene los archivos de evidencia y `agentes.md` generado desde el registro de agentes, y no contiene logs
 
 ### Requirement: Contexto del repositorio antes de proponer
-Antes de proponer el change de una historia en modo `demo`, el orquestador SHALL escribir en `<trabajo>/contexto.md` las tablas y columnas de las migraciones, los módulos con sus puntos de extensión, las semillas y las rutas del contrato, y la propuesta SHALL tratar como pregunta cualquier tabla o módulo que no figure ahí (CA-6).
+Antes de proponer el change de una historia, el orquestador SHALL escribir en `<trabajo>/contexto.md` las tablas y columnas de las migraciones, los módulos con sus puntos de extensión, las semillas y las rutas del contrato, y la propuesta SHALL tratar como pregunta cualquier tabla o módulo que no figure ahí (CA-6).
 
 #### Scenario: Repositorio de ejemplo (CA-6)
 - **WHEN** se genera el contexto de un repositorio con una migración que crea una tabla y agrega una columna, y un módulo con ítem de menú
 - **THEN** `contexto.md` lista la tabla con ambas columnas, el módulo con su ítem de menú, la semilla y las rutas del contrato
 
-### Requirement: Entorno Docker por historia sin choques de puertos
-El skill `entorno-docker` SHALL levantar el entorno de una historia con puertos efímeros, devolver su `BASE_URL` y dejar `docker ps` limpio al bajarlo (CA-6).
+### Requirement: Cobertura de criterios antes de G2
+Antes de la puerta G2, el orquestador SHALL obtener con un script, sin agentes, los requisitos, escenarios y tareas que citan cada `CA-n` del issue y los criterios sin cobertura, y SHALL pasar ese resultado al `revisor-salida` (CA-6).
 
-#### Scenario: Levantar y bajar (CA-6)
-- **WHEN** se levanta el entorno de una historia y luego se baja
-- **THEN** al levantar se obtiene un puerto asignado por Docker, y al bajar no queda ningún contenedor de esa historia
+#### Scenario: Change de ejemplo con cobertura completa (CA-6)
+- **WHEN** se analiza la cobertura del change de ejemplo correcto contra su issue
+- **THEN** cada `CA-n` tiene requisito o escenario y tarea, y la lista de criterios sin cobertura está vacía
+
+#### Scenario: Criterio sin cobertura (CA-6)
+- **WHEN** el issue tiene un `CA-n` que ninguna spec ni tarea cita
+- **THEN** ese criterio aparece en la lista de criterios sin cobertura

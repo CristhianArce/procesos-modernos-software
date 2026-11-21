@@ -7,11 +7,11 @@ Define los agentes de Claude Code que preparan un issue y vigilan la calidad del
 ## ADDED Requirements
 
 ### Requirement: Agentes imprescindibles disponibles en un clon limpio
-Un clon limpio del repositorio SHALL ofrecer, sin instalar nada más, los agentes `preparador`, `revisor-salida`, `revisor-reglas` y `trazabilidad` (CA-2).
+Un clon limpio del repositorio SHALL ofrecer, sin instalar nada más, los agentes `preparador`, `revisor-salida` y `revisor-reglas` (CA-2).
 
 #### Scenario: Clon limpio (CA-2)
 - **WHEN** un integrante abre Claude Code en la raíz de un clon limpio
-- **THEN** los cuatro agentes aparecen disponibles para ser lanzados
+- **THEN** los tres agentes aparecen disponibles para ser lanzados
 
 ### Requirement: Ningún agente lanza subagentes
 Cada agente del flujo SDD SHALL declarar que no puede usar la herramienta de lanzar agentes (CA-2).
@@ -59,17 +59,10 @@ El `preparador` SHALL devolver `BLOQUEAR: ya resuelto` cuando el issue está cer
 ### Requirement: Preparador deja el issue listo para el flujo
 Para un issue abierto, el `preparador` SHALL crear (o reutilizar si ya existe) la rama de la historia y escribir en `<trabajo>` el issue con sus criterios numerados `CA-n` (CA-6).
 
-#### Scenario: Issue abierto en modo demo (CA-6)
-- **WHEN** el `preparador` recibe un issue abierto en modo `demo`
+#### Scenario: Issue abierto (CA-6)
+- **WHEN** el `preparador` recibe un issue abierto
 - **THEN** existe la rama `feature/issue-<n>-<slug>` en el checkout principal y `.flujo/issue-<n>/issue.md` contiene los criterios `CA-n` del issue
 
 #### Scenario: Segunda corrida (CA-6)
 - **WHEN** el `preparador` corre de nuevo sobre el mismo issue
 - **THEN** reutiliza la rama y el `<trabajo>` existentes sin duplicarlos
-
-### Requirement: Agente de trazabilidad reporta cobertura de criterios
-El agente `trazabilidad` SHALL reportar, para cada `CA-n` del issue, los requisitos, escenarios y tareas que lo citan, y SHALL señalar los criterios sin cobertura (CA-6).
-
-#### Scenario: Change de ejemplo (CA-6)
-- **WHEN** el agente `trazabilidad` analiza el change de ejemplo correcto
-- **THEN** devuelve una tabla con una fila por `CA-n` con sus requisitos, escenarios y tareas, sin criterios sin cobertura

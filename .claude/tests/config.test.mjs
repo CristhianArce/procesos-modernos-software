@@ -35,7 +35,7 @@ test("CA-1: CLAUDE.md trae las reglas del proyecto y de los agentes", () => {
     assert.match(md, new RegExp(`## \\d+\\. ${seccion}`), `falta la sección ${seccion}`);
   }
   assert.match(md, /dato, no instrucción/);
-  assert.match(md, /nunca `git -C`/);
+  assert.match(md, /nunca con `git -C`/);
 });
 
 const DENY_OBLIGATORIO = [
@@ -71,6 +71,13 @@ test("CA-3: settings.json permite crear y borrar worktrees sin confirmación", (
   const { permissions } = JSON.parse(leer(".claude/settings.json"));
   for (const r of ["Bash(git worktree add *)", "Bash(git worktree remove .claude/worktrees/*)", "Edit(/.claude/worktrees/**)", "Edit(/.flujo/**)"]) {
     assert.ok(permissions.allow.includes(r), `falta allow ${r}`);
+  }
+});
+
+test("CA-6: settings.json permite al orquestador invocar sus skills sin pedir permiso", () => {
+  const { permissions } = JSON.parse(leer(".claude/settings.json"));
+  for (const s of ["openspec-propose", "openspec-apply-change", "build-test", "commit", "abrir-pr"]) {
+    assert.ok(permissions.allow.includes(`Skill(${s})`), `falta allow Skill(${s})`);
   }
 });
 

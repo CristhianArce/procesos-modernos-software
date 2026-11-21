@@ -53,7 +53,12 @@
       "Bash(mkdir -p .flujo/*)",
       "Bash(cp .env .claude/worktrees/*)",
       "Edit(/.flujo/**)",
-      "Edit(/.claude/worktrees/**)"
+      "Edit(/.claude/worktrees/**)",
+      "Skill(openspec-propose)",
+      "Skill(openspec-apply-change)",
+      "Skill(build-test)",
+      "Skill(commit)",
+      "Skill(abrir-pr)"
     ],
     "deny": [
       "Bash(gh pr merge *)",

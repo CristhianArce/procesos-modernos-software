@@ -15,7 +15,7 @@ Aplicación para administrar nodos y sensores de una red eléctrica, simular lec
 ## Documentación
 
 - [Propuesta de arquitectura y SDD](docs/propuesta.md): requisitos, arquitectura, backlog, reglas del proyecto, cronograma y riesgos.
-- [Flujo del orquestador](docs/flujo-orquestador.md): pasos 0 a 10 y puertas de calidad G1 a G4.
+- [Flujo del orquestador](docs/flujo-orquestador.md): la secuencia única de 8 pasos que corre para la entrega (5 minutos o menos) y, como referencia, el flujo completo con los pasos 0 a 10 y las puertas G1 a G4.
 - [Especificación de skills y agentes](docs/especificacion-skills-agentes-orquestador.md): ficha de cada pieza del orquestador.
 - [Plan de construcción del entorno SDD](docs/plan-construccion-sdd.md): orden de construcción, niveles y calendario.
 
@@ -87,9 +87,9 @@ Credenciales de demostración: pendiente (las crea la semilla de la HU 3).
 
 ## Historias de usuario
 
-Las historias son issues de GitHub, con criterios de aceptación numerados (`CA-n`). Cada una se implementa con el orquestador (`/orquestador <n>`) siguiendo el [flujo del orquestador](docs/flujo-orquestador.md), con un change de OpenSpec en `openspec/changes/<nombre>/`.
+Las historias son issues de GitHub, con criterios de aceptación numerados (`CA-n`). Cada una se implementa con el orquestador (`/orquestador <n>`), que tiene un solo modo: la secuencia de 8 pasos del [flujo del orquestador](docs/flujo-orquestador.md), con un change de OpenSpec en `openspec/changes/<nombre>/` y un PR en borrador al final. Antes de correrlo, la BD de desarrollo debe estar levantada y migrada (los dos primeros comandos de arriba) y `node_modules` instalado.
 
 ## Evidencias
 
-- `evidencias/issue-<n>/`: decisiones, puertas de calidad, verificación, trazabilidad y agentes que intervinieron en cada historia.
+- `evidencias/issue-<n>/`: decisiones, puerta de calidad G2 (con su trazabilidad CA → requisito → tarea), verificación y agentes que intervinieron en cada historia.
 - `AGENTS_LOG.md`: índice de todas las historias con sus rechazos y correcciones.
