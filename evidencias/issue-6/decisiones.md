@@ -1,0 +1,4 @@
+| # | Fecha | Fase | Decisión | Decidió | Votos | Evidencia | Alternativas descartadas | Revisar |
+|---|-------|------|----------|---------|-------|-----------|--------------------------|---------|
+| 1 | 2026-11-21 | Propuesta | Modo práctica: `package.json` mínimo (typescript, vitest, zod, react, react-dom y tipos) con scripts `typecheck` y `test:unit`; sin Next.js | Orquestador (técnica, modo práctica) | — | design.md, decisión 1; no existe package.json | Instalar Next.js completo (más lento, innecesario para pruebas unitarias) | Al llegar la HU 1b |
+| 2 | 2026-11-21 | Propuesta | Sesión inyectada en `crearGetAcerca(obtenerSesion)`; `route.ts` falla cerrado (401) hasta que exista `sessionFromRequest` | Orquestador (técnica, modo práctica) | — | design.md, decisión 2; no existe src/lib | Sesión falsa por cabecera (inseguro) | Al llegar la HU 1b |
