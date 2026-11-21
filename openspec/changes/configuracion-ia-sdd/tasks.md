@@ -10,7 +10,7 @@
 - [x] 1.6 Crear `.claude/tests/config.test.mjs` con `node --test`: `config.yaml` sin claves duplicadas y con todas las reglas como texto; `settings.json` con cada regla `deny` obligatoria; `.gitignore` con `.flujo/` y `.claude/worktrees/`. Verificar que `node --test ".claude/tests/*.test.mjs"` pasa (CA-1, CA-3)
 - [x] 1.7 Verificación manual en una sesión nueva: `gh pr merge`, `git commit --amend`, `git rebase`, `git reset` y `git push --force` se rechazan; crear y borrar `.claude/worktrees/prueba` no pide confirmación. Anotar el resultado en `evidencias/issue-1/pruebas/permisos.md` (CA-3)
 - [x] 1.8 CI mínimo `.github/workflows/ci.yml` (job `configuracion-ia`: OpenSpec 2.1, `node --test ".claude/tests/*.test.mjs"`, `openspec validate --all --strict --no-interactive`; job `proyecto` condicionado a `package.json`) y verificar que el CI del PR de arranque termina en verde (CA-1, CA-3; Derivado: decisión #21)
-- [ ] 1.9 Abrir y fusionar el PR de arranque a `main` con `Refs #1`, y verificar que `main` contiene `openspec/`, `CLAUDE.md` y `.claude/settings.json` (Derivado: decisión #22)
+- [x] 1.9 Abrir y fusionar el PR de arranque a `main` con `Refs #1`, y verificar que `main` contiene `openspec/`, `CLAUDE.md` y `.claude/settings.json` (Derivado: decisión #22)
 
 ## 2. Fixtures y validación del formato de specs (B0)
 
@@ -36,7 +36,7 @@
 
 ## 5. Preparador (B5)
 
-- [ ] 5.1 Crear los 3 issues de práctica con `crea-hu` (plan 2.0) y verificar que existen con la etiqueta `practica` (CA-6, CA-7)
+- [ ] 5.1 Crear los 3 issues de práctica con `crear-hu` (plan 2.0) y verificar que existen con la etiqueta `practica` (CA-6, CA-7)
 - [ ] 5.2 Escribir `.claude/agents/preparador.md` (sonnet / medium, ficha 3.1) y verificar con el issue de práctica 1 en `demo` que crea `feature/issue-<n>-<slug>` y `.flujo/issue-<n>/issue.md` con `CA-n`, y que una segunda corrida reutiliza todo; guardar en `evidencias/issue-1/pruebas/preparador.md` (CA-6)
 - [ ] 5.3 Verificar que con un issue de práctica cerrado el `preparador` devuelve `BLOQUEAR: ya resuelto` sin crear rama ni worktree, y reabrir el issue; guardar en la misma evidencia (CA-7)
 
