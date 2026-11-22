@@ -1,0 +1,41 @@
+# Design
+
+## Context
+
+La app base (HU 1b) ya compila y pasa lint, typecheck y pruebas, pero no hay Docker, ni base de datos local, ni CD. El CI mínimo (PR #13) solo valida la configuración de IA y el proyecto. El equipo pidió que el CI de cada PR sea lo más ligero posible, porque la nota pesa más en usar el SDD con agilidad que en el pipeline. Las pruebas de integración actuales invocan los handlers con `Request` y no usan BD.
+
+## Goals / Non-Goals
+
+**Goals:**
+- Un entorno local reproducible con un solo `.env` y cuatro comandos.
+- Un CI de PR rápido que detecte roturas de calidad y de la imagen.
+- Una imagen publicada y pública después de cada cambio de código en `main`.
+
+**Non-Goals (diferidos por decisión del equipo, 22 nov 2026):**
+- **CodeQL.** La propuesta lo menciona como no bloqueante; no se agrega para no alargar el CI. Se retoma si sobra tiempo.
+- **Postgres de servicio, `flyway migrate info` y script de orden de migraciones en el CI.** Hoy ninguna prueba usa BD y no hay migraciones salvo la línea base. Se agregan cuando la HU 3 traiga la primera migración o prueba con BD.
+- **Protección de `main`.** Se decidió no protegerla por ahora. `CODEOWNERS` existe pero no obliga: GitHub pide revisores sin impedir el merge. La revisión por otra cuenta es un acuerdo del equipo.
+- **Despliegue público.** Sigue pospuesto (propuesta, sección 4). La imagen publicada permite retomarlo con Render sin cambiar el build.
+- **Dependabot.** La propuesta lo menciona; no está en los criterios del issue #18.
+
+## Decisions
+
+1. **Imagen.** `Dockerfile` multi-etapa (`deps`, `build`, `runner`) sobre `node:24-slim`, basado en el ejemplo oficial `with-docker`. La etapa final copia `.next/standalone`, `.next/static` y `public/`, corre como el usuario `node` y ejecuta `node server.js` con `PORT=3000` y `HOSTNAME=0.0.0.0`. `DATABASE_URL`, `SESSION_SECRET` y `METRICS_TOKEN` se pasan al ejecutar, nunca al construir, y `.dockerignore` excluye `.env*` (RN-2). Se agregó `public/.gitkeep` porque el `COPY` falla si la carpeta no existe.
+2. **Compose.** Tres servicios: `db` (`postgres:17-alpine`, `pg_isready`), `flyway` (`flyway/flyway:11`, `profiles: ["tools"]` para que `up` no lo arranque, espera a que `db` esté sano) y `app`. Los puertos se publican sin puerto fijo (`["5432"]`, `["3000"]`) para que varias historias corran a la vez, y `docker compose port` devuelve el asignado. Las variables obligatorias usan `${VAR:?mensaje}`, así que un `.env` incompleto falla antes de arrancar y nombra la variable (CA-2). El healthcheck de `app` usa `node -e fetch(...)` porque `node:24-slim` no trae `curl` ni `wget`. El nombre del proyecto es `${COMPOSE_PROJECT_NAME:-tablero}`.
+3. **Orden de arranque y semilla.** `up -d --wait db` → `run --rm flyway migrate info` → `npm run seed` → `up -d --build --wait app`. Un `up` a secas no migra ni carga la semilla. Como el puerto de la BD es efímero, el `DATABASE_URL` del `seed` se arma con `docker compose port db 5432`; el README lo documenta. La migración de línea base solo habilita `pgcrypto` (`V202611211900__linea_base.sql`): sin ella, `flyway migrate info` no tendría nada que aplicar.
+4. **CI ligero.** En cada PR corren dos jobs en paralelo, además de `configuracion-ia`: `proyecto` (lint, typecheck, `test:unit`, `test:integration`, build) e `imagen`. `seguridad` (gitleaks sobre el historial completo y `npm audit --audit-level=high`) corre solo con `push` a `main` (RN-1). Se acepta que un hallazgo de seguridad se vea después del merge a cambio de un CI de PR corto; el costo es que `main` puede quedar en rojo. Las pruebas de integración van en el PR porque hoy no usan BD y no cuestan tiempo. Una concurrencia `ci-${{ github.ref }}` cancela la corrida anterior del mismo PR.
+5. **Job `imagen`.** Construye con `docker/build-push-action` con `push: false` y `load: true`, usa caché `gha`, y ejecuta la imagen con valores de relleno (`DATABASE_URL`, `SESSION_SECRET` y `METRICS_TOKEN` de CI), porque `/api/health` no usa la BD ni los secretos. Reintenta hasta 30 veces y, si falla, imprime `docker logs`. Es el job más lento (cerca de 3 minutos con caché frío).
+6. **CD.** `cd.yml` corre con `push` a `main` y `workflow_dispatch`, con `paths-ignore` para `openspec/**`, `evidencias/**`, `docs/**` y `AGENTS_LOG.md`. Los permisos del workflow son `contents: read` y el job `publicar` suma `packages: write`. Inicia sesión con `GITHUB_TOKEN`, publica `latest` y `sha-<commit>` con `docker/metadata-action` y termina con `docker buildx imagetools inspect`. La concurrencia `cd` no cancela una publicación en curso: una nueva espera.
+7. **Paquete público.** Los paquetes de `ghcr.io` suelen nacer privados, pero este heredó la visibilidad pública del repositorio gracias a la etiqueta `org.opencontainers.image.source` que agrega `metadata-action`. Se verificó con un token anónimo (HTTP 200) y no hizo falta cambiar la configuración del paquete.
+8. **Solo `linux/amd64`.** El build del CD no pide `arm64`, así que `docker pull` en un Mac con Apple Silicon falla con `no matching manifest` y requiere `--platform linux/amd64`. Se acepta: Render y los portátiles x86 no se ven afectados, y emular `arm64` alargaría el CD. Quien tenga Apple Silicon construye con `docker compose`.
+9. **Plantillas, etiquetas y revisores.** Las plantillas son `.md` y copian el cuerpo de las plantillas de los skills `crear-hu` y `abrir-pr`, para que lo escrito a mano y lo generado tengan el mismo formato. La plantilla de PR cambia solo la primera línea por un comentario. Las etiquetas se crean con `gh label create` y llevan descripción propia; `linea-base` y `clase` usan los colores que fija `crear-hu`. `CODEOWNERS` tiene una sola regla (`*`) con los cuatro colaboradores (`danielfms`, `CristhianArce`, `Luis-Castilla`, `jfelixrojas`); las migraciones no tienen regla aparte. El autor no cuenta como revisor, así que basta con otro de la lista.
+10. **Verificación de los CA.** Los criterios de esta historia son de infraestructura y no tienen pruebas de Vitest con nombre `#18 CA-n`. Se verifican así: CA-3, CA-4 y CA-5 con los propios workflows (cada corrida en GitHub Actions es la prueba automática), CA-2 y CA-7 con comandos que se pueden repetir (`docker compose config`, `gh label list`, la API de `codeowners/errors`), y CA-1 y CA-6 con una corrida manual documentada. CA-1 no se automatiza en el CI para mantenerlo ligero. Es una excepción a la regla de nombrar pruebas por criterio; las tareas y `evidencias/issue-18/trazabilidad.md` dicen qué corrida o comando verifica cada uno.
+
+## Risks / Trade-offs
+
+- [Un hallazgo de gitleaks o `npm audit` aparece después del merge y deja `main` en rojo] → el equipo lo corrige en un PR pequeño; se acepta por el CI ligero (decisión #4).
+- [Escenarios de fallo no ejercitados: gitleaks con un secreto real y `npm audit` con una vulnerabilidad alta] → solo se vio el camino en verde; se confía en el comportamiento de las herramientas.
+- [Sin protección de `main`, alguien puede fusionar sin revisión o con el CI en rojo] → acuerdo del equipo: otra cuenta aprueba y se espera el CI.
+- [El job `imagen` es el más lento] → si estorba, se limita a `main` o a los PR que tocan `Dockerfile`, `package*.json` o `src/`.
+- [La imagen solo existe para `amd64`] → ver decisión #8.
+- [Si el CD falla, la imagen publicada queda desactualizada] → no afecta a la app ni al CI; se corrige en un PR pequeño y se relanza con `workflow_dispatch`.
