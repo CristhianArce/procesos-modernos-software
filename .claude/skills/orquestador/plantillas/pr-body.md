@@ -7,6 +7,10 @@ Closes #<n>
 | CA | Estado | Tarea | Prueba (`#<n> CA-k`) |
 |---|---|---|---|
 
+## Decisiones a revisar
+
+Ninguna. <!-- o: | # | Decisión | Por qué se tomó sin la persona | (filas de decisiones.md con Revisar: sí) -->
+
 ## Tareas pendientes
 
 Ninguna. <!-- o: | Tarea | Motivo (decisiones.md) | -->

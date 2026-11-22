@@ -59,9 +59,9 @@ Qué trae el repo y no hay que configurar a mano:
 - `CLAUDE.md`: reglas del proyecto (stack, capas, datos, seguridad, SDD y reglas de agentes).
 - `.claude/settings.json`: permisos compartidos. La lista `allow` cubre los comandos del flujo y la lista `deny` bloquea merge, aprobar PR, force push, amend, rebase, reset y leer `.env`. Los ajustes personales van en `.claude/settings.local.json` (ignorado por git), nunca en el compartido.
 - `.claude/skills/`: `orquestador`, `build-test`, `commit`, `abrir-pr`, `crear-hu` (redacta y publica historias como issues) y los skills de OpenSpec. `.claude/agents/`: `preparador`, `revisor-salida` (G2), `revisor-reglas` y `trazabilidad` (pospuesto).
-- `.claude/worktrees/` (worktrees de cada historia) y `.flujo/` (`<trabajo>` de cada issue) están fuera de git.
+- `.flujo/` (`<trabajo>` de cada issue) está fuera de git.
 
-Si varias sesiones de Claude trabajan en el mismo clon, no cambies de rama en el checkout principal: usa un worktree (`git worktree add .claude/worktrees/<nombre> origin/main`).
+Para cualquier cambio, actualiza `main` y crea una rama: `git switch main`, `git pull` y `git switch -c <rama>`. El flujo no usa worktrees.
 
 ## Cómo ejecutar (cuando la HU 1 y la HU 2 estén fusionadas)
 
@@ -106,7 +106,7 @@ Cada historia de usuario es un issue de GitHub con criterios de aceptación nume
 
 - La [configuración inicial](#configuración-inicial-una-vez-por-portátil) hecha (`gh auth status` en verde, OpenSpec 2.1 y Claude Code).
 - El issue existe, abierto, sin PR y con sus `CA-n` (las historias del backlog llevan la etiqueta `historia`). Para redactarlo y publicarlo, en Claude Code: `/crear-hu <descripción o fila del backlog>`.
-- El checkout principal está en `main`, actualizado y **limpio** (`git switch main`, `git pull`, `git status` sin cambios; `.flujo/` se ignora). El orquestador crea la rama de la historia en este checkout, así que corre **una sola sesión de Claude en ese clon** mientras dura; si necesitas otra, usa un clon o un worktree aparte.
+- El checkout principal está en `main`, actualizado y **limpio** (`git switch main`, `git pull`, `git status` sin cambios; `.flujo/` se ignora). El orquestador crea la rama de la historia en este checkout, así que corre **una sola sesión de Claude en ese clon** mientras dura; si necesitas otra, usa otro clon.
 - La BD de desarrollo está levantada y migrada y las dependencias instaladas:
 
   ```

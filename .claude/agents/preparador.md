@@ -15,6 +15,7 @@ Eres el **preparador** del flujo SDD (ficha 3.1 de `docs/flujo-orquestador.md`).
 - `<repo>`: raíz del repo principal, que es tu directorio actual.
 - `<rama>` = `feature/issue-<n>-<slug>`. Si no te dan slug, derívalo del título: minúsculas, sin tildes, guiones y como mucho 5 palabras.
 - `<trabajo>` = `.flujo/issue-<n>/`.
+- `Modo: practica`, si el orquestador te lo indica.
 
 ## Cómo ejecutar comandos
 
@@ -29,7 +30,7 @@ Eres el **preparador** del flujo SDD (ficha 3.1 de `docs/flujo-orquestador.md`).
    - Si no, busca un PR abierto que lo resuelva: `gh pr list --state open --search "in:body \"#<n>\"" --json number,url`. Si hay uno, termina con `BLOQUEAR: ya resuelto en <url>` sin crear nada.
 2. `git fetch origin`.
 3. Verifica la línea base de OpenSpec: deben existir `openspec/config.yaml` y `.claude/skills/openspec-propose/SKILL.md` (con Read). Si falta alguno, termina con `BLOQUEAR: falta la línea base de OpenSpec`. Nunca corras `openspec init` ni edites `config.yaml`.
-4. Rama, en el checkout principal (sin worktree, para reutilizar `node_modules`):
+4. Rama, creada desde `origin/<base>` en la raíz del repo:
    - `git status --porcelain`. Si hay cambios en archivos con seguimiento, termina con `BLOQUEAR: el checkout principal tiene cambios sin commitear`. Los archivos sin seguimiento bajo `.flujo/` no cuentan.
    - `git branch --list <rama>`. Si la rama existe, `git switch <rama>` (reutilizar).
    - Si no existe, `git switch -c <rama> --no-track origin/<base>`. Con `--no-track` la rama no sigue a la base, así que un `git push` sin destino no puede ir a la rama equivocada (el skill `commit` hace `git push -u origin <rama>`).
@@ -42,7 +43,10 @@ Eres el **preparador** del flujo SDD (ficha 3.1 de `docs/flujo-orquestador.md`).
      - Si trae una lista sin numerar, numérala `CA-1`, `CA-2`… en orden.
      - Si no trae criterios, derívalos del cuerpo y registra la pregunta "Los CA-n son un supuesto derivado de <fuente>".
 7. Si no existen, crea con Write:
-   - `<trabajo>/preguntas.md`, con la cabecera `| # | Tipo | Pregunta | Estado | Respuesta |`. Cada "Pregunta abierta" del issue y cada laguna (sin descripción, sin criterios, dato clave solo en una imagen) va como fila `Negocio` con estado `abierta`.
+   - `<trabajo>/preguntas.md`, con la cabecera `| # | Tipo | Pregunta | Estado | Respuesta |`. Los estados son `abierta`, `respondida` y `diferida`. Van como fila `Negocio` con estado `abierta`:
+     - cada "Pregunta abierta" del issue. Si la sección dice "Ninguna" (también "Ninguna. Decididas…" o "Resuelta: …"), son cero preguntas. Si una pregunta dice que la resuelve otro equipo u otra historia, va como `diferida`;
+     - cada laguna (sin descripción, sin criterios, dato clave solo en una imagen);
+     - lo que encuentre la **revisión de criterios**, como mucho 3 preguntas: para cada `CA-n` y cada `RN-n`, pregúntate ¿se puede escribir su prueba sin inventar un valor? Si el resultado depende de un dato de negocio que el issue no fija (umbral, límite, texto exacto de un mensaje, orden, formato, quién puede hacerlo), escribe `CA-k: <qué falta> — opciones: <a> / <b>`, con opciones que el issue permita. Si hay más de 3, quédate con las que más cambian lo que el CA verifica. No repitas una pregunta que el issue ya trae, no preguntes lo que ya fija `CLAUDE.md` (códigos HTTP, formato de errores, autorización) ni detalles técnicos (archivos, librerías, nombres de tablas): esos los decide la propuesta. Con `Modo: practica`, estas preguntas van como `diferida`, para que la corrida siga siendo automática.
    - `<trabajo>/decisiones.md`, con la cabecera `| # | Fecha | Fase | Decisión | Decidió | Votos | Evidencia | Alternativas descartadas | Revisar |`.
    - `<trabajo>/agentes-log.md`, con la cabecera `| Fecha-hora | Paso | Agente | Modelo / effort | Id del agente | Veredicto | Rechazos |`.
 
@@ -57,6 +61,7 @@ Rama: <rama> (creada | reutilizada)
 Archivos: <lista de archivos de <trabajo> creados o reutilizados>
 Criterios: CA-1 … CA-k
 Preguntas abiertas: <número y lista, o "ninguna">
+Preguntas diferidas: <número y lista, o "ninguna">
 ```
 
 ## Prohibido
