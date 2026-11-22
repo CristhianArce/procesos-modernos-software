@@ -9,7 +9,7 @@ Aplicación para administrar nodos y sensores de una red eléctrica, simular lec
 - Una sola app **Next.js 16** (App Router) para interfaz y API: páginas con Server Components y componentes `"use client"`, API en **Route Handlers + Zod**.
 - **Postgres** con `pg` y SQL escrito a mano; migraciones versionadas con **Flyway**.
 - **Docker** (`docker compose` en local) y **GitHub Actions** (lint, pruebas, seguridad, build de la imagen).
-- Imagen publicada en **GitHub Container Registry**: `ghcr.io/cristhianarce/procesos-modernos-software`. El despliegue en un entorno público está pospuesto.
+- Imagen publicada en **GitHub Container Registry**: `ghcr.io/cristhianarce/procesos-modernos-software`. La app corre desplegada en **Render** (plan gratuito) en https://tablero-oa6d.onrender.com con esa imagen, sin base de datos hasta la HU 3: se duerme tras 15 minutos sin uso y la primera petición tarda cerca de 1 minuto. El CD avisa a Render al publicar una imagen nueva.
 - SDD con **OpenSpec** en lugar de Spec Kit: su numeración secuencial choca cuando varios estudiantes trabajan a la vez y su ciclo no cabe en la demo de 10 minutos (ver [propuesta §4](docs/propuesta.md#4-stack-tecnológico-y-decisiones)).
 
 ## Documentación

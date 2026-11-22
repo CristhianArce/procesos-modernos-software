@@ -93,7 +93,7 @@ Pospuesto (no corre en la secuencia): worktrees, explorar y G1 (`openspec-explor
    - Aprueba (especializada si hay impacto, por ejemplo migraciones) y hace merge; si pide cambios: validador → 5 → 6 → 7 → 8.
 
 10. **Después del merge** [OpenSpec] — Ejecuta: GitHub Actions (CD) y skill `cierre-post-merge`
-    - El CD construye la imagen de Docker y la publica en GitHub Container Registry (`ghcr.io/<owner>/<repo>:latest` y `:sha-<commit>`); el skill verifica que la imagen quedó publicada y cierra el issue. El despliegue a un ambiente está pospuesto.
+    - El CD construye la imagen de Docker y la publica en GitHub Container Registry (`ghcr.io/<owner>/<repo>:latest` y `:sha-<commit>`); el skill verifica que la imagen quedó publicada y cierra el issue. El último paso del CD avisa a Render (deploy hook) para que ejecute la imagen nueva; se omite si falta el secreto.
     - Archiva el change sobre `<base>` actualizada (`openspec archive <change> --yes`), uno a la vez, para que los deltas de varias historias no choquen, y regenera el índice `AGENTS_LOG.md`.
     - **Puerta de calidad G4** (agente `revisor-salida`), antes de abrir el PR: specs consolidadas, validación estricta y sin tareas pendientes. Su sección se agrega a `evidencias/issue-<n>/gates.md` y `agentes.md`.
     - Abre el PR `chore/archivar-<change>` (segundo PR de la historia, con `openspec/`, el índice y las evidencias de G4), en borrador si G4 no aprobó; la persona lo fusiona.
@@ -118,7 +118,7 @@ Pospuesto (no corre en la secuencia): worktrees, explorar y G1 (`openspec-explor
 **Cómo funciona**:
 - Las migraciones versionadas viven en el repo, por ejemplo `db/migration/V<AAAAMMDDHHmm>__<descripcion>.sql`.
 - Una herramienta las aplica en orden y registra cada una en una tabla de historial dentro de la propia BD, así que cada migración corre una sola vez por ambiente. Ejemplos: Flyway, Liquibase o la del framework (EF Core, Alembic, Prisma, Rails).
-- El agente nunca toca una BD compartida: escribe la migración y la prueba en la BD efímera. Mientras el despliegue esté pospuesto, no hay BD compartida: quien ejecute la imagen publicada aplica las migraciones con el servicio `flyway` de `docker compose` (perfil `tools`, solo con `run --rm`; `db` y `app` publican puertos efímeros en el host).
+- El agente nunca toca una BD compartida: escribe la migración y la prueba en la BD efímera. Hoy el despliegue en Render no tiene base de datos y no hay BD compartida: quien ejecute la imagen publicada aplica las migraciones con el servicio `flyway` de `docker compose` (perfil `tools`, solo con `run --rm`; `db` y `app` publican puertos efímeros en el host).
 
 | Momento | Quién | Qué hace con las migraciones |
 |---|---|---|
@@ -126,14 +126,14 @@ Pospuesto (no corre en la secuencia): worktrees, explorar y G1 (`openspec-explor
 | Paso 5 | `build-test` | En la secuencia única, `test:integration` corre contra la BD de desarrollo levantada y migrada. Pospuesto: `entorno-docker`, con una BD efímera que arranca vacía y aplica todas las migraciones |
 | Paso 6 | skill `abrir-pr` | Si el diff trae migraciones, etiqueta el PR `migracion` para revisión especializada |
 | Paso 7 | CI | `flyway migrate info` sobre un service container vacío (`migrate` ya valida checksums; un `validate` previo fallaría por migraciones pendientes) y un script que compara la versión mínima nueva del PR con la máxima de `origin/<base>` |
-| Paso 10 | CD | Publica la imagen; las migraciones viajan en el repo y se aplican con `docker compose` donde se ejecute la imagen. Cuando se retome el despliegue: `migrate` en cada ambiente antes de desplegar, con `environment` y aprobación en producción |
+| Paso 10 | CD | Publica la imagen; las migraciones viajan en el repo y se aplican con `docker compose` donde se ejecute la imagen. Cuando Render tenga base de datos (HU 3): `migrate` contra ella antes de desplegar, con `environment` y aprobación en producción |
 
 **Reglas para que sea seguro**:
 - **Versiones con timestamp**, no correlativas, para que dos PRs en paralelo no choquen. Una versión duplicada hace fallar a Flyway por sí sola. Una versión menor que la última de `<base>` no se detecta migrando una BD vacía, así que un script del CI compara la versión mínima nueva del PR con la máxima de `db/migration/` en `origin/<base>`; por eso, al sincronizar en el paso 5, si la migración del change quedó con un timestamp menor que la última de `<base>`, se renombra con uno nuevo (aún no está fusionada, así que no viola la inmutabilidad).
 - **Compatibles hacia atrás** (expandir y luego contraer): migración y despliegue no son atómicos, así que la versión anterior de la app debe seguir funcionando con el esquema nuevo. Borrar o renombrar columnas va en un PR posterior.
 - **Sin rollback automático**: un error se corrige con una nueva migración. El `undo` de Flyway es de pago; Liquibase sí tiene rollback.
 - **Migraciones inmutables**: una migración ya aplicada no se edita. `flyway validate` detecta cambios por checksum. Las vistas y procedimientos van como repetibles (`R__`).
-- **Usuario de BD propio del CD** (cuando se retome el despliegue), con permisos de DDL, guardado en los secretos del `environment` de GitHub.
+- **Usuario de BD propio del CD** (cuando Render tenga base de datos), con permisos de DDL, guardado en los secretos del `environment` de GitHub.
 - **Migraciones largas o con bloqueos**: se revisan de forma especializada y, si hace falta, se ejecutan en una ventana de mantenimiento.
 
 ### 1.4 Diagrama

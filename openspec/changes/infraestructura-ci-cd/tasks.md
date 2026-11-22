@@ -15,11 +15,13 @@
 - [x] 2.2 Job `imagen` en `ci.yml` (build sin push, caché `gha` y arranque con consulta a `/api/health`); verificar con el check `Imagen de Docker` en verde del PR #15 (CA-3; Derivado: decisión #5)
 - [x] 2.3 Job `seguridad` (gitleaks y `npm audit --audit-level=high`) con `if: github.event_name == 'push'`; verificar que está omitido en el PR #15 y en verde en la corrida de `main` tras el PR #16 (CA-4; Derivado: decisión #4)
 
-## 3. Publicación de la imagen
+## 3. Publicación de la imagen y despliegue
 
 - [x] 3.1 `.github/workflows/cd.yml` con `paths-ignore`, permisos mínimos, concurrencia que no cancela y etiquetas `latest` y `sha-<commit>`; verificar la sintaxis YAML con el módulo `yaml` que trae OpenSpec y revisar el log de la corrida de `main` del PR #16, que publica ambas etiquetas (CA-5; Derivado: decisión #6)
 - [x] 3.2 Comprobar que el CD no corre con merges de documentación; verificar en `gh run list --workflow cd.yml`: hay corridas para los PR #16, #17 y #29, y ninguna para #19 y #28, que solo tocaron `docs/` (CA-5; Derivado: decisión #6)
 - [x] 3.3 Comprobar el paquete público y la imagen publicada; verificar con un token anónimo de `ghcr.io` (HTTP 200 sobre el manifiesto de `latest`) y ejecutando la imagen con `--platform linux/amd64`, que responde 200 en `/api/health` (CA-6; Derivado: decisión #7)
+- [x] 3.4 `render.yaml` con el servicio web basado en imagen, plan gratuito, `PORT=3000`, health check y secretos generados por Render; verificar que `GET https://tablero-oa6d.onrender.com/api/health` responde 200 con `status` igual a `ok` y que `/` sin sesión redirige a `/login` (CA-8; Derivado: decisión #12)
+- [x] 3.5 Paso `Avisar a Render` al final de `cd.yml`, con `RENDER_DEPLOY_HOOK_URL` como secreto y `if` que lo omite si falta; verificar con la corrida del CD de `main` tras el PR #33, donde el paso sale en verde y no omitido, y con una prueba local del comando contra un servidor que responde 200 y 404 (CA-8; Derivado: decisión #12)
 
 ## 4. Plantillas, etiquetas y revisores
 
@@ -29,8 +31,8 @@
 
 ## 5. Integración y aceptación de la historia
 
-- [x] 5.1 Evidencia por criterio en `evidencias/issue-18/trazabilidad.md`; verificar que cada `CA-1` a `CA-7` apunta a una corrida o a un comando (CA-1 a CA-7; Derivado: decisión #10)
-- [x] 5.2 `openspec validate infraestructura-ci-cd --strict --type change --no-interactive` y `openspec validate --all --strict --no-interactive` en verde (CA-1 a CA-7)
+- [x] 5.1 Evidencia por criterio en `evidencias/issue-18/trazabilidad.md`; verificar que cada `CA-1` a `CA-7` apunta a una corrida o a un comando (CA-1 a CA-8; Derivado: decisión #10)
+- [x] 5.2 `openspec validate infraestructura-ci-cd --strict --type change --no-interactive` y `openspec validate --all --strict --no-interactive` en verde (CA-1 a CA-8)
 
 ## Workflow follow-up
 
