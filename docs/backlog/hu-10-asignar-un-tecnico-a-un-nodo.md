@@ -19,13 +19,14 @@ La red eléctrica es simulada, sin control de equipos reales. Los roles y usuari
 
 - **RN-1:** Solo un usuario con rol técnico puede asignarse a un nodo.
 - **RN-2:** El panel se enchufa por `paneles.ts`: no se edita la página de la ficha de la HU 4.
+- **RN-3:** Un nodo tiene como máximo un técnico asignado; asignar otro reemplaza al anterior.
 
 ## Fuera de alcance
 
 - Registrar mantenimientos y mostrar su historial (lo cubre la HU 11).
 - Notificar al técnico de su asignación (la HU 7 solo cubre alertas de umbral).
-- Fijar la cardinalidad por inferencia: mientras PA-1 siga abierta, el caso de prueba usa una sola asignación.
-- Decidir qué pasa con el historial de mantenimientos al cambiar el técnico (pregunta abierta de la HU 11).
+- Asignar varios técnicos a un mismo nodo (decisión 1).
+- El historial de mantenimientos al cambiar el técnico: lo conserva la HU 11 (su decisión 3).
 - Implementar funcionalidades o contratos propietarios de otras historias.
 
 ## Notas técnicas (no vinculantes)
@@ -46,15 +47,30 @@ Aplicación, API y BD de prueba reales, migradas y con datos conocidos: administ
 
 Cubre **CA-1**. **CA-2** (usuario no técnico → 400, inexistente → 404), **CA-3** (nodo inexistente → 404) y **CA-4** (técnico → 403) se prueban con pruebas de integración de los handlers, comprobando que la asignación no cambia.
 
+## Decisiones de la HU 4 que aplican
+
+La HU 4 ([#21](https://github.com/CristhianArce/procesos-modernos-software/issues/21)) cerró sus preguntas abiertas el 2026-11-22. Lo que sigue es consecuencia de esas decisiones y no cambia los CA de esta historia.
+
+- **Borrado en cascada (decisión 5):** al eliminar un nodo, la HU 4 elimina también sus sensores y lecturas. La tabla propia de asignaciones referencia al nodo con borrado en cascada, para que eliminar el nodo no falle ni deje filas huérfanas.
+- **El técnico solo consulta (decisión 6):** la lista y la ficha del nodo las pueden ver el administrador y el técnico; crear, editar y eliminar nodos o sensores es solo del administrador. El panel de asignación lo ven ambos roles; asignar es solo del administrador (CA-4).
+
 ## Dependencias
 
 - HU 3 ([#20](https://github.com/CristhianArce/procesos-modernos-software/issues/20): usuarios y roles) y HU 4 ([#21](https://github.com/CristhianArce/procesos-modernos-software/issues/21): nodos, ficha y registro de paneles).
 - Sin dependencias de las HU 6 a 9. La HU 11 ([#43](https://github.com/CristhianArce/procesos-modernos-software/issues/43)) depende de esta.
 
+## Decisiones tomadas
+
+Resueltas por el equipo el 2026-11-22. Reemplazan a las preguntas abiertas de la versión anterior.
+
+| # | Pregunta | Decisión | Alternativa descartada |
+|---|---|---|---|
+| 1 | Técnicos por nodo (PA-1) | Uno; asignar otro reemplaza al anterior | Varios (obligaría a revisar el CA-2 de la HU 11) |
+| 2 | Contratos de las HU 3 y HU 4 (PA-2) | Se reutiliza lo que implementen: rol `tecnico` de `usuarios`, nodo por identificador y panel por `paneles.ts` | Coordinarlos antes con sus responsables |
+
 ## Preguntas abiertas
 
-- **PA-1:** ¿Un nodo puede tener varios técnicos? — opciones: uno / varios. CA-1 asume uno. Cambiarlo obliga a revisar esta historia y el CA-2 de la HU 11.
-- **PA-2:** ¿Qué contratos reales de las HU 3 y HU 4 dan la identidad y el rol del técnico, la existencia del nodo y el montaje del panel? — opciones: reutilizar la implementación cuando exista / coordinarla antes con sus responsables.
+Ninguna. Decididas en "Decisiones tomadas".
 
 ## Definición de hecho
 

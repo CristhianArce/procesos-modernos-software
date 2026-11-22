@@ -18,13 +18,16 @@ La red eléctrica es simulada, sin control de equipos reales. La asignación de 
 ## Reglas de negocio
 
 - **RN-1:** El historial se muestra en el panel de mantenimiento de la ficha del nodo, que se enchufa por `paneles.ts`: no se edita la página de la ficha de la HU 4.
+- **RN-2:** Solo el técnico asignado al nodo registra mantenimientos; ni otro técnico ni el administrador pueden hacerlo.
+- **RN-3:** Un mantenimiento tiene fecha con hora y descripción. El historial se ordena del más reciente al más antiguo; si dos coinciden en fecha y hora, va primero el que se registró después.
+- **RN-4:** Cada mantenimiento conserva a quien lo realizó: cambiar el técnico asignado al nodo no modifica el historial.
 
 ## Fuera de alcance
 
 - Asignar o cambiar el técnico de un nodo (lo cubre la HU 10).
 - Programar mantenimientos futuros o recordatorios.
 - Editar o borrar mantenimientos ya registrados.
-- Fijar campos adicionales o el tratamiento de la autoría histórica por inferencia.
+- Campos adicionales del mantenimiento, como tipo o estado (decisión 2).
 - Implementar funcionalidades o contratos propietarios de otras historias.
 
 ## Notas técnicas (no vinculantes)
@@ -33,7 +36,7 @@ La red eléctrica es simulada, sin control de equipos reales. La asignación de 
 - Endpoints sugeridos: `GET|POST /api/mantenimiento/nodos/{id}/registros` (se agregan a `contracts/openapi.yaml`).
 - Autorización en servidor: `sessionFromRequest(req)` + `requireRole(sesion, "tecnico")` dentro del handler, con el envoltorio `conHttp`; el servicio comprueba además la asignación real del técnico al nodo. Un técnico válido no asignado recibe 403 y no se guarda nada (CA-2); ocultar el formulario no sustituye el permiso. La lectura del historial reutiliza los permisos de la ficha del nodo, sin inventar otra matriz.
 - Datos: tabla propia de registros con migración Flyway propia (no se modifica la migración de la HU 10); semilla en `db/seed/mantenimiento.sql`. Se leen la asignación de la HU 10 y `nodos` y `usuarios` de las HU 4 y HU 3 sin modificarlos. El registro tiene fecha y descripción (CA-1 y CA-3); tipos, nombres de columnas y límites de la descripción se concretan con los contratos reales, no se inventan.
-- **Recomendación pendiente:** conservar la autoría y las fechas de cada mantenimiento al cambiar la asignación. Es una recomendación, no una regla aprobada: PA-3 sigue abierta.
+- **Autoría (decisión 3):** cada mantenimiento conserva a quien lo realizó y su fecha aunque cambie la asignación del nodo.
 - SQL solo en `repo.ts`, Zod, servicio y handlers delgados; sin Server Actions, librerías nuevas ni cambios al núcleo.
 
 ### E2E
@@ -44,7 +47,14 @@ Aplicación, API y BD de prueba reales, migradas y con datos conocidos: técnico
 2. T1 recarga la ficha: ambos registros permanecen en el mismo orden.
 3. T2, técnico válido no asignado, intenta registrar por la API un mantenimiento con datos válidos: recibe 403 y el historial sigue siendo exactamente `[M2, M1]`.
 
-Cubre **CA-1** y **CA-2**. **CA-3** (descripción vacía o fecha inválida → 400) y **CA-4** (nodo inexistente → 404) se prueban con pruebas de integración de los handlers. El caso no ejercita una reasignación, para no dar por resuelta PA-3.
+Cubre **CA-1** y **CA-2**. **CA-3** (descripción vacía o fecha inválida → 400) y **CA-4** (nodo inexistente → 404) se prueban con pruebas de integración de los handlers. El caso no ejercita una reasignación.
+
+## Decisiones de la HU 4 que aplican
+
+La HU 4 ([#21](https://github.com/CristhianArce/procesos-modernos-software/issues/21)) cerró sus preguntas abiertas el 2026-11-22. Lo que sigue es consecuencia de esas decisiones y no cambia los CA de esta historia.
+
+- **Borrado en cascada (decisión 5):** al eliminar un nodo, la HU 4 elimina también sus sensores y lecturas. La tabla propia de registros de mantenimiento referencia al nodo con borrado en cascada, para que eliminar el nodo no falle ni deje filas huérfanas.
+- **El técnico solo consulta (decisión 6):** la lista y la ficha del nodo las pueden ver el administrador y el técnico; crear, editar y eliminar nodos o sensores es solo del administrador. El historial de mantenimientos, que reutiliza los permisos de la ficha, lo pueden leer ambos roles.
 
 ## Dependencias
 
@@ -52,12 +62,20 @@ Cubre **CA-1** y **CA-2**. **CA-3** (descripción vacía o fecha inválida → 4
 - HU 3 ([#20](https://github.com/CristhianArce/procesos-modernos-software/issues/20): usuarios y roles) y HU 4 ([#21](https://github.com/CristhianArce/procesos-modernos-software/issues/21): nodos, ficha y registro de paneles).
 - Sin dependencias de las HU 6 a 9.
 
+## Decisiones tomadas
+
+Resueltas por el equipo el 2026-11-22. Reemplazan a las preguntas abiertas de la versión anterior.
+
+| # | Pregunta | Decisión | Alternativa descartada |
+|---|---|---|---|
+| 1 | Quién puede registrar (PA-1) | Solo el técnico asignado | Cualquier técnico / también el administrador |
+| 2 | Datos del mantenimiento (PA-2) | Fecha y descripción | Además tipo y estado |
+| 3 | Historial al cambiar el técnico (PA-3) | Se conserva con quien lo realizó | Se reasigna al nuevo técnico |
+| 4 | Fecha y orden del historial (PA-4) | Fecha con hora; en empate, primero el registrado más tarde | Solo fecha; en empate, orden de registro |
+
 ## Preguntas abiertas
 
-- **PA-1:** ¿Quién puede registrar? — opciones: solo el asignado / cualquier técnico / también el administrador. CA-1 y CA-2 asumen solo el asignado.
-- **PA-2:** ¿Qué datos lleva el mantenimiento? — opciones: fecha y descripción / también tipo y estado. No se agregan campos sin acuerdo.
-- **PA-3:** ¿Cambiar el técnico de un nodo conserva el historial con quien lo realizó o lo reasigna? — opciones: conservar / reasignar. Se recomienda conservar.
-- **PA-4:** ¿Qué representación y semántica tienen la fecha y el orden del historial (solo fecha o fecha y hora, desempate entre registros de la misma fecha)? — opciones: definirlo en el diseño de esta historia / acordarlo antes con el equipo.
+Ninguna. Decididas en "Decisiones tomadas".
 
 ## Definición de hecho
 
