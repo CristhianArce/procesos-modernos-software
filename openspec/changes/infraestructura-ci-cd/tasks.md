@@ -22,6 +22,8 @@
 - [x] 3.3 Comprobar el paquete público y la imagen publicada; verificar con un token anónimo de `ghcr.io` (HTTP 200 sobre el manifiesto de `latest`) y ejecutando la imagen con `--platform linux/amd64`, que responde 200 en `/api/health` (CA-6; Derivado: decisión #7)
 - [x] 3.4 `render.yaml` con el servicio web basado en imagen, plan gratuito, `PORT=3000`, health check y secretos generados por Render; verificar que `GET https://tablero-oa6d.onrender.com/api/health` responde 200 con `status` igual a `ok` y que `/` sin sesión redirige a `/login` (CA-8; Derivado: decisión #12)
 - [x] 3.5 Paso `Avisar a Render` al final de `cd.yml`, con `RENDER_DEPLOY_HOOK_URL` como secreto y `if` que lo omite si falta; verificar con la corrida del CD de `main` tras el PR #33, donde el paso sale en verde y no omitido, y con una prueba local del comando contra un servidor que responde 200 y 404 (CA-8; Derivado: decisión #12)
+- [x] 3.6 Base Postgres en `render.yaml` (`tablero-db`, `fromDatabase` hacia `DATABASE_URL`) y paso `Migrar y sembrar la base de Render` en `cd.yml`, antes de `Avisar a Render`; verificar ejecutando el mismo script contra un Postgres local desechable: la primera corrida aplica la línea base y la semilla, la segunda informa «up to date» y no duplica filas (CA-9; Derivado: decisión #13)
+- [ ] 3.7 Base creada por el Blueprint y corrida real del CD con el secreto `RENDER_DATABASE_URL`; verificar con el paso `Migrar y sembrar la base de Render` en verde en `gh run view` y la app sana en la URL pública. Pendiente: requiere sincronizar el Blueprint en Render y crear el secreto, que son pasos del dueño del repositorio (CA-9; Derivado: decisión #13)
 
 ## 4. Plantillas, etiquetas y revisores
 
@@ -31,8 +33,8 @@
 
 ## 5. Integración y aceptación de la historia
 
-- [x] 5.1 Evidencia por criterio en `evidencias/issue-18/trazabilidad.md`; verificar que cada `CA-1` a `CA-7` apunta a una corrida o a un comando (CA-1 a CA-8; Derivado: decisión #10)
-- [x] 5.2 `openspec validate infraestructura-ci-cd --strict --type change --no-interactive` y `openspec validate --all --strict --no-interactive` en verde (CA-1 a CA-8)
+- [x] 5.1 Evidencia por criterio en `evidencias/issue-18/trazabilidad.md`; verificar que cada `CA-1` a `CA-9` apunta a una corrida o a un comando (CA-1 a CA-9; Derivado: decisión #10)
+- [x] 5.2 `openspec validate infraestructura-ci-cd --strict --type change --no-interactive` y `openspec validate --all --strict --no-interactive` en verde (CA-1 a CA-9)
 
 ## Workflow follow-up
 

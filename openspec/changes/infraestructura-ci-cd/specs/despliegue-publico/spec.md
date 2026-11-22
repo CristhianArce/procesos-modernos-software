@@ -38,3 +38,29 @@ El CD SHALL avisar al servicio de Render, con su deploy hook, después de public
 #### Scenario: Revisión de `render.yaml` (CA-8)
 - **WHEN** se revisa `render.yaml`
 - **THEN** `SESSION_SECRET` y `METRICS_TOKEN` usan `generateValue: true` y ningún campo contiene un valor secreto ni la URL del deploy hook
+
+### Requirement: Base de datos del servicio público
+`render.yaml` SHALL definir una base Postgres gratuita y pasarle a la app su URL interna como `DATABASE_URL`; el repositorio MUST NOT contener la clave de esa base (CA-9; Derivado: decisión #13).
+
+#### Scenario: Revisión de `render.yaml` con la base (CA-9)
+- **WHEN** se revisa `render.yaml`
+- **THEN** existe una base con `plan: free`, y `DATABASE_URL` del servicio sale de `fromDatabase` con `property: connectionString`, sin ningún valor escrito
+
+### Requirement: Migraciones y semillas en el CD
+El CD SHALL aplicar, antes de avisar a Render, las migraciones de `db/migration` con Flyway y las semillas de `db/seed` en la base de Render, usando el secreto `RENDER_DATABASE_URL`, y SHALL omitir el paso cuando el secreto no existe; si una migración o una semilla falla, el CD MUST terminar en rojo sin llamar al deploy hook (CA-9; Derivado: decisión #13).
+
+#### Scenario: Migraciones pendientes con el secreto configurado (CA-9)
+- **WHEN** el CD corre y `RENDER_DATABASE_URL` existe
+- **THEN** el paso `Migrar y sembrar la base de Render` aplica las migraciones pendientes y las semillas, termina en verde y `Avisar a Render` corre después
+
+#### Scenario: Repetición sin cambios (CA-9)
+- **WHEN** el CD corre otra vez sin migraciones ni semillas nuevas
+- **THEN** Flyway informa que el esquema está al día y las semillas no duplican filas
+
+#### Scenario: Una migración falla (CA-9)
+- **WHEN** una migración o semilla devuelve un error
+- **THEN** el paso falla, `Avisar a Render` no corre y el CD termina en rojo
+
+#### Scenario: Sin secreto de base (CA-9)
+- **WHEN** el CD corre y `RENDER_DATABASE_URL` no existe
+- **THEN** el paso `Migrar y sembrar la base de Render` se omite y el CD termina en verde

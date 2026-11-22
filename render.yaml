@@ -1,8 +1,19 @@
 # Blueprint de Render: ejecuta la imagen publicada por cd.yml en ghcr.io (el paquete es público).
 # Los servicios basados en imagen no se redespliegan solos al publicar una imagen nueva:
 # hay que usar "Manual Deploy" en el panel o llamar al deploy hook del servicio.
-# Todavía sin base de datos: la app solo usa /api/health hasta la HU 3. La base se agrega
-# aquí cuando exista la primera migración (la base gratuita de Render vence a los 30 días).
+# La base gratuita de Render vence a los 30 días (con 14 de gracia) y solo hay una por cuenta.
+# El esquema y las semillas los aplica cd.yml con el secreto RENDER_DATABASE_URL (la "External
+# Database URL"), por eso la base acepta conexiones externas; la app usa la URL interna.
+databases:
+  - name: tablero-db
+    plan: free
+    region: virginia
+    databaseName: tablero
+    user: tablero
+    ipAllowList:
+      - source: 0.0.0.0/0
+        description: CD de GitHub Actions (sus IP cambian en cada corrida)
+
 services:
   - type: web
     name: tablero
@@ -16,6 +27,10 @@ services:
       # Mismo puerto que EXPOSE y ENV PORT del Dockerfile (Render usa 10000 si no se indica).
       - key: PORT
         value: 3000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: tablero-db
+          property: connectionString
       # Render genera valores aleatorios la primera vez; nunca van en el repositorio.
       - key: SESSION_SECRET
         generateValue: true

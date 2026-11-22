@@ -10,10 +10,10 @@ La app base (HU 1b, #2) compila y pasa sus pruebas, pero no hay forma de levanta
 - `.github/workflows/ci.yml` ampliado: job `proyecto` (lint, typecheck, pruebas y build) y job `imagen` (construye y arranca la imagen) en cada PR; job `seguridad` (gitleaks y `npm audit`) solo al fusionar en `main`. Cubre CA-3 y CA-4.
 - `.github/workflows/cd.yml`: al fusionar en `main` publica `ghcr.io/cristhianarce/procesos-modernos-software` con las etiquetas `latest` y `sha-<commit>`; los merges que solo tocan documentación no publican. Cubre CA-5 y CA-6.
 - `render.yaml` (servicio web gratuito basado en la imagen publicada) y un último paso de `cd.yml` que avisa a Render con el deploy hook para que ejecute la imagen nueva. Cubre CA-8.
+- Base de datos Postgres gratuita en `render.yaml` y un paso de `cd.yml` que, antes de avisar, aplica las migraciones con Flyway y las semillas con `psql` usando el secreto `RENDER_DATABASE_URL`. Cubre CA-9.
 - Plantillas de historia y de PR, `CODEOWNERS` y las etiquetas del repositorio (`bloqueado`, `migracion`, `revision-especializada`, `escalado`, `linea-base`, `clase`). Cubre CA-7.
 
 Fuera de alcance (issue #18):
-- base de datos en Render y migraciones en el entorno público (las agrega la HU 3);
 - tablas de dominio, semilla de datos y login (HU 3 a 5);
 - configuración de IA (HU 1a) y app base (HU 1b).
 

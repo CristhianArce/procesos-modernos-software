@@ -345,7 +345,6 @@ Hoy es el sábado 21 de noviembre de 2026 y la entrega es el martes 24 a las 18:
   - La automatización de `cierre-post-merge`. El archivo se hace a mano con los mismos comandos, igual después del merge y uno a la vez.
   - El hook `guardia`.
   - Prometheus y Grafana.
-  - La base de datos en Render y las migraciones en el entorno público (las agrega la HU 3).
 
 **Cronograma**
 

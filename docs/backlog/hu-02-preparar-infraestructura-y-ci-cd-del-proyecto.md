@@ -16,6 +16,7 @@ Es la HU 2 de la propuesta (sección 5) y la fase 2 del [flujo del orquestador](
 - **CA-6:** Dada la imagen publicada, cuando se consulta `latest` sin iniciar sesión en `ghcr.io`, entonces responde. Y cuando se ejecuta con `DATABASE_URL`, `SESSION_SECRET` y `METRICS_TOKEN`, `GET /api/health` responde 200.
 - **CA-7:** Dado el repositorio, cuando se consultan sus plantillas y sus etiquetas, entonces existen una plantilla de historia de usuario, una de PR y las etiquetas `historia`, `bloqueado`, `migracion`, `revision-especializada` y `escalado`.
 - **CA-8:** Dada una imagen nueva publicada por el CD, cuando el CD avisa a Render, entonces el servicio público ejecuta esa imagen y `GET /api/health` responde 200 en su URL. Si Render rechaza el aviso, el CD termina en rojo.
+- **CA-9:** Dado un push a `main` con el secreto de la base de Render configurado, cuando el CD corre, entonces aplica las migraciones y las semillas a la base de Render antes de avisar al servicio, y la app pública usa esa base. Si una migración falla, el CD termina en rojo sin avisar a Render. Si el secreto no existe, el paso se omite.
 
 ## Reglas de negocio
 
@@ -24,10 +25,10 @@ Es la HU 2 de la propuesta (sección 5) y la fase 2 del [flujo del orquestador](
 - **RN-3:** Los puertos del host son efímeros, para que varias historias o personas corran a la vez sin chocar.
 - **RN-4:** El CD solo se dispara al fusionar en `main` y solo tiene permiso de escritura de paquetes en el job que publica.
 - **RN-5:** Los secretos de la app en Render (`SESSION_SECRET` y `METRICS_TOKEN`) los genera Render y no están en el repositorio; la URL del aviso de despliegue es un secreto del repositorio y, si falta, el aviso se omite.
+- **RN-6:** La base de Render es gratuita (vence a los 30 días, con 14 de gracia). Su URL externa es un secreto del repositorio; el CD la usa con la imagen de Flyway y con `psql`, y la app usa la URL interna que le inyecta Render.
 
 ## Fuera de alcance
 
-- Base de datos en Render y migraciones en el entorno público (las agrega la HU 3 con su primera migración).
 - Tablas de dominio, semilla de datos y login (HU 3 a 5). Aquí solo el mecanismo de semilla.
 - Configuración de IA, `CLAUDE.md` y skills (HU 1a) y la app base (HU 1b).
 
