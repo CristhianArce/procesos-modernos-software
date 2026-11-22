@@ -18,9 +18,13 @@ Es la HU 3 de la propuesta (sección 5) y la primera historia de la línea base.
 
 ## Reglas de negocio
 
-- **RN-1:** Los roles son `admin` y `tecnico` (propuesta, sección 4). Cada usuario tiene exactamente uno.
+- **RN-1:** Los roles son `administrador` y `tecnico` (propuesta, sección 4; son los literales de `ROLES` en `src/lib/session.ts`). Cada usuario tiene exactamente uno.
 - **RN-2:** La contraseña nunca se guarda ni se registra en claro; el log no incluye contraseñas ni tokens.
 - **RN-3:** La sesión es un JWT firmado con `SESSION_SECRET` y se verifica siempre en el servidor.
+- **RN-4:** El usuario inicia sesión con su nombre de usuario, que es único.
+- **RN-5:** La contraseña se guarda con `scrypt` del módulo `crypto` de Node (sal aleatoria por usuario) y se compara en tiempo constante. No se agrega ninguna librería.
+- **RN-6:** El límite de login es de 5 intentos fallidos por minuto, contados por IP y por usuario; al superarlo responde 429 (CA-4).
+- **RN-7:** La sesión dura 8 horas, valor que ya fija `DURACION_SESION_S` en el núcleo; esta historia no lo cambia.
 
 ## Fuera de alcance
 
@@ -30,9 +34,10 @@ Es la HU 3 de la propuesta (sección 5) y la primera historia de la línea base.
 
 ## Notas técnicas (no vinculantes)
 
-- Módulo: `src/modulos/auth/` · página `src/app/login/page.tsx` · API `src/app/api/auth/login/route.ts` (pública, con `rate-limit.ts`) y cierre de sesión en `src/app/api/auth/`.
+- Módulo: `src/modulos/auth/` · página `src/app/login/page.tsx` · API `src/app/api/auth/login/route.ts` (pública, con rate limit) y cierre de sesión en `src/app/api/auth/`.
+- Rate limit: `src/lib/` no tiene `rate-limit.ts` y el núcleo no se edita, así que esta historia crea el limitador dentro de `src/modulos/auth/` (en memoria, suficiente para una sola instancia).
 - Endpoints sugeridos: `POST /api/auth/login` y `POST /api/auth/logout` (se agregan a `contracts/openapi.yaml`).
-- Datos: tabla `usuarios` con migración Flyway y semilla `db/seed/auth.sql` con un administrador y un técnico de demostración.
+- Datos: tabla `usuarios` (nombre de usuario único, hash de contraseña, rol) con migración Flyway y semilla `db/seed/auth.sql` con un administrador y un técnico de demostración. La semilla guarda solo el hash; las contraseñas de demostración se documentan en el README.
 - Contador de negocio opcional: `auth_login_fallidos_total` en `src/modulos/auth/metrics.ts`.
 - Puntos de extensión: ninguno (usa el núcleo de sesión que dejó la HU 1b).
 
@@ -42,11 +47,13 @@ Es la HU 3 de la propuesta (sección 5) y la primera historia de la línea base.
 
 ## Preguntas abiertas
 
-- ¿Con qué se inicia sesión? — opciones: correo electrónico / nombre de usuario. Los CA dicen "usuario" para no fijarlo.
-- ¿Cómo se guarda la contraseña? — opciones: `scrypt` del módulo `crypto` de Node, sin dependencias nuevas / `bcrypt`, que exige aprobar una librería nueva (CLAUDE.md).
-- ¿Cuál es el límite de intentos y la ventana de tiempo del rate limit? — la propuesta pide 429 pero no el valor. Opciones: por ejemplo 5 intentos por minuto por IP y usuario / otro valor.
-- ¿Cuánto dura la sesión? — opciones: 8 horas / 24 horas / otro.
-- ¿Cuáles son las credenciales de demostración? — la propuesta las deja pendientes; la semilla las define y el README las documenta.
+Ninguna. Decididas el 22 de noviembre de 2026:
+
+- Se inicia sesión con **nombre de usuario** (RN-4).
+- La contraseña se guarda con **`scrypt`** de Node, sin librerías nuevas (RN-5).
+- El rate limit es de **5 intentos fallidos por minuto** por IP y usuario (RN-6).
+- La sesión dura **8 horas**, como ya fija el núcleo (RN-7).
+- Las credenciales de demostración son **dos cuentas fijas en la semilla** (un administrador y un técnico); la semilla guarda solo el hash y el README documenta las contraseñas.
 
 ## Definición de hecho
 
