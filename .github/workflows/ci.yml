@@ -1,5 +1,6 @@
 # CI mínimo: rápido en cada PR; los controles de seguridad corren solo al fusionar en main.
-# La HU 2 agrega después Postgres de servicio, Flyway, CodeQL y el CD que publica la imagen.
+# El job proyecto levanta Postgres de servicio y aplica las migraciones con Flyway para las pruebas
+# de integración con base de datos (desde la HU 3). CodeQL y el script de orden de migraciones siguen diferidos.
 name: CI
 
 on:
@@ -35,6 +36,23 @@ jobs:
     name: Proyecto (lint, typecheck, pruebas, build)
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Base desechable solo para este job; las credenciales no protegen nada.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://ci:ci@localhost:5432/ci
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
@@ -49,8 +67,14 @@ jobs:
         run: npm run typecheck
       - name: Pruebas unitarias
         run: npm run test:unit
-      # Hoy las pruebas de integración invocan los handlers con Request y no usan BD.
-      # Cuando una necesite Postgres (HU 3), la HU 2 agrega el servicio a este job.
+      # Mismas migraciones y misma imagen de Flyway que docker compose (db/migration, inmutables).
+      - name: Aplicar las migraciones (Flyway)
+        run: |
+          docker run --rm --network host -v "$PWD/db/migration:/flyway/sql:ro" \
+            -e FLYWAY_URL=jdbc:postgresql://localhost:5432/ci \
+            -e FLYWAY_USER=ci -e FLYWAY_PASSWORD=ci \
+            -e FLYWAY_LOCATIONS=filesystem:/flyway/sql \
+            flyway/flyway:11 migrate
       - name: Pruebas de integración
         run: npm run test:integration
       - name: Build
