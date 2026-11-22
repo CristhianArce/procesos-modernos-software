@@ -6,3 +6,4 @@ Cada historia tiene su archivo en esta carpeta (el cuerpo del issue de GitHub) y
 |---|---|---|---|---|---|
 | 1a | [Configurar la IA del flujo SDD (OpenSpec, agentes, skills)](hu-01a-configurar-la-ia-del-flujo-sdd.md) | Habilitadora | #1 | HU 1b (#2) y HU 2 solo para CA-6 y CA-7 | 7 |
 | 1b | [Preparar las herramientas de desarrollo del proyecto](hu-01b-preparar-las-herramientas-de-desarrollo-del-proyecto.md) | Habilitadora | #2 | – (su change espera el `openspec init` de la HU 1a, #1) | 7 |
+| 2 | [Preparar infraestructura y CI/CD del proyecto](hu-02-preparar-infraestructura-y-ci-cd-del-proyecto.md) | Habilitadora | #18 | HU 1a (#1) y HU 1b (#2) | 7 |
