@@ -1,0 +1,5 @@
+# Revisores del repositorio. GitHub los pide como revisores de cada PR según los archivos que toca;
+# el autor del PR no cuenta, así que basta con que apruebe otro de la lista.
+# Solo obliga si la protección de main activa "Require review from Code Owners" (la configura un administrador).
+# Las migraciones de db/migration/ las revisan los mismos dueños: no hay regla aparte.
+* @danielfms @CristhianArce @Luis-Castilla @jfelixrojas
