@@ -53,7 +53,7 @@ La aplicación es un monolito modular: una sola app Next.js 16 (App Router) que 
                   │  └──────────────────────────────────────────────┘                            │
                   │  Módulos: auth y roles · nodos y sensores · lecturas · simulador ·           │
                   │           alertas                                                            │
-                  │  [ Historias 6 a 10 se enchufan con su propia carpeta ]                      │
+                  │  [ Historias 6 a 12 se enchufan con su propia carpeta ]                      │
                   └──────────────────────────────────────▲───────────────────────────────────────┘
                                                          │ docker pull
                                ┌─────────────────────────┴──────────────────────────┐
@@ -74,7 +74,7 @@ Cómo se integran interfaz y API dentro de la misma app:
 - **Autenticación**: `proxy.ts` (el antiguo `middleware.ts`, renombrado en Next.js 16; corre en Node) solo redirige a `/login` las **páginas** sin cookie. Su `config.matcher` excluye `/api/:path*`, `/login`, `/_next/*` y los archivos estáticos, para no romper el healthcheck, el login ni las llamadas `fetch` a la API. La verificación real está en `src/lib/dal.ts`: `verifySession(token)` (pura, verifica el JWT con `jose`), `sessionFromRequest(req)` para los Route Handlers (se puede probar con Vitest), `sessionFromCookies()` (usa `cookies()`) para páginas y layouts, y `requireRole()` encima de ambas.
 - **Rutas públicas**: `GET /api/health` no exige sesión y devuelve solo `{ status }`; `GET /api/metrics` exige `Authorization: Bearer $METRICS_TOKEN` (comparación en tiempo constante; 404 si la variable no está definida); `POST /api/auth/login` es pública y tiene rate limit.
 
-Las historias de clase (6 a 10) se enchufan agregando su propia carpeta, sin tocar el núcleo. GitHub Actions ejecuta pruebas, valida las migraciones y los escaneos de seguridad, construye la imagen en cada PR y, al fusionar en `main`, la publica en GitHub Container Registry. Cualquiera puede ejecutarla con `docker compose` apuntando a esa imagen.
+Las historias de clase (6 a 12) se enchufan agregando su propia carpeta, sin tocar el núcleo. GitHub Actions ejecuta pruebas, valida las migraciones y los escaneos de seguridad, construye la imagen en cada PR y, al fusionar en `main`, la publica en GitHub Container Registry. Cualquiera puede ejecutarla con `docker compose` apuntando a esa imagen.
 
 | Componente | Responsabilidad |
 | --- | --- |
@@ -192,7 +192,7 @@ e2e/*.spec.ts · playwright.config.ts · vitest.config.mts (alias de server-only
 
 ## 5. Backlog de historias de usuario
 
-Las dos primeras historias crean el proyecto y la infraestructura sobre la que corre el SDD; las cinco historias de clase dependen solo de la línea base y no entre sí.
+Las dos primeras historias crean el proyecto y la infraestructura sobre la que corre el SDD; las historias de clase dependen solo de la línea base y no entre sí, salvo la 11, que sale de dividir la 10 original y depende de ella, y la 12, que sale de dividir la 7 original y depende de ella.
 
 | # | Historia | Fase | Depende de | Entrega |
 | --- | --- | --- | --- | --- |
@@ -202,10 +202,12 @@ Las dos primeras historias crean el proyecto y la infraestructura sobre la que c
 | 4 | CRUD de nodos y sensores, con simulador de lecturas (voltaje, corriente, potencia) | Línea base | 3 | `nodos`, `sensores`, `lecturas`, `POST /api/simulador` |
 | 5 | Dashboard con última lectura, gráfica por sensor y alertas por umbral | Línea base | 4 | Panel del frontend, `alertas` |
 | 6 | Aislar nodo: botón de corte en la ficha del nodo (campo `estado` conectado o desconectado) | Clase | Línea base | `nodos` (columna `estado` ya creada en la base) |
-| 7 | Notificar a técnicos cuando salta una alerta de umbral (centro de notificaciones en la interfaz) | Clase | Línea base (historia 5) | Módulo `notificaciones`, suscrito a las alertas con `on-alerta.ts` |
+| 7 | Centro de notificaciones del técnico: consultar y marcar como leídas | Clase | Línea base (historia 3) | Módulo `notificaciones` con tabla propia, lee `usuarios` |
 | 8 | Usuarios o dispositivos afectados por un nodo | Clase | Línea base | Tabla propia `nodo_usuarios` |
 | 9 | Histórico con filtros y exportación a CSV | Clase | Línea base | Lee solo `lecturas` |
-| 10 | Registro de mantenimiento y asignación de técnico a un nodo | Clase | Línea base | Tabla propia, lee `nodos` y `usuarios` |
+| 10 | Asignación de un técnico a un nodo | Clase | Línea base | Módulo `mantenimiento` con tabla propia de asignaciones, lee `nodos` y `usuarios` |
+| 11 | Registro de los mantenimientos de un nodo por el técnico asignado | Clase | Línea base e historia 10 | Tabla propia de registros en el módulo `mantenimiento`, lee la asignación de la historia 10 |
+| 12 | Crear una notificación por técnico cuando salta una alerta de umbral | Clase | Línea base (historia 5) e historia 7 | Suscriptor `on-alerta.ts` en el módulo `notificaciones`, escribe en la tabla de la historia 7 |
 
 **Cambios frente al borrador anterior:** las historias 1 y 2 pasan a ser habilitadoras (proyecto SDD e infraestructura), porque todo lo demás se construye con ellas y su especificación es la primera evidencia de trazabilidad. Las construye el equipo con Claude Code en modo interactivo (cada una con su change de OpenSpec; la 1 en dos issues, `herramientas-desarrollo` para el herramientas de desarrollo y `configuracion-ia-sdd` para OpenSpec, reglas, permisos, agentes y skills, para que la base quede lista el primer día sin esperar al orquestador), porque tocan Docker y `.github/`, que el orquestador tiene prohibido; el orquestador trabaja desde la historia 3. Para mantener cinco historias base, el simulador se une al CRUD (historia 4) y las alertas al dashboard (historia 5). Las historias de clase no cambian: la 7 se dispara con cualquier alerta de umbral y la 8 usa una tabla propia, así que ninguna depende de otra.
 
@@ -213,8 +215,8 @@ Las dos primeras historias crean el proyecto y la infraestructura sobre la que c
 
 - Rutas por carpeta (enrutamiento de Next.js): cada historia agrega `src/app/(tablero)/<modulo>/page.tsx` (interfaz), `src/app/api/<modulo>/route.ts` (API) y `src/modulos/<modulo>/` (`schema.ts`, `service.ts`, `repo.ts`, `ui/`, `__tests__/`); no hay archivo central de rutas. `proxy.ts`, `src/lib/` y el layout del tablero son núcleo y ninguna historia los edita: los permisos por ruta se declaran en el propio handler con `requireRole`.
 - Registro de menú: cada módulo declara su ítem en `src/modulos/<modulo>/menu.ts` (`{ etiqueta, href, roles, orden }`) y `src/nav/registro.ts` los descubre con `import.meta.glob` (soportado por Turbopack desde 16.3 y por Vitest). Si da problemas, el respaldo es un `registro.ts` con una línea de import por módulo. Ocultar el ítem es cosmético: el rol se verifica siempre en el servidor.
-- Registro de paneles de la ficha del nodo: la página del nodo (historia 4) muestra los paneles que declaran los módulos en `src/modulos/<modulo>/paneles.ts`, descubiertos por `src/nav/registro.ts` con el mismo mecanismo (y el mismo respaldo manual). Así las historias 6 (aislar), 8 (afectados) y 10 (mantenimiento) agregan su panel sin editar la página de la historia 4.
-- Suscriptores de alertas: al registrar una alerta, el servicio de `alertas` (historia 5) llama a los `src/modulos/<modulo>/on-alerta.ts` registrados en `src/nav/registro.ts`. La historia 7 se suscribe así sin editar el módulo de alertas; si el registro falla, su respaldo es consultar periódicamente la tabla `alertas`.
+- Registro de paneles de la ficha del nodo: la página del nodo (historia 4) muestra los paneles que declaran los módulos en `src/modulos/<modulo>/paneles.ts`, descubiertos por `src/nav/registro.ts` con el mismo mecanismo (y el mismo respaldo manual). Así las historias 6 (aislar), 8 (afectados) y 10 y 11 (mantenimiento) agregan su panel sin editar la página de la historia 4.
+- Suscriptores de alertas: al registrar una alerta, el servicio de `alertas` (historia 5) llama a los `src/modulos/<modulo>/on-alerta.ts` registrados en `src/nav/registro.ts`. La historia 12 se suscribe así sin editar el módulo de alertas; si el registro falla, su respaldo es consultar periódicamente la tabla `alertas`.
 - Único archivo compartido que sí editan varias historias: `contracts/openapi.yaml` (cada una agrega sus rutas); sus conflictos se resuelven al sincronizar en el paso 5, conservando las rutas de ambos lados. La evidencia multiagente va por historia en `evidencias/issue-<n>/`, y `AGENTS_LOG.md` es un índice que se regenera en el PR de archivo, que es serializado, así que no genera conflictos.
 - Carpeta de migraciones de Flyway con versión timestamp, por ejemplo `db/migration/V202611231030__aislar_nodo.sql`.
 - Un change de OpenSpec por historia, con nombre descriptivo y no numérico: `openspec/changes/aislar-nodo/`. Así no hay choques de numeración entre estudiantes.
@@ -329,7 +331,7 @@ Hoy es el sábado 21 de noviembre de 2026 y la entrega es el martes 24 a las 18:
   - Orquestador con un solo modo (8 pasos, 5 minutos o menos) con `preparador`, `revisor-salida` (G2), `revisor-reglas`, `build-test`, `commit`, `abrir-pr`, los scripts `estado`, `contexto`, `trazabilidad-grep`, `copiar-evidencias`, `migracion-timestamp` y `puerto`, y la copia de evidencias.
   - Prueba de punta a punta con un solo issue, el #6 "[PRUEBA] Página Acerca de" (etiqueta `prueba`, fuera del backlog; su PR se cierra sin fusionar).
   - HU 3 a 5 construidas con ese mismo flujo, cada una con su `evidencias/issue-<n>/` y un rechazo real.
-  - Issues de las historias 6 a 10 con criterios `CA-n`.
+  - Issues de las historias 6 a 12 con criterios `CA-n`.
   - Ensayo por estudiante, rama de respaldo y video.
 - **Para nota máxima** (solo cuando lo imprescindible esté en verde; fuera del orquestador):
   - 2 smoke de Playwright en el CI.
