@@ -35,6 +35,95 @@ components:
           schema:
             $ref: "#/components/schemas/Error"
 paths:
+  /api/auth/login:
+    post:
+      summary: Iniciar sesión con nombre de usuario y contraseña
+      description: >-
+        Crea la cookie de sesión `httpOnly` (8 horas). Tras 5 intentos fallidos en un minuto,
+        por IP o por usuario, responde 429 aunque la contraseña sea correcta.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [usuario, contrasena]
+              properties:
+                usuario:
+                  type: string
+                  minLength: 1
+                  maxLength: 64
+                contrasena:
+                  type: string
+                  minLength: 1
+                  maxLength: 128
+      responses:
+        "200":
+          description: Sesión iniciada; la cookie `sesion` viaja en `Set-Cookie`
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [usuario, rol]
+                properties:
+                  usuario:
+                    type: string
+                  rol:
+                    type: string
+                    enum: [administrador, tecnico]
+        "400":
+          description: Falta el usuario o la contraseña, o el cuerpo no es JSON
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [error]
+                properties:
+                  error:
+                    type: string
+                  detalles:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        campo:
+                          type: string
+                        mensaje:
+                          type: string
+        "401":
+          description: Usuario inexistente o contraseña incorrecta (mismo mensaje en ambos casos)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: Demasiados intentos fallidos
+          headers:
+            Retry-After:
+              description: Segundos de espera antes de volver a intentar
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/auth/logout:
+    post:
+      summary: Cerrar sesión
+      description: Elimina la cookie de sesión. Es idempotente y no exige sesión.
+      security: []
+      responses:
+        "200":
+          description: Cookie de sesión vencida en `Set-Cookie`
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok]
+                properties:
+                  ok:
+                    type: boolean
   /api/health:
     get:
       summary: Salud de la app
