@@ -22,3 +22,9 @@ Se copiaron a una carpeta vacía solo los archivos que van a git (`git ls-files`
 - **Smoke:** `BASE_URL=http://localhost:3999 npm run e2e` pasó (`@smoke la app responde en /api/health`).
 - **Mutaciones:** quitar `api` del matcher de `proxy.ts` hace fallar 2 pruebas; vaciar el `redact` del logger hace fallar 1. Las pruebas detectan esas regresiones.
 - **Semilla:** sin `DATABASE_URL` termina con 1 y mensaje claro; sin archivos en `db/seed/` imprime "No hay semillas" y termina con 0.
+
+## Rechazo del CI en el PR #12
+
+El primer CI del PR #12 falló en `npm ci` (job `proyecto`): `Missing: @emnapi/runtime@1.11.3 from lock file`. El clon limpio local había pasado porque corrió en macOS; en Linux, `npm ci` exige la entrada de nivel superior de `@emnapi/runtime`, dependencia opcional de `@img/sharp-wasm32`, que el lockfile reparado con `npm install` no tenía.
+
+Se reprodujo en Docker con `node:24-slim`: el lockfile viejo termina con código 1 y el mismo error, y el regenerado desde cero (`rm -rf node_modules package-lock.json && npm install`) termina con 0. El arreglo es el commit `8ff2199`, y con él el CI del PR quedó en verde en los dos jobs.
