@@ -284,7 +284,7 @@ gh api graphql -f query='query { repository(owner:"<owner>", name:"<repo>") { pu
 gh api graphql -f query='mutation { resolveReviewThread(input: {threadId: "<thread-id>"}) { thread { isResolved } } }'
 ```
 
-**10 Publicar la imagen tras el merge** (`cd.yml`; en los PR el CI solo construye, sin `push`; `ghcr.io` exige el nombre en minúsculas, que `danielfms/procesos-modernos-software` ya cumple; se recomienda fijar cada acción a un SHA de commit):
+**10 Publicar la imagen tras el merge** (`cd.yml`; en los PR el CI solo construye, sin `push`; `ghcr.io` exige el nombre en minúsculas, y el dueño del repositorio (`CristhianArce`) lleva mayúsculas, así que el workflow lo convierte con `tr`; se recomienda fijar cada acción a un SHA de commit):
 ```yaml
 on:
   push:
@@ -1000,7 +1000,7 @@ Change `infraestructura-ci-cd`. Puede arrancar el 21 en cuanto la HU 1b (fase 1B
 - `docker compose up` funciona en un portátil que no es el de quien lo preparó;
 - `docker compose run --rm flyway migrate info` aplica la línea base;
 - el CI está en verde en un PR;
-- `docker buildx imagetools inspect ghcr.io/danielfms/procesos-modernos-software:latest` responde sin login.
+- `docker buildx imagetools inspect ghcr.io/cristhianarce/procesos-modernos-software:latest` responde sin login.
 
 ### Fase 3. HU 1a: agentes y skills, resto de la historia (sábado 21 y domingo 22 de noviembre, en paralelo con la HU 2)
 

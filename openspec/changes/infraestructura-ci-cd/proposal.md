@@ -8,7 +8,7 @@ La app base (HU 1b, #2) compila y pasa sus pruebas, pero no hay forma de levanta
 
 - `Dockerfile` multi-etapa y `docker-compose.yml` con `db`, `flyway` y `app`, con healthchecks, puertos efímeros y variables obligatorias; migración de línea base `V202611211900__linea_base.sql`. Cubre CA-1 y CA-2.
 - `.github/workflows/ci.yml` ampliado: job `proyecto` (lint, typecheck, pruebas y build) y job `imagen` (construye y arranca la imagen) en cada PR; job `seguridad` (gitleaks y `npm audit`) solo al fusionar en `main`. Cubre CA-3 y CA-4.
-- `.github/workflows/cd.yml`: al fusionar en `main` publica `ghcr.io/danielfms/procesos-modernos-software` con las etiquetas `latest` y `sha-<commit>`; los merges que solo tocan documentación no publican. Cubre CA-5 y CA-6.
+- `.github/workflows/cd.yml`: al fusionar en `main` publica `ghcr.io/cristhianarce/procesos-modernos-software` con las etiquetas `latest` y `sha-<commit>`; los merges que solo tocan documentación no publican. Cubre CA-5 y CA-6.
 - Plantillas de historia y de PR, `CODEOWNERS` y las etiquetas del repositorio (`bloqueado`, `migracion`, `revision-especializada`, `escalado`, `linea-base`, `clase`). Cubre CA-7.
 
 Fuera de alcance (issue #18):

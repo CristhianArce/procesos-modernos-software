@@ -25,7 +25,7 @@ La imagen publicada SHALL poder consultarse y descargarse sin iniciar sesión en
 - **THEN** el registro responde con el manifiesto de la imagen
 
 #### Scenario: Ejecución de la imagen publicada (CA-6)
-- **WHEN** se ejecuta `ghcr.io/danielfms/procesos-modernos-software:latest` con las tres variables definidas
+- **WHEN** se ejecuta `ghcr.io/cristhianarce/procesos-modernos-software:latest` con las tres variables definidas
 - **THEN** `GET /api/health` responde 200 con `status` igual a `ok`
 
 ### Requirement: Permisos mínimos del CD

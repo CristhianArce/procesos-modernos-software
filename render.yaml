@@ -8,7 +8,7 @@ services:
     name: tablero
     runtime: image
     image:
-      url: ghcr.io/danielfms/procesos-modernos-software:latest
+      url: ghcr.io/cristhianarce/procesos-modernos-software:latest
     plan: free
     region: virginia
     healthCheckPath: /api/health
