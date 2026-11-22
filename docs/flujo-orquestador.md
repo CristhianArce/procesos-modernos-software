@@ -28,17 +28,17 @@ Marcadores: `<n>` issue · `<pr>` PR · `<base>` rama base · `<rama>` = `featur
 
 Tras cada invocación de un agente, el orquestador agrega una fila a `<trabajo>/agentes-log.md` (de ahí sale `evidencias/issue-<n>/agentes.md`). Cada paso lee sus entradas de disco y escribe su salida antes de cerrar.
 
-Antes de empezar: BD de desarrollo levantada y migrada (`docker compose up -d --wait db` y `docker compose run --rm flyway migrate info`), `node_modules` instalado y checkout principal limpio. La sesión y los agentes usan sonnet. `<raiz>` es la raíz del repo, así que los comandos van sin `cd` (Claude Code pide aprobación para `cd <dir> && git ...`).
+Antes de empezar: BD de desarrollo levantada y migrada (`docker compose up -d --wait db` y `docker compose run --rm flyway migrate info`), `node_modules` instalado y checkout principal limpio. La sesión corre con opus (propuesta, implementación y corrección) y los agentes con sonnet (ver 1.6). `<raiz>` es la raíz del repo, así que los comandos van sin `cd` (Claude Code pide aprobación para `cd <dir> && git ...`).
 
 | # | Pieza | Qué hace | Modelo | Tiempo aprox. | Deja en `<trabajo>` o en el repo |
 |---|---|---|---|---|---|
-| 1 | agente `preparador` | Crea la rama `feature/issue-<n>-<slug>` en el checkout principal (sin worktree ni `npm ci`) y vuelca el issue; bloquea si el issue está cerrado o ya tiene PR | sonnet / medium | 20 s | `issue.md` con `CA-n`, `preguntas.md`, `decisiones.md`, `agentes-log.md` |
+| 1 | agente `preparador` | Crea la rama `feature/issue-<n>-<slug>` en el checkout principal (sin worktree ni `npm ci`) y vuelca el issue; bloquea si el issue está cerrado o ya tiene PR | sonnet / low | 20 s | `issue.md` con `CA-n`, `preguntas.md`, `decisiones.md`, `agentes-log.md` |
 | 2 | script `contexto.mjs` | Lista capacidades de `openspec/specs/` y changes activos, tablas y columnas de `db/migration/`, módulos de `src/modulos/` con sus puntos de extensión, semillas y rutas de `contracts/openapi.yaml` (sin agentes) | — | 2 s | `contexto.md` |
-| 3 | skill `openspec-propose` | Resuelve con la persona las preguntas abiertas de `preguntas.md` y genera proposal, specs, design y tasks desde `issue.md`, `contexto.md` y `decisiones.md`; las dudas de negocio se registran con `Decidió: Persona` | sesión (sonnet) | 90 s | `openspec/changes/<change>/`; `<change>` en `estado.md` |
+| 3 | skill `openspec-propose` | Resuelve con la persona las preguntas abiertas de `preguntas.md` y genera proposal, specs, design y tasks desde `issue.md`, `contexto.md` y `decisiones.md`; las dudas de negocio se registran con `Decidió: Persona` | sesión (opus) | 90 s | `openspec/changes/<change>/`; `<change>` en `estado.md` |
 | 4 | **G2**: agente `revisor-salida` | `openspec validate --strict`, formato de specs, alcance, uso de `contexto.md` y `decisiones.md`, y la salida del script `trazabilidad-grep.mjs` (CA → requisito/escenario → tarea, que también escribe `trazabilidad.md`); con CORREGIR vuelve a 3, máximo una vez | sonnet / medium | 40 s | sección en `gates.md`; `trazabilidad.md` |
-| 5 | skill `openspec-apply-change` | Ejecuta `tasks.md`: código, pruebas, migración y semilla; al cerrar, un Grep de `- [ ]` en `tasks.md` (lo mismo que `progress.remaining`) exige cero tareas pendientes o un motivo en `decisiones.md` por cada una (si no, Bloqueado) | sesión (sonnet) | 90 s | código en la rama; tareas `[x]` |
-| 6 | script `build-test` en paralelo con agente `revisor-reglas` y `trazabilidad-grep.mjs --pruebas <n>` | `typecheck`, `test:unit` y `test:integration` contra la BD de desarrollo ya migrada (lint y `next build` quedan para el CI), mientras se revisa el diff y se buscan las pruebas que citan `#<n> CA-k` (≈ 1 s) | sonnet / medium (revisor) | 60 s | último build en `estado.md`; hallazgos en `verificacion.md`; columna Caso en `trazabilidad.md` |
-| 7 | sesión + `build-test` | Si hay CRITICAL confirmados: una sola pasada de corrección y se repite `build-test`; si no, se salta | sesión (sonnet) | 0-40 s | build en verde |
+| 5 | skill `openspec-apply-change` | Ejecuta `tasks.md`: código, pruebas, migración y semilla; al cerrar, un Grep de `- [ ]` en `tasks.md` (lo mismo que `progress.remaining`) exige cero tareas pendientes o un motivo en `decisiones.md` por cada una (si no, Bloqueado) | sesión (opus) | 90 s | código en la rama; tareas `[x]` |
+| 6 | script `build-test` en paralelo con agente `revisor-reglas` y `trazabilidad-grep.mjs --pruebas <n>` | `typecheck`, `test:unit` y `test:integration` contra la BD de desarrollo ya migrada (lint y `next build` quedan para el CI), mientras se revisa el diff y se buscan las pruebas que citan `#<n> CA-k` (≈ 1 s) | sonnet / high (revisor) | 60 s | último build en `estado.md`; hallazgos en `verificacion.md`; columna Caso en `trazabilidad.md` |
+| 7 | sesión + `build-test` | Si hay CRITICAL confirmados: una sola pasada de corrección y se repite `build-test`; si no, se salta | sesión (opus) | 0-40 s | build en verde |
 | 8 | skills `commit` y `abrir-pr` + `trazabilidad-grep.mjs --pruebas <n>` + `copiar-evidencias.mjs` | Commit con `#<n>` y `Change:`, push; trazabilidad con pruebas otra vez (el paso 7 pudo agregarlas); PR en borrador con cuerpo mínimo (la columna Prueba sale de Caso); copia a `evidencias/issue-<n>/`, genera `agentes.md`, commit y push | — | 20 s | PR en borrador con `evidencias/issue-<n>/` |
 
 Sin build y pruebas en verde no hay commit: tras la pasada del paso 7, si siguen en rojo, Bloqueado. Las HU 3 a 5 se construyen con esta misma secuencia; el issue de prueba es el #6 "[PRUEBA] Página Acerca de" (etiqueta `prueba`, fuera del backlog), cuyo PR se cierra sin fusionar.
@@ -341,8 +341,8 @@ git worktree prune
 
 | Paso | Orquestador invoca | Tipo | Modelo / effort | Entrega |
 |---|---|---|---|---|
-| 0 Entrada | — (sesión principal) | skill `orquestador` | sesión (sonnet) | Imprescindible |
-| 1 Preparar | `preparador` | agente | sonnet / medium | Imprescindible |
+| 0 Entrada | — (sesión principal) | skill `orquestador` | sesión (opus, por `model: opus` del skill) | Imprescindible |
+| 1 Preparar | `preparador` | agente | sonnet / low | Imprescindible |
 | 2 Contexto | `contexto.mjs` | script | — | Imprescindible |
 | 2 Explorar | `openspec-explore` | skill (de OpenSpec) | sesión (opus) | Pospuesto |
 | 2 Explorar | `preguntas-tecnicas` | agente | sonnet / medium | Pospuesto |
@@ -350,13 +350,13 @@ git worktree prune
 | G2 | `revisor-salida` | agente | sonnet / medium | Imprescindible |
 | G1, G3 | `revisor-salida` | agente | sonnet / medium | Pospuesto |
 | G4 | `revisor-salida` (o el comando de validación) | agente | sonnet / medium | a mano, en el paso 10 |
-| 3 Propuesta | `openspec-propose` | skill (de OpenSpec) | sesión (sonnet) | Imprescindible |
+| 3 Propuesta | `openspec-propose` | skill (de OpenSpec) | sesión (opus) | Imprescindible |
 | 3 Propuesta | `generar-planes-prueba` | skill, corrido por un agente | sonnet / high | Pospuesto |
 | G2 | `trazabilidad-grep.mjs` | script | — | Imprescindible |
-| 4 Implementar | `openspec-apply-change` | skill (de OpenSpec) | sesión (sonnet) | Imprescindible |
+| 4 Implementar | `openspec-apply-change` | skill (de OpenSpec) | sesión (opus) | Imprescindible |
 | 5 Verificación | `build-test` | skill | — (script) | Imprescindible |
 | 5 Verificación | `entorno-docker` | skill | — (script) | Pospuesto |
-| 5 Verificación | `revisor-reglas` | agente | sonnet / medium | Imprescindible |
+| 5 Verificación | `revisor-reglas` | agente | sonnet / high | Imprescindible |
 | 5 Verificación | `Plan` como revisor cruzado | agente integrado | opus / high (v1), sonnet / medium (v2+) | Pospuesto |
 | 5 y 7 | `ejecutor-e2e` | agente | sonnet / medium | Pospuesto |
 | 6 Commit/PR | `commit` | skill | — | Imprescindible |
@@ -371,7 +371,7 @@ git worktree prune
 | 10 Post-merge | `cierre-post-merge` | skill | — | Pospuesto (a mano) |
 | 10 Post-merge | `openspec archive <change> --yes` (CLI, no el skill `openspec-archive-change`, que pide confirmación) | comando | — | a mano |
 
-Regla de modelos: para la entrega todo corre con sonnet (la sesión y los agentes). En el diseño completo, opus queda solo para lo que decide diseño y código (sesión principal en explorar, proponer, implementar y clasificar fallas; revisor cruzado en la primera vuelta; un decisor del panel; revisor del PR) y lo demás baja a sonnet o haiku. Al lanzar un agente siempre se pasa `model` y `effort`; sin eso hereda el de la sesión. El frontmatter del agente también admite `model` y `effort`; el valor pasado al lanzarlo tiene prioridad.
+Regla de modelos: opus genera, sonnet revisa y lo mecánico va en `low` o haiku. Opus queda para lo que decide diseño y código: en el flujo único, la sesión principal en proponer, implementar y corregir (el skill `orquestador` fija `model: opus`, así que no depende del modelo con que se abrió la sesión); en el diseño completo, además, explorar, el revisor cruzado en la primera vuelta, un decisor del panel y el revisor del PR. Las puertas y los revisores corren con sonnet (`revisor-reglas` en `high`, porque revisa seguridad y autorización) y el `preparador`, que es mecánico, en `low` (decisión 26). Al lanzar un agente siempre se pasa `model` y `effort`; sin eso hereda el de la sesión. El frontmatter del agente también admite `model` y `effort`; el valor pasado al lanzarlo tiene prioridad.
 
 Niveles (los mismos de la sección "Alcance mínimo para el 24 de noviembre" de [propuesta.md](propuesta.md)):
 - **Imprescindible:** `orquestador` (flujo único), `preparador`, `revisor-salida` (G2), `revisor-reglas`, `build-test`, `commit`, `abrir-pr`, los scripts `estado`, `contexto`, `trazabilidad-grep`, `copiar-evidencias`, `migracion-timestamp` y `puerto`, y la copia de evidencias.
@@ -459,13 +459,13 @@ Consecuencia: las HU 1 (proyecto y entorno SDD) y 2 (Docker, CI/CD, imagen en `g
   3. Ejecutar los 8 pasos del flujo único (punto 5) en orden; al iniciar cada paso leer `estado.md` y sus entradas; al cerrarlo, escribir su salida y actualizar `estado.md`. Tras cada invocación de agente, agregar una fila a `agentes-log.md`. En el paso 8, antes de `abrir-pr`, escribir el `pr-body.md` mínimo (ver 2.1). La sesión termina con el PR en borrador: marcarlo listo, la revisión y el merge los hace la persona, y el archivo del change (paso 10) se hace a mano.
   3b. Mide la corrida con `tiempos.mjs` (inicio al empezar, resumen en el paso 8) y, con la etiqueta `practica`, aplica el modo práctica (ver 1.1).
   4. Las dudas de negocio se le preguntan a la persona y se registran en `decisiones.md` con `Decidió: Persona` (el decisor está pospuesto).
-  5. **Flujo único** (meta ≤ 5 minutos; tabla con tiempos en 1.1). Precondición: la BD de desarrollo ya está levantada y migrada (`docker compose up -d --wait db` y `docker compose run --rm flyway migrate info`), `node_modules` ya existe y el checkout principal está limpio. La sesión y los agentes usan sonnet. `<raiz>` es la raíz del repo, así que los comandos van sin `cd`.
-     1. `preparador` (sonnet / medium): rama `feature/issue-<n>-<slug>` en el checkout principal (sin worktree ni `npm ci`) y `<trabajo>/issue.md` con los `CA-n`; bloquea si el issue está cerrado o ya tiene PR.
+  5. **Flujo único** (meta ≤ 5 minutos; tabla con tiempos en 1.1). Precondición: la BD de desarrollo ya está levantada y migrada (`docker compose up -d --wait db` y `docker compose run --rm flyway migrate info`), `node_modules` ya existe y el checkout principal está limpio. La sesión corre con opus y los agentes con sonnet. `<raiz>` es la raíz del repo, así que los comandos van sin `cd`.
+     1. `preparador` (sonnet / low): rama `feature/issue-<n>-<slug>` en el checkout principal (sin worktree ni `npm ci`) y `<trabajo>/issue.md` con los `CA-n`; bloquea si el issue está cerrado o ya tiene PR.
      2. `contexto.mjs` (script, sin agentes): escribe `contexto.md` (capacidades ya especificadas, changes activos, tablas, módulos con sus puntos de extensión, semillas y rutas del contrato), para que la propuesta no suponga tablas, columnas o módulos que no existen y use `MODIFIED` sobre una capacidad existente en vez de duplicarla.
      3. `/openspec-propose` (sesión) con `issue.md` + `contexto.md`; las dudas de negocio se le preguntan a la persona y se registran con `Decidió: Persona`. Cada tarea dice cómo se verifica; abrir el PR, el CI y el archivo van como viñetas en `## Workflow follow-up`. `/orquestador <n>` es el pedido explícito que autoriza seguir con `apply` sin la pausa que pide el skill tras planificar (excepción deliberada).
      4. G2: `revisor-salida` (sonnet / medium) con `openspec validate --strict` y la salida del script `trazabilidad-grep.mjs`. Máximo 1 `CORREGIR`.
      5. `/openspec-apply-change` (sesión); al cerrar, un Grep de `- [ ]` en `tasks.md` (lo mismo que `progress.remaining`, sin leer el JSON de `openspec instructions apply`): cero pendientes, o cada `[ ]` con su fila en `decisiones.md` (número `X.Y` y motivo); si no, Bloqueado.
-     6. `build-test` (`typecheck`, `test:unit` y `test:integration` contra la BD de desarrollo; `lint` y `next build` quedan para el CI) en paralelo con `revisor-reglas` (sonnet / medium) y con `trazabilidad-grep.mjs --pruebas <n>`, que llena la columna Caso con las pruebas que citan `#<n> CA-k`.
+     6. `build-test` (`typecheck`, `test:unit` y `test:integration` contra la BD de desarrollo; `lint` y `next build` quedan para el CI) en paralelo con `revisor-reglas` (sonnet / high) y con `trazabilidad-grep.mjs --pruebas <n>`, que llena la columna Caso con las pruebas que citan `#<n> CA-k`.
      7. Si hay CRITICAL confirmados: una sola pasada de corrección y se repite `build-test`; si no, se salta.
      8. `commit` + push + `trazabilidad-grep.mjs --pruebas <n>` otra vez + `abrir-pr` (PR en borrador, cuerpo mínimo, columna Prueba desde Caso) + `copiar-evidencias.mjs` y commit de `evidencias/issue-<n>/`. Un CA "Sin prueba" no bloquea: se informa en el PR y en el resumen; si el paso 7 corre por otro motivo, esa pasada también agrega sus pruebas.
 
@@ -547,7 +547,7 @@ Consecuencia: las HU 1 (proyecto y entorno SDD) y 2 (Docker, CI/CD, imagen en `g
 
 ### 3.6 Skill `openspec-propose` (paso 3, de OpenSpec)
 
-- **Lo corre**: la sesión principal (sonnet), con `/openspec-propose` (OpenSpec 2.1 instala skills, no los comandos `/opsx:*`). El skill termina al escribir los artefactos y no edita código.
+- **Lo corre**: la sesión principal (opus), con `/openspec-propose` (OpenSpec 2.1 instala skills, no los comandos `/opsx:*`). El skill termina al escribir los artefactos y no edita código.
 - **Instrucción**: proponer con `issue.md` + `contexto.md` (con explorar, pospuesto, sería `explore.md`), `decisiones.md` y las reglas del proyecto. Toda tabla, columna o módulo existente que use la propuesta debe aparecer en `contexto.md`; si no aparece, es una pregunta a la persona, no un supuesto. El change lleva nombre descriptivo, no numérico (`aislar-nodo`). Guardar el nombre del change en `estado.md` en cuanto `openspec new change` lo crea. Las tareas siguen la estructura por módulo de `propuesta.md` (página en `src/app/(tablero)/<modulo>/`, handler en `src/app/api/<modulo>/`, lógica en `src/modulos/<modulo>/`, ítem en `menu.ts`) e incluyen pruebas unitarias e integración (Vitest, invocando los Route Handlers con `Request`), los cambios a `contracts/openapi.yaml` si la API cambia, la migración `db/migration/V<AAAAMMDDHHmm>__<descripcion>.sql` si el cambio toca esquema, y la semilla `db/seed/<modulo>.sql` si la historia agrega tablas. Pospuesto (fuera del flujo único): un contador opcional, solo si la historia tiene una acción de negocio relevante, en `src/modulos/<modulo>/metrics.ts`, registrado en el registro único que exporta `src/lib/metrics.ts`. Cada requisito/escenario y cada tarea citan su `CA-n`; lo derivado lleva `Derivado: decisión #k`. Si el change crea una capacidad nueva, su delta empieza con `## Purpose` (ver 2.6). `design.md` es opcional para OpenSpec, pero aquí es obligatorio cuando cambia el contrato o el esquema.
 - **En paralelo** (Pospuesto): lanzar `generar-planes-prueba` en segundo plano en cuanto existan las specs.
 - **Después**: `trazabilidad-grep.mjs` y G2.
@@ -566,7 +566,7 @@ Consecuencia: las HU 1 (proyecto y entorno SDD) y 2 (Docker, CI/CD, imagen en `g
 
 ### 3.8 Skill `openspec-apply-change` (paso 4, de OpenSpec)
 
-- **Lo corre**: la sesión principal (sonnet).
+- **Lo corre**: la sesión principal (opus).
 - **Instrucción**: ejecutar `tasks.md` respetando las reglas del proyecto; marcar `[x]` solo lo hecho; lo que no se pudo queda `[ ]` con motivo en `decisiones.md` (citando su número `X.Y`); al cerrar, comprobar con un Grep de `- [ ]` en `tasks.md` que no quedan pendientes o que cada `[ ]` tiene su motivo (si no, Bloqueado); dudas de negocio a la persona; escribir pruebas unitarias e integración, la migración y la semilla del módulo; no reformatear líneas no tocadas.
 - **Después**: `build-test` en paralelo con `revisor-reglas` (G3 está pospuesto).
 
@@ -835,10 +835,10 @@ Plantillas en `.claude/skills/orquestador/plantillas/`, una por cada archivo de 
 
 | Agente | Ficha | `model` / `effort` | `tools` | Escribe | Nivel |
 |---|---|---|---|---|---|
-| `preparador` | 3.1 | sonnet / medium | `Bash, Read, Write` | rama en el checkout principal (worktree: pospuesto), `<trabajo>/issue.md`, `preguntas.md`, `decisiones.md` | Imprescindible |
+| `preparador` | 3.1 | sonnet / low | `Bash, Read, Write` | rama en el checkout principal (worktree: pospuesto), `<trabajo>/issue.md`, `preguntas.md`, `decisiones.md` | Imprescindible |
 | `preguntas-tecnicas` | 3.3 | sonnet / medium | `Read, Grep, Glob` | nada (devuelve tabla) | Pospuesto |
 | `revisor-salida` | 3.5 | sonnet / medium | `Read, Grep, Glob, Bash` | nada (devuelve su sección; el orquestador la pega textual en `gates.md`) | Imprescindible (G2; G3 pospuesto) |
-| `revisor-reglas` | 3.11 | sonnet / medium | `Read, Grep, Glob, Bash` | nada | Imprescindible |
+| `revisor-reglas` | 3.11 | sonnet / high | `Read, Grep, Glob, Bash` | nada | Imprescindible |
 | `ejecutor-e2e` | 3.14 | sonnet / medium | `Read, Write, Bash` | capturas y resultados | Pospuesto (los 2 smoke de Playwright corren como script en CI) |
 | `revisor-pr` | 3.18 | opus / high | `Read, Grep, Glob, Bash` | comentarios en el PR (solo evento `COMMENT`) | Pospuesto |
 | `validador-comentarios` | 3.19 | sonnet / medium | `Read, Grep, Glob, Bash` | nada | Pospuesto |
@@ -850,9 +850,9 @@ Plantillas en `.claude/skills/orquestador/plantillas/`, una por cada archivo de 
 
 - Todos llevan `disallowedTools: Agent`. Claude Code ya impide que un subagente lance otros; se deja explícito como documentación.
 - Los cuatro del decisor tienen archivo propio: la forma por defecto del decisor es lanzarlos como 3 agentes en paralelo más el consolidador (alternativa de 3.4), sin depender de los workflows. El workflow queda pospuesto y, si se hace, usa los mismos prompts.
-- La sesión y los agentes corren con sonnet (sin opus ni haiku), para ahorrar cuota y latencia.
+- La sesión corre con opus (genera specs y código) y los agentes con sonnet (revisan), para gastar la cuota de opus solo donde un error se propaga a todo el change (decisión 26).
 - El revisor cruzado (pospuesto) es el agente integrado `Plan` (3.12); cuando se retome, su prompt vivirá en el `SKILL.md` del orquestador.
-- **Effort por invocación:** en el flujo único `revisor-reglas` corre una sola vez con sonnet / medium (el diseño completo bajaba el effort de `revisor-reglas` y `Plan` en las vueltas 2+). La herramienta `Agent` acepta `model` y `effort` por invocación (verificado; tienen prioridad sobre el frontmatter), así que el orquestador los pasa siempre y los registra en `agentes-log.md`. En la fase 3.2 solo se confirma que el valor pasado aparece en el registro.
+- **Effort por invocación:** en el flujo único `revisor-reglas` corre una sola vez con sonnet / high (el diseño completo bajaba el effort de `revisor-reglas` y `Plan` en las vueltas 2+). La herramienta `Agent` acepta `model` y `effort` por invocación (verificado; tienen prioridad sobre el frontmatter), así que el orquestador los pasa siempre y los registra en `agentes-log.md`. En la fase 3.2 solo se confirma que el valor pasado aparece en el registro.
 
 ### 4.4 Workflow
 
@@ -929,7 +929,7 @@ Todos se crean con el skill `crear-hu` (criterios `CA-n` ya numerados, que el pr
 
 1. Instalar Node 24, Docker Desktop, Git ≥ 2.40, `gh` (`winget install --id GitHub.cli --source winget` y luego `gh auth login`; quien prepare la HU 2 necesita además el scope `workflow` para hacer push de `.github/workflows/`) y OpenSpec 2.1 global, fijado (`npm i -g @fission-ai/openspec@2.1`; ya existe la 2.1.1). Confirmar `openspec --version`.
 2. `git config --global core.longpaths true`: las rutas de `node_modules` dentro de `Documents\EAFIT\...` superan el límite de Windows.
-3. En Claude Code, confirmar acceso a sonnet (el orquestador corre todo con sonnet). Habilitar "Dynamic workflows" es opcional: el decisor usa por defecto la alternativa sin workflow (4.4).
+3. En Claude Code, confirmar acceso a opus y sonnet (la sesión del orquestador corre con opus y los agentes con sonnet). Habilitar "Dynamic workflows" es opcional: el decisor usa por defecto la alternativa sin workflow (4.4).
 4. La noche antes de la presentación: `docker compose pull` y `npm ci` en el checkout principal, para no depender de la red (la BD levantada y migrada y `node_modules` instalado son precondición del orquestador).
 5. Una sola persona (A), al empezar: crear con `crear-hu` el issue de HU 2 (5.0). El de prueba ya existe (#6). Los de HU 1b (#2) y HU 1a (#1) ya existen, en [el backlog](backlog/README.md).
 
@@ -1032,9 +1032,9 @@ Se construyen de abajo hacia arriba y cada pieza tiene una prueba aislada antes 
    - los argumentos de la ficha 3.0;
    - la máquina de estados de los 8 pasos del flujo único (leyendo y escribiendo `estado.md` con `estado.mjs`);
    - el presupuesto de 2.5 y las reglas Bloqueado/Escalado de la ficha 3.23;
-   - la tabla de modelos de 1.6 (qué `model` y `effort` pasar a cada `Agent`: todo sonnet);
+   - la tabla de modelos de 1.6 (qué `model` y `effort` pasar a cada `Agent`: sonnet, con el effort de cada uno; la sesión, opus);
    - la regla de 2.7: los comandos van sin `cd`, porque `<raiz>` es la raíz del repo (Claude Code pide aprobación para `cd <dir> && git ...`), y se usa la herramienta Bash, no PowerShell, para que coincidan los permisos de 7.3.
-2. **Prueba de punta a punta del flujo único** (secuencia de 8 pasos de 1.1) con el issue de prueba #6. Debe terminar con el PR en borrador y `evidencias/issue-<n>/` commiteado en **5 minutos o menos**. Precondición: `db` levantada y migrada y `node_modules` instalado antes de empezar. Todo con sonnet. Al terminar, el PR del #6 se cierra sin fusionar y se borra su rama.
+2. **Prueba de punta a punta del flujo único** (secuencia de 8 pasos de 1.1) con el issue de prueba #6. Debe terminar con el PR en borrador y `evidencias/issue-<n>/` commiteado en **5 minutos o menos**. Precondición: `db` levantada y migrada y `node_modules` instalado antes de empezar. La sesión con opus y los agentes con sonnet. Al terminar, el PR del #6 se cierra sin fusionar y se borra su rama.
 3. **Salidas de error**, provocadas una vez cada una con el issue de prueba #6:
    - issue ya resuelto: cerrarlo con `gh issue close` (sin fusionar nada) y comprobar que el preparador devuelve `BLOQUEAR`; luego reabrirlo;
    - `build-test` con Docker apagado: error de **entorno**, el item se detiene.
@@ -1335,6 +1335,7 @@ El cuerpo de cada agente contiene:
 23. **Un solo modo del orquestador, ≤ 5 minutos;** ya no existen `demo`, el modo normal reducido ni `manual`. La secuencia es de 8 pasos (`preparador` → `contexto.mjs` → `openspec-propose` → G2 con `revisor-salida` y `trazabilidad-grep.mjs` → `openspec-apply-change` → `build-test` en paralelo con `revisor-reglas` → una pasada de corrección solo si hay CRITICAL → `commit`, `abrir-pr` y `copiar-evidencias.mjs`), todo con sonnet, en el checkout principal y con los comandos sin `cd`. Precondición: BD de desarrollo levantada y migrada y `node_modules` instalado. Quedan pospuestos el agente `trazabilidad`, G3, la trazabilidad final del paso 8, `entorno-docker`, worktrees, decisor, revisor cruzado `Plan`, `openspec-explore` y `preguntas-tecnicas`, el ciclo del PR, `revisor-pr`, reporte, `solicitar-revision-humana` y `cierre-post-merge`. Se prueba con un solo issue, el #6 "[PRUEBA] Página Acerca de" (etiqueta `prueba`, fuera del backlog; su PR se cierra sin fusionar), y las HU 3 a 5 se hacen con este mismo flujo.
 24. **Ajustes de conformidad con el schema `spec-driven` de OpenSpec 2.1** (revisados por tres agentes independientes): G2 exige que cada tarea diga cómo se verifica ("Each task MUST state how to verify completion") y que cada grupo lleve sus pruebas, sin grupo final que las acumule; el contrato va en el grupo del handler; abrir el PR, el CI y el archivo van como viñetas en `## Workflow follow-up`; al cerrar el paso 5, `openspec instructions apply --json` exige `progress.remaining == 0` o un motivo en `decisiones.md` por cada `[ ]`; y se declara como excepción deliberada que `/orquestador <n>` autoriza pasar de `propose` a `apply` sin pausa. Además, cada prueba nueva cita `#<n> CA-k` en su nombre (el número del issue hace única la referencia) y `trazabilidad-grep.mjs --pruebas <n>` las liga en los pasos 6 y 8 (≈ 1 s cada vez, sin bloquear), y los principios del texto de referencia (SOLID, KISS, YAGNI, Clean Code, BDD, TDD, seguridad desde el diseño, integración continua y trazabilidad) quedan nombrados en `CLAUDE.md` y revisados por `revisor-reglas` sin agregar pasadas de corrección. Quedan pospuestos, junto con G3: resolver con la persona las Open Questions de `design.md` antes de las tareas, y volver a specs y tasks cuando la corrección del paso 7 cambia el diseño.
 25. **Tiempo medido y modo práctica.** El tiempo de cada corrida se mide con `tiempos.mjs` (dos llamadas; las marcas de cada paso las deja `estado.mjs`) y queda en `evidencias/issue-<n>/tiempos.md`; la meta de 5 minutos se informa, no bloquea. Las historias con etiqueta `practica` corren sin BD ni Docker (`npm install` dentro de apply, `build-test --sin-bd` y una nota de alcance para propose, G2, apply y `revisor-reglas`), para probar el orquestador antes de la HU 1b y la HU 2. Revisado por un agente independiente antes de aplicarlo.
+26. **Opus genera, sonnet revisa.** Reemplaza el "todo con sonnet" de la decisión 23. La sesión del orquestador (pasos 3, 5 y 7: propuesta, implementación y corrección) corre con opus, fijado con `model: opus` en el frontmatter del skill para que no dependa del modelo con que se abrió la sesión; los agentes siguen en sonnet: `preparador` en `low` (es mecánico), `revisor-salida` en `medium` y `revisor-reglas` en `high` (antes el `SKILL.md` lo lanzaba en `medium` y anulaba el `high` de su frontmatter). Motivo: la corrida del #6 tardó 8 min 12 s con todo en sonnet, así que sonnet no aseguraba la meta de 5 minutos, y la mayor parte del tiempo se fue en pasos mecánicos y en idas y vueltas de herramientas; en cambio, un error en specs o en código se arrastra hasta el PR. `agentes-log.md` registra también el modelo de la sesión en los pasos 3, 5 y 7. Costo: más cuota de opus por historia.
 
 **Pendientes de verificar al construir** (cada uno con su respaldo ya definido):
 - **`pino` con la salida `standalone`** de Next (si su transporte da problemas, se usa sin transporte, escribiendo JSON a stdout).

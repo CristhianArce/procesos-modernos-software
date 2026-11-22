@@ -32,11 +32,23 @@ test("CA-2: existen los tres agentes que usa el flujo", () => {
   assert.deepEqual(AGENTES_IMPRESCINDIBLES.filter((a) => !hay.includes(a)), []);
 });
 
-test("CA-2: modelos según flujo-orquestador 4.3 (flujo en sonnet; trazabilidad, fuera del flujo, en haiku)", () => {
-  const modelo = (a) => frontmatter(leer(`.claude/agents/${a}.md`)).model;
-  assert.equal(modelo("trazabilidad"), "haiku");
-  assert.equal(modelo("revisor-salida"), "sonnet");
-  assert.equal(modelo("revisor-reglas"), "sonnet");
+test("CA-2: modelos según flujo-orquestador 1.6 (opus genera, sonnet revisa, lo mecánico en low o haiku)", () => {
+  const agente = (a) => frontmatter(leer(`.claude/agents/${a}.md`));
+  assert.equal(agente("trazabilidad").model, "haiku");
+  assert.equal(agente("preparador").model, "sonnet");
+  assert.equal(agente("preparador").effort, "low");
+  assert.equal(agente("revisor-salida").model, "sonnet");
+  assert.equal(agente("revisor-reglas").model, "sonnet");
+  assert.equal(agente("revisor-reglas").effort, "high");
+});
+
+test("CA-2: la sesión del orquestador (propuesta, implementación y corrección) corre con opus", () => {
+  const texto = leer(".claude/skills/orquestador/SKILL.md");
+  assert.equal(frontmatter(texto).model, "opus");
+  assert.doesNotMatch(texto, /Todo con sonnet/);
+  // El effort que se pasa al lanzar un agente tiene prioridad sobre su frontmatter: deben coincidir.
+  assert.match(texto, /`preparador` \(`subagent_type: preparador`, `model: sonnet`, `effort: low`\)/);
+  assert.match(texto, /agente `revisor-reglas` \(`model: sonnet`, `effort: high`\)/);
 });
 
 test("CA-2: los seis skills de OpenSpec están versionados", () => {

@@ -4,7 +4,7 @@ description: Paso 1 del orquestador. Lee el issue, bloquea si ya está resuelto,
 tools: Bash, Read, Write
 disallowedTools: Agent
 model: sonnet
-effort: medium
+effort: low
 ---
 
 Eres el **preparador** del flujo SDD (ficha 3.1 de `docs/flujo-orquestador.md`). Dejas el issue listo para que el orquestador lo proponga con OpenSpec.
