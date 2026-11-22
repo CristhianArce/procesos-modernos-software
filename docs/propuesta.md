@@ -86,7 +86,7 @@ Las historias de clase (6 a 10) se enchufan agregando su propia carpeta, sin toc
 | Postgres | Usuarios, nodos, sensores, lecturas y alertas; migraciones versionadas con Flyway (`V<AAAAMMDDHHmm>__<descripcion>.sql`) |
 | GitHub Actions | Lint, pruebas, `flyway migrate info` sobre un Postgres de servicio (con `validateOnMigrate` activo, que ya verifica checksums), verificación de que las migraciones nuevas tienen versión mayor que la última de `origin/<base>`, gitleaks, `npm audit`, CodeQL (no bloqueante), build de la imagen en cada PR y publicación en `ghcr.io` al fusionar en `main` |
 | Observabilidad (en la app) | Logs JSON por petición, `GET /api/health` (público, con chequeo de la BD, usado como healthcheck del contenedor) y `GET /api/metrics` en formato Prometheus (con token) con métricas técnicas y, opcionalmente, de negocio |
-| GitHub Container Registry | Guarda la imagen publicada (`ghcr.io/danielfms/procesos-modernos-software`), con etiquetas `latest` y `sha-<commit>` |
+| GitHub Container Registry | Guarda la imagen publicada (`ghcr.io/cristhianarce/procesos-modernos-software`), con etiquetas `latest` y `sha-<commit>` |
 
 ## 4. Stack tecnológico y decisiones
 
@@ -175,7 +175,7 @@ e2e/*.spec.ts · playwright.config.ts · vitest.config.mts (alias de server-only
 - Arranque: `docker compose up -d --wait db` → `docker compose run --rm flyway migrate info` → `npm run seed` (con `DATABASE_URL` apuntando al puerto que devuelve `docker compose port db 5432`) → `docker compose up -d --build --wait app`. Un `docker compose up` a secas no migra ni carga la semilla.
 - `npm run seed` aplica de forma idempotente los archivos `db/seed/<modulo>.sql`. La HU 2 crea el mecanismo (todavía sin tablas); cada historia de la 3 a la 5 agrega la semilla de su módulo, así no hay un archivo de semilla compartido.
 - En cada PR, GitHub Actions construye la imagen sin publicarla, para detectar fallos de build antes del merge.
-- Al fusionar en `main`, un job con `permissions: packages: write` inicia sesión en `ghcr.io` con el `GITHUB_TOKEN` y publica `ghcr.io/danielfms/procesos-modernos-software:latest` y `:sha-<commit>`. Los paquetes nuevos nacen privados: en la HU 2 se marca público una vez, para que cualquiera pueda hacer `docker pull` sin credenciales. Los merges que solo tocan `openspec/`, `evidencias/`, `AGENTS_LOG.md` o `docs/` no vuelven a publicar (`paths-ignore`).
+- Al fusionar en `main`, un job con `permissions: packages: write` inicia sesión en `ghcr.io` con el `GITHUB_TOKEN` y publica `ghcr.io/cristhianarce/procesos-modernos-software:latest` y `:sha-<commit>`. Los paquetes nuevos nacen privados: en la HU 2 se marca público una vez, para que cualquiera pueda hacer `docker pull` sin credenciales. Los merges que solo tocan `openspec/`, `evidencias/`, `AGENTS_LOG.md` o `docs/` no vuelven a publicar (`paths-ignore`).
 - **Notificaciones sin servicios externos:** la historia 7 guarda la notificación en una tabla y la muestra en la interfaz; un correo real queda fuera del alcance.
 - **Demo individual:** cada estudiante trabaja en local con `docker compose`.
 

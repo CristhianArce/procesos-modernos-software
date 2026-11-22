@@ -25,7 +25,7 @@
 
 - [x] 4.1 `.github/ISSUE_TEMPLATE/historia.md` y `.github/PULL_REQUEST_TEMPLATE.md`; verificar con `diff` contra `plantilla-issue.md` de `crear-hu` (idéntico) y `pr-body.md` del orquestador (solo difiere la primera línea) (CA-7; Derivado: decisión #9)
 - [x] 4.2 Etiquetas `bloqueado`, `migracion`, `revision-especializada`, `escalado`, `linea-base` y `clase` con `gh label create`; verificar con `gh label list` (CA-7)
-- [x] 4.3 `.github/CODEOWNERS` con los cuatro colaboradores; verificar con `gh api repos/danielfms/procesos-modernos-software/codeowners/errors` (cero errores) (CA-7; Derivado: decisión #9)
+- [x] 4.3 `.github/CODEOWNERS` con los cuatro colaboradores; verificar con `gh api repos/CristhianArce/procesos-modernos-software/codeowners/errors` (cero errores) (CA-7; Derivado: decisión #9)
 
 ## 5. Integración y aceptación de la historia
 

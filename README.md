@@ -2,14 +2,14 @@
 
 Aplicación para administrar nodos y sensores de una red eléctrica, simular lecturas de voltaje, corriente y potencia, verlas en un tablero y generar alertas por umbral. Se construye con Spec-Driven Development (OpenSpec) y un orquestador de agentes de Claude Code que lleva cada historia de usuario desde el issue hasta el PR, con puertas de calidad y evidencia trazable. Taller "Aplicación de Solución IA bajo SDD", modalidad B; entrega el 24 de noviembre de 2026.
 
-[![CI](https://github.com/danielfms/procesos-modernos-software/actions/workflows/ci.yml/badge.svg)](https://github.com/danielfms/procesos-modernos-software/actions/workflows/ci.yml)
+[![CI](https://github.com/CristhianArce/procesos-modernos-software/actions/workflows/ci.yml/badge.svg)](https://github.com/CristhianArce/procesos-modernos-software/actions/workflows/ci.yml)
 
 ## Stack
 
 - Una sola app **Next.js 16** (App Router) para interfaz y API: páginas con Server Components y componentes `"use client"`, API en **Route Handlers + Zod**.
 - **Postgres** con `pg` y SQL escrito a mano; migraciones versionadas con **Flyway**.
 - **Docker** (`docker compose` en local) y **GitHub Actions** (lint, pruebas, seguridad, build de la imagen).
-- Imagen publicada en **GitHub Container Registry**: `ghcr.io/danielfms/procesos-modernos-software`. El despliegue en un entorno público está pospuesto.
+- Imagen publicada en **GitHub Container Registry**: `ghcr.io/cristhianarce/procesos-modernos-software`. El despliegue en un entorno público está pospuesto.
 - SDD con **OpenSpec** en lugar de Spec Kit: su numeración secuencial choca cuando varios estudiantes trabajan a la vez y su ciclo no cabe en la demo de 10 minutos (ver [propuesta §4](docs/propuesta.md#4-stack-tecnológico-y-decisiones)).
 
 ## Documentación
@@ -82,7 +82,7 @@ Los puertos del host son efímeros (así varias historias corren a la vez), por 
 O, sin compilar, con la imagen publicada:
 
 ```
-docker pull ghcr.io/danielfms/procesos-modernos-software:latest
+docker pull ghcr.io/cristhianarce/procesos-modernos-software:latest
 ```
 
 Credenciales de demostración: pendiente (las crea la semilla de la HU 3).
