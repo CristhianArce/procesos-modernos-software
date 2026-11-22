@@ -1,0 +1,66 @@
+# despliegue-publico Specification
+
+## Purpose
+
+Mantiene una instancia pública de la app, en un servicio gratuito, que ejecuta siempre la última imagen publicada por el CD, sin guardar secretos en el repositorio y sin pasos manuales después de cada merge.
+
+## Requirements
+
+### Requirement: Servicio público con la imagen publicada
+El despliegue SHALL ejecutar en un servicio público la imagen que publica el CD, y `GET /api/health` MUST responder 200 en la URL pública del servicio (CA-8; Derivado: decisión #12).
+
+#### Scenario: Salud en la URL pública (CA-8)
+- **WHEN** se hace `GET /api/health` sin sesión ni token a la URL pública del servicio
+- **THEN** recibe 200 con `status` igual a `ok`
+
+#### Scenario: Páginas sin sesión (CA-8)
+- **WHEN** se abre una página del tablero en la URL pública sin sesión
+- **THEN** el servicio redirige a `/login`, igual que en local
+
+### Requirement: Aviso a Render desde el CD
+El CD SHALL avisar al servicio de Render, con su deploy hook, después de publicar la imagen, y SHALL omitir el aviso cuando el secreto del repositorio `RENDER_DEPLOY_HOOK_URL` no existe; si Render rechaza el aviso, el CD MUST terminar en rojo (CA-8; Derivado: decisión #12).
+
+#### Scenario: Imagen nueva con el secreto configurado (CA-8)
+- **WHEN** el CD publica una imagen nueva y el secreto `RENDER_DEPLOY_HOOK_URL` existe
+- **THEN** el paso `Avisar a Render` llama al deploy hook, termina en verde y Render vuelve a descargar `latest`
+
+#### Scenario: Sin secreto (CA-8)
+- **WHEN** el CD corre y el secreto `RENDER_DEPLOY_HOOK_URL` no existe
+- **THEN** el paso `Avisar a Render` se omite y el CD termina en verde
+
+#### Scenario: Render rechaza el aviso (CA-8)
+- **WHEN** el deploy hook responde con un código de error
+- **THEN** el paso `Avisar a Render` falla y el CD termina en rojo
+
+### Requirement: Secretos del servicio fuera del repositorio
+`render.yaml` SHALL pedir a Render que genere los valores de `SESSION_SECRET` y `METRICS_TOKEN`, y el repositorio MUST NOT contener sus valores ni la URL del deploy hook (CA-8; Derivado: decisión #12).
+
+#### Scenario: Revisión de `render.yaml` (CA-8)
+- **WHEN** se revisa `render.yaml`
+- **THEN** `SESSION_SECRET` y `METRICS_TOKEN` usan `generateValue: true` y ningún campo contiene un valor secreto ni la URL del deploy hook
+
+### Requirement: Base de datos del servicio público
+`render.yaml` SHALL definir una base Postgres gratuita y pasarle a la app su URL interna como `DATABASE_URL`; el repositorio MUST NOT contener la clave de esa base (CA-9; Derivado: decisión #13).
+
+#### Scenario: Revisión de `render.yaml` con la base (CA-9)
+- **WHEN** se revisa `render.yaml`
+- **THEN** existe una base con `plan: free`, y `DATABASE_URL` del servicio sale de `fromDatabase` con `property: connectionString`, sin ningún valor escrito
+
+### Requirement: Migraciones y semillas en el CD
+El CD SHALL aplicar, antes de avisar a Render, las migraciones de `db/migration` con Flyway y las semillas de `db/seed` en la base de Render, usando el secreto `RENDER_DATABASE_URL`, y SHALL omitir el paso cuando el secreto no existe; si una migración o una semilla falla, el CD MUST terminar en rojo sin llamar al deploy hook (CA-9; Derivado: decisión #13).
+
+#### Scenario: Migraciones pendientes con el secreto configurado (CA-9)
+- **WHEN** el CD corre y `RENDER_DATABASE_URL` existe
+- **THEN** el paso `Migrar y sembrar la base de Render` aplica las migraciones pendientes y las semillas, termina en verde y `Avisar a Render` corre después
+
+#### Scenario: Repetición sin cambios (CA-9)
+- **WHEN** el CD corre otra vez sin migraciones ni semillas nuevas
+- **THEN** Flyway informa que el esquema está al día y las semillas no duplican filas
+
+#### Scenario: Una migración falla (CA-9)
+- **WHEN** una migración o semilla devuelve un error
+- **THEN** el paso falla, `Avisar a Render` no corre y el CD termina en rojo
+
+#### Scenario: Sin secreto de base (CA-9)
+- **WHEN** el CD corre y `RENDER_DATABASE_URL` no existe
+- **THEN** el paso `Migrar y sembrar la base de Render` se omite y el CD termina en verde
