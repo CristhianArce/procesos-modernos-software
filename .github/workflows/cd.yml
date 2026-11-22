@@ -1,5 +1,6 @@
 # CD: al fusionar en main publica la imagen en GitHub Container Registry.
-# Etiquetas: latest y sha-<commit>. Si existe el secreto RENDER_DEPLOY_HOOK_URL, avisa a Render para redesplegar.
+# Etiquetas: latest y sha-<commit>. Si existe el secreto RENDER_DATABASE_URL, migra y siembra la base de Render;
+# si existe RENDER_DEPLOY_HOOK_URL, avisa a Render para redesplegar (siempre después de migrar).
 # El paquete hereda la visibilidad del repositorio (público) por la etiqueta
 # org.opencontainers.image.source que agrega docker/metadata-action.
 name: CD
@@ -32,8 +33,9 @@ jobs:
       contents: read
       packages: write
     env:
-      # Opcional: si el secreto no existe, el paso de Render se omite.
+      # Opcionales: si un secreto no existe, su paso de Render se omite.
       RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+      RENDER_DATABASE_URL: ${{ secrets.RENDER_DATABASE_URL }}
     steps:
       - uses: actions/checkout@v6
       # ghcr.io exige el nombre en minúsculas y el dueño del repositorio puede llevar mayúsculas.
@@ -64,6 +66,29 @@ jobs:
           cache-to: type=gha,mode=max
       - name: Comprobar la imagen publicada
         run: docker buildx imagetools inspect ${{ env.IMAGEN }}:latest
+      # Migra y siembra la base de Render antes de avisar, para que la imagen nueva encuentre su esquema.
+      # RENDER_DATABASE_URL es la "External Database URL" de Render (postgres://usuario:clave@host/bd).
+      # Las migraciones son hacia adelante y las semillas idempotentes, así que repetirlas es seguro.
+      - name: Migrar y sembrar la base de Render
+        if: env.RENDER_DATABASE_URL != ''
+        run: |
+          set -euo pipefail
+          sin_esquema="${RENDER_DATABASE_URL#*://}"
+          credenciales="${sin_esquema%%@*}"
+          destino="${sin_esquema#*@}"
+          usuario="${credenciales%%:*}"
+          clave="${credenciales#*:}"
+          echo "::add-mask::$clave"
+          docker run --rm -v "$PWD/db/migration:/flyway/sql:ro" \
+            -e FLYWAY_URL="jdbc:postgresql://${destino}?sslmode=require" \
+            -e FLYWAY_USER="$usuario" -e FLYWAY_PASSWORD="$clave" \
+            -e FLYWAY_LOCATIONS=filesystem:/flyway/sql \
+            flyway/flyway:11 migrate
+          for semilla in db/seed/*.sql; do
+            [ -e "$semilla" ] || continue
+            docker run --rm -v "$PWD/db/seed:/seed:ro" postgres:17-alpine \
+              psql "${RENDER_DATABASE_URL}?sslmode=require" -v ON_ERROR_STOP=1 --single-transaction -f "/seed/$(basename "$semilla")"
+          done
       # Los servicios de Render basados en imagen no se redespliegan solos al publicar una nueva:
       # el deploy hook vuelve a descargar :latest. La URL es un secreto del repositorio.
       - name: Avisar a Render
