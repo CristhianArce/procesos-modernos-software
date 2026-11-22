@@ -21,7 +21,165 @@ components:
       properties:
         error:
           type: string
+    ErrorValidacion:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+        detalles:
+          type: array
+          items:
+            type: object
+            properties:
+              campo:
+                type: string
+              mensaje:
+                type: string
+    Nodo:
+      type: object
+      required: [id, nombre, ubicacion, estado, creadoEn]
+      properties:
+        id:
+          type: string
+          format: uuid
+        nombre:
+          type: string
+        ubicacion:
+          type: [string, "null"]
+        estado:
+          type: string
+          enum: [conectado, desconectado]
+        creadoEn:
+          type: string
+          format: date-time
+    NodoCrear:
+      type: object
+      required: [nombre]
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 80
+        ubicacion:
+          type: [string, "null"]
+          maxLength: 120
+    NodoEditar:
+      type: object
+      description: Al menos un campo. El estado no se edita aquí.
+      minProperties: 1
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 80
+        ubicacion:
+          type: [string, "null"]
+          maxLength: 120
+    Lectura:
+      type: object
+      required: [id, sensorId, voltaje, corriente, potencia, tomadaEn]
+      properties:
+        id:
+          type: string
+          format: uuid
+        sensorId:
+          type: string
+          format: uuid
+        voltaje:
+          type: number
+        corriente:
+          type: number
+        potencia:
+          type: number
+        tomadaEn:
+          type: string
+          format: date-time
+    Sensor:
+      type: object
+      required: [id, nodoId, nombre, umbralVoltaje, umbralCorriente, umbralPotencia, creadoEn, ultimaLectura]
+      properties:
+        id:
+          type: string
+          format: uuid
+        nodoId:
+          type: string
+          format: uuid
+        nombre:
+          type: string
+        umbralVoltaje:
+          type: [number, "null"]
+        umbralCorriente:
+          type: [number, "null"]
+        umbralPotencia:
+          type: [number, "null"]
+        creadoEn:
+          type: string
+          format: date-time
+        ultimaLectura:
+          description: Última lectura del sensor, o null si aún no tiene.
+          oneOf:
+            - $ref: "#/components/schemas/Lectura"
+            - type: "null"
+    SensorCrear:
+      type: object
+      required: [nodoId, nombre]
+      properties:
+        nodoId:
+          type: string
+          format: uuid
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 80
+        umbralVoltaje:
+          type: [number, "null"]
+          exclusiveMinimum: 0
+        umbralCorriente:
+          type: [number, "null"]
+          exclusiveMinimum: 0
+        umbralPotencia:
+          type: [number, "null"]
+          exclusiveMinimum: 0
+    SensorEditar:
+      type: object
+      description: Al menos un campo. Un umbral en null lo quita. El nodo no se edita.
+      minProperties: 1
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 80
+        umbralVoltaje:
+          type: [number, "null"]
+          exclusiveMinimum: 0
+        umbralCorriente:
+          type: [number, "null"]
+          exclusiveMinimum: 0
+        umbralPotencia:
+          type: [number, "null"]
+          exclusiveMinimum: 0
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      description: Identificador UUID. Uno que no existe o está mal formado responde 404.
+      schema:
+        type: string
   responses:
+    DatosInvalidos:
+      description: Datos inválidos, con el detalle de cada campo; no se guarda nada
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorValidacion"
+    NoEncontrado:
+      description: El identificador no existe
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
     NoAutenticado:
       description: Sin sesión o token válido
       content:
@@ -156,3 +314,256 @@ paths:
                 type: string
         "401":
           $ref: "#/components/responses/NoAutenticado"
+  /api/nodos:
+    get:
+      summary: Listar los nodos
+      description: Administradores y técnicos.
+      security:
+        - sesion: []
+      responses:
+        "200":
+          description: Nodos de la red
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Nodo"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+    post:
+      summary: Crear un nodo
+      description: Solo administradores. El nodo nace con estado `conectado`.
+      security:
+        - sesion: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NodoCrear"
+      responses:
+        "201":
+          description: Nodo creado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Nodo"
+        "400":
+          $ref: "#/components/responses/DatosInvalidos"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+        "403":
+          $ref: "#/components/responses/SinPermiso"
+  /api/nodos/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      summary: Consultar un nodo
+      description: Administradores y técnicos.
+      security:
+        - sesion: []
+      responses:
+        "200":
+          description: El nodo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Nodo"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+        "404":
+          $ref: "#/components/responses/NoEncontrado"
+    patch:
+      summary: Editar el nombre o la ubicación de un nodo
+      description: Solo administradores.
+      security:
+        - sesion: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NodoEditar"
+      responses:
+        "200":
+          description: Nodo actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Nodo"
+        "400":
+          $ref: "#/components/responses/DatosInvalidos"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+        "403":
+          $ref: "#/components/responses/SinPermiso"
+        "404":
+          $ref: "#/components/responses/NoEncontrado"
+    delete:
+      summary: Eliminar un nodo
+      description: Solo administradores. Elimina también sus sensores y lecturas.
+      security:
+        - sesion: []
+      responses:
+        "204":
+          description: Nodo eliminado
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+        "403":
+          $ref: "#/components/responses/SinPermiso"
+        "404":
+          $ref: "#/components/responses/NoEncontrado"
+  /api/sensores:
+    get:
+      summary: Listar los sensores de un nodo
+      description: Administradores y técnicos. Cada sensor trae su última lectura.
+      security:
+        - sesion: []
+      parameters:
+        - name: nodoId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Sensores del nodo
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Sensor"
+        "400":
+          $ref: "#/components/responses/DatosInvalidos"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+        "404":
+          $ref: "#/components/responses/NoEncontrado"
+    post:
+      summary: Agregar un sensor a un nodo
+      description: Solo administradores. Responde 404 si el nodo no existe.
+      security:
+        - sesion: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SensorCrear"
+      responses:
+        "201":
+          description: Sensor creado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Sensor"
+        "400":
+          $ref: "#/components/responses/DatosInvalidos"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+        "403":
+          $ref: "#/components/responses/SinPermiso"
+        "404":
+          $ref: "#/components/responses/NoEncontrado"
+  /api/sensores/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      summary: Consultar un sensor con su última lectura
+      description: Administradores y técnicos.
+      security:
+        - sesion: []
+      responses:
+        "200":
+          description: El sensor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Sensor"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+        "404":
+          $ref: "#/components/responses/NoEncontrado"
+    patch:
+      summary: Editar el nombre o los umbrales de un sensor
+      description: Solo administradores.
+      security:
+        - sesion: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SensorEditar"
+      responses:
+        "200":
+          description: Sensor actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Sensor"
+        "400":
+          $ref: "#/components/responses/DatosInvalidos"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+        "403":
+          $ref: "#/components/responses/SinPermiso"
+        "404":
+          $ref: "#/components/responses/NoEncontrado"
+    delete:
+      summary: Eliminar un sensor
+      description: Solo administradores. Elimina también sus lecturas.
+      security:
+        - sesion: []
+      responses:
+        "204":
+          description: Sensor eliminado
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+        "403":
+          $ref: "#/components/responses/SinPermiso"
+        "404":
+          $ref: "#/components/responses/NoEncontrado"
+  /api/simulador:
+    post:
+      summary: Simular una lectura por cada sensor de un nodo
+      description: >-
+        Solo administradores. Registra una lectura de voltaje, corriente y potencia por cada sensor
+        del nodo. Un nodo sin sensores responde 200 con cero lecturas.
+      security:
+        - sesion: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nodoId]
+              properties:
+                nodoId:
+                  type: string
+                  format: uuid
+      responses:
+        "200":
+          description: Lecturas registradas
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [lecturas]
+                properties:
+                  lecturas:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Lectura"
+        "400":
+          $ref: "#/components/responses/DatosInvalidos"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+        "403":
+          $ref: "#/components/responses/SinPermiso"
+        "404":
+          $ref: "#/components/responses/NoEncontrado"
