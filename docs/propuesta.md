@@ -229,7 +229,7 @@ La arquitectura de agentes es la del [flujo del orquestador](flujo-orquestador.m
 | Agente o skill | Paso | Responsabilidad | Rechaza cuando | Entrega |
 | --- | --- | --- | --- | --- |
 | `orquestador` (skill, sesión principal) | 0–10 | Encadena los pasos, aplica topes y reglas de Bloqueado y Escalado; corre los skills de OpenSpec (`/openspec-explore`, `/openspec-propose`, `/openspec-apply-change`) | Falta la línea base, se agota el presupuesto o se requiere algo prohibido | Sí (flujo único; sin `/openspec-explore`) |
-| `preparador` | 1 | Rama en el checkout principal (worktree: pospuesto), volcado del issue con criterios numerados `CA-n` | El issue está cerrado o ya tiene PR, la rama tiene cambios o falta la línea base de OpenSpec | Sí |
+| `preparador` | 1 | Rama desde `main` en el checkout principal, volcado del issue con criterios numerados `CA-n` | El issue está cerrado o ya tiene PR, la rama tiene cambios o falta la línea base de OpenSpec | Sí |
 | `preguntas-tecnicas` | 2–4 | Responde dudas técnicas con evidencia del código y separa las de negocio | — (clasifica, no rechaza) | Pospuesto |
 | `decisor` (3 agentes + consolidador) | 2–5, 7 | Decide las dudas de negocio por votación; por defecto, 3 llamadas `Agent` en paralelo y un consolidador (el workflow guardado es opcional) | La pregunta exige algo prohibido | Pospuesto (las dudas de negocio se le preguntan a la persona) |
 | `revisor-salida` | G1–G4 | Puertas de calidad tras cada comando de OpenSpec | Criterios sin mapear, `openspec validate` inválido, tareas sin hacer o código que no sigue la spec (`CORREGIR` o `BLOQUEAR`) | Solo G2, con `openspec validate --strict` y la salida del script `trazabilidad-grep.mjs` |
@@ -276,7 +276,7 @@ El flujo completo del orquestador es demasiado largo para la demo de 5 a 10 minu
 
 Ajustes para que quepa en el tiempo (meta: 5 minutos o menos en el ensayo):
 
-- Trabaja en el checkout principal, en la rama `feature/issue-<n>-<slug>`, sin worktree: reutiliza `node_modules` y no corre `npm ci`.
+- Trabaja en el checkout principal, en la rama `feature/issue-<n>-<slug>`, creada desde `main`: reutiliza `node_modules` y no corre `npm ci`.
 - `db` ya está levantada y migrada antes de empezar.
 - `build-test` reducido: `typecheck`, `test:unit` y `test:integration`; el lint y `next build` los corre el CI.
 - `revisor-reglas` (sonnet / medium) corre en paralelo con `build-test`.
@@ -337,7 +337,7 @@ Hoy es el sábado 21 de noviembre de 2026 y la entrega es el martes 24 a las 18:
   - Índice `AGENTS_LOG.md`.
 - **Pospuesto** (queda documentado en el [flujo del orquestador](flujo-orquestador.md), pero no se construye para la entrega):
   - El agente `trazabilidad` (lo reemplaza el script `trazabilidad-grep.mjs`; el archivo del agente existe pero el flujo no lo usa), la puerta G3 y la trazabilidad final del paso 8.
-  - Worktrees, `entorno-docker` (solo servía al smoke local) y `openspec-explore` con `preguntas-tecnicas`.
+  - `entorno-docker` (solo servía al smoke local) y `openspec-explore` con `preguntas-tecnicas`.
   - Decisor (3 agentes en paralelo más consolidador) y revisor cruzado `Plan`.
   - El ciclo del paso 7: `revisor-pr`, automatización de `esperar-ci`, `validador-comentarios` y resolución de hilos por GraphQL.
   - `generar-planes-prueba` y `ejecutor-e2e` con capturas por verificación, reemplazados por los 2 smoke escritos a mano en el CI.
@@ -378,7 +378,7 @@ Los dos riesgos con mayor probabilidad de afectar la nota son que la demo indivi
 | `docker compose` falla en algún portátil | Ensayar en máquinas ajenas el lunes 23, documentar requisitos y tener devcontainer o Codespaces como alternativa |
 | Wi-Fi caído en el salón | La demo necesita internet (Claude Code, `gh`, push), así que no hay modo sin red: hotspot del celular por estudiante, dependencias e imágenes ya descargadas, demo que tolera no hacer push (evidencia local) y video pregrabado |
 | La demo no cabe en 10 minutos | Flujo único de 8 pasos (sección 7): checkout principal sin `npm ci`, BD ya migrada, `build-test` reducido en paralelo con `revisor-reglas`, solo G2 con un `CORREGIR`, una sola pasada de corrección; meta de 5 minutos en el ensayo |
-| Rutas largas en Windows (`node_modules` dentro de `Documents\EAFIT\...`) | `git config --global core.longpaths true` y `LongPathsEnabled`; el orquestador no crea worktrees (pospuestos) |
+| Rutas largas en Windows (`node_modules` dentro de `Documents\EAFIT\...`) | `git config --global core.longpaths true` y `LongPathsEnabled`; el orquestador no crea worktrees |
 | Conflictos entre historias desarrolladas en paralelo | Puntos de extensión en la línea base, un archivo y una migración por historia y reglas de nombres en las reglas del proyecto |
 | El despliegue gratuito en Render se duerme tras 15 minutos y su base vence a los 30 días | Abrir la URL un par de minutos antes de la demo para despertar el servicio; la fase 1 también puede mostrarse con `docker compose` sobre la misma imagen; si la base caduca, se crea otra y se aplican de nuevo las migraciones |
 | La multiagencia resulta ser teatro | Puerta G2 y `revisor-reglas` con veredicto propio, `evidencias/issue-<n>/`, `AGENTS_LOG.md` y al menos un rechazo real con su corrección |
