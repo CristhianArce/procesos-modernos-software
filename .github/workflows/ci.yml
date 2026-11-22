@@ -1,5 +1,5 @@
 # CI mínimo: rápido en cada PR; los controles de seguridad corren solo al fusionar en main.
-# La HU 2 agrega después Postgres de servicio, Flyway, CodeQL y el build de la imagen (CD).
+# La HU 2 agrega después Postgres de servicio, Flyway, CodeQL y el CD que publica la imagen.
 name: CI
 
 on:
@@ -55,6 +55,36 @@ jobs:
         run: npm run test:integration
       - name: Build
         run: npm run build
+
+  imagen:
+    name: Imagen de Docker (build y arranque)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: docker/setup-buildx-action@v4
+      # Solo construye: no publica. La publicación en ghcr.io es del CD.
+      - name: Construir la imagen
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: false
+          load: true
+          tags: tablero:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      # Valores de relleno: /api/health no usa la BD ni los secretos.
+      - name: Arrancar la imagen y consultar /api/health
+        run: |
+          docker run -d --name app -p 3000:3000 \
+            -e DATABASE_URL=postgres://ci:ci@localhost:5432/ci \
+            -e SESSION_SECRET=ci -e METRICS_TOKEN=ci tablero:ci
+          for i in $(seq 1 30); do
+            curl -fsS http://localhost:3000/api/health && exit 0
+            sleep 1
+          done
+          docker logs app
+          exit 1
 
   seguridad:
     name: Seguridad (gitleaks y npm audit)
