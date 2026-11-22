@@ -6,7 +6,7 @@ Cada historia tiene su archivo en esta carpeta (el cuerpo del issue de GitHub) y
 |---|---|---|---|---|---|
 | 1a | [Configurar la IA del flujo SDD (OpenSpec, agentes, skills)](hu-01a-configurar-la-ia-del-flujo-sdd.md) | Habilitadora | #1 | HU 1b (#2) y HU 2 solo para CA-6 y CA-7 | 7 |
 | 1b | [Preparar las herramientas de desarrollo del proyecto](hu-01b-preparar-las-herramientas-de-desarrollo-del-proyecto.md) | Habilitadora | #2 | – (su change espera el `openspec init` de la HU 1a, #1) | 7 |
-| 2 | [Preparar infraestructura y CI/CD del proyecto](hu-02-preparar-infraestructura-y-ci-cd-del-proyecto.md) | Habilitadora | #18 | HU 1a (#1) y HU 1b (#2) | 7 |
+| 2 | [Preparar infraestructura y CI/CD del proyecto](hu-02-preparar-infraestructura-y-ci-cd-del-proyecto.md) | Habilitadora | #18 | HU 1a (#1) y HU 1b (#2) | 8 |
 | 3 | [Iniciar sesión con roles de administrador y técnico](hu-03-iniciar-sesion-con-roles-de-administrador-y-tecnico.md) | Línea base | #20 | HU 2 (#18) | 7 |
 | 4 | [Administrar nodos y sensores con simulador de lecturas](hu-04-administrar-nodos-y-sensores-con-simulador-de-lecturas.md) | Línea base | #21 | HU 3 (#20) | 7 |
 | 5 | [Ver el dashboard con lecturas, gráficas y alertas por umbral](hu-05-ver-el-dashboard-con-lecturas-graficas-y-alertas-por-umbral.md) | Línea base | #22 | HU 4 (#21) | 7 |

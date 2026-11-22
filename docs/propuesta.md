@@ -13,7 +13,7 @@ La aplicación permite administrar nodos y sensores de una red eléctrica, simul
 - Todo corre local con `docker compose` (BD, migraciones con Flyway, semilla y app; ver sección 4), porque cada estudiante construye su historia en su propio portátil.
 - Las historias de clase son independientes entre sí: cada una añade su carpeta, su tabla y su migración, y se enchufa en puntos de extensión ya construidos.
 - Los agentes de IA hacen trabajo real y verificable: evidencias por historia, un registro de actividad y al menos un rechazo documentado de una puerta de calidad o un revisor.
-- La infraestructura se reduce a una imagen de Docker (una sola app Next.js con interfaz y API) y Postgres. Por ahora el alcance llega hasta construir la imagen y publicarla en GitHub Container Registry; el despliegue en un entorno público queda pospuesto.
+- La infraestructura se reduce a una imagen de Docker (una sola app Next.js con interfaz y API) y Postgres. El alcance llega hasta construir la imagen, publicarla en GitHub Container Registry y ejecutarla en Render (plan gratuito); la base de datos en Render se agrega con la HU 3.
 
 Taller: Aplicación de Solución IA bajo Spec-Driven Development. Entrega: 24 de noviembre de 2026, 18:00. Modalidad objetivo: B (SDD multiagente, nota máxima 5.0).
 
@@ -105,7 +105,7 @@ El stack es TypeScript de extremo a extremo en una sola app Next.js (sin monorep
 | Autenticación | JWT propio con roles `admin` y `tecnico` (librería `jose`, en cookie `httpOnly`, verificado en `verifySession`) | Cumple "login con roles" y funciona igual en local y en la imagen publicada |
 | Contenedor | Un solo contenedor (la app Next.js `standalone`) | Arranque local en cuatro pasos: `docker compose up -d --wait db`, `docker compose run --rm flyway migrate info`, `npm run seed` y `docker compose up -d --build --wait app` |
 | Registro de imágenes | GitHub Container Registry (`ghcr.io`) | Gratuito para repositorios públicos y sin cuentas extra: Actions publica con el `GITHUB_TOKEN` (permiso `packages: write`) |
-| Despliegue | Pospuesto | Fuera del alcance actual; la imagen publicada queda lista para cualquier proveedor que acepte contenedores |
+| Despliegue | Render (plan gratuito), servicio web basado en la imagen publicada, definido en `render.yaml` | Ejecuta la imagen de `ghcr.io` sin cambiar el build. Los servicios basados en imagen no se redespliegan solos: el CD llama al *deploy hook* del servicio al publicar. La base de datos de Render se agrega con la HU 3 |
 | CI/CD | GitHub Actions | Lint (`eslint .`; Next.js 16 quitó `next lint`), typecheck, pruebas, migraciones, seguridad, build y publicación de la imagen |
 | Pruebas | Vitest: `test:unit` (servicios y esquemas, sin BD) y `test:integration` (Route Handlers invocando sus funciones `GET`/`POST` con objetos `Request`, contra el Postgres del compose ya migrado), incluidas pruebas de los controles de seguridad (401 sin sesión, 403 con rol incorrecto, 400 por Zod, 429 por rate limit en login, cabeceras de seguridad presentes); `vitest.config.mts` asigna `server-only` a un módulo vacío para poder importar `repo.ts`. Además, 2 smoke de Playwright (`e2e/*.spec.ts`, etiqueta `@smoke`) contra la app levantada con `docker compose` (`BASE_URL`) | Cobertura suficiente sin consumir días. Vitest no puede renderizar Server Components asíncronos: esas páginas se cubren con Playwright. Los handlers usan `sessionFromRequest(req)`, no `cookies()`, para que se puedan probar fuera de Next |
 | Observabilidad | `pino` (logs JSON), `prom-client` (métricas Prometheus), healthcheck de Docker sobre `/api/health` | Sencilla y sin servicios externos: los logs se leen con `docker compose logs app` y las métricas con `curl -H "Authorization: Bearer $METRICS_TOKEN" .../api/metrics`. Un dashboard con Prometheus y Grafana queda pospuesto (ver "Observabilidad") |
@@ -175,7 +175,7 @@ e2e/*.spec.ts · playwright.config.ts · vitest.config.mts (alias de server-only
 - Arranque: `docker compose up -d --wait db` → `docker compose run --rm flyway migrate info` → `npm run seed` (con `DATABASE_URL` apuntando al puerto que devuelve `docker compose port db 5432`) → `docker compose up -d --build --wait app`. Un `docker compose up` a secas no migra ni carga la semilla.
 - `npm run seed` aplica de forma idempotente los archivos `db/seed/<modulo>.sql`. La HU 2 crea el mecanismo (todavía sin tablas); cada historia de la 3 a la 5 agrega la semilla de su módulo, así no hay un archivo de semilla compartido.
 - En cada PR, GitHub Actions construye la imagen sin publicarla, para detectar fallos de build antes del merge.
-- Al fusionar en `main`, un job con `permissions: packages: write` inicia sesión en `ghcr.io` con el `GITHUB_TOKEN` y publica `ghcr.io/cristhianarce/procesos-modernos-software:latest` y `:sha-<commit>`. Los paquetes nuevos nacen privados: en la HU 2 se marca público una vez, para que cualquiera pueda hacer `docker pull` sin credenciales. Los merges que solo tocan `openspec/`, `evidencias/`, `AGENTS_LOG.md` o `docs/` no vuelven a publicar (`paths-ignore`).
+- Al fusionar en `main`, un job con `permissions: packages: write` inicia sesión en `ghcr.io` con el `GITHUB_TOKEN` y publica `ghcr.io/cristhianarce/procesos-modernos-software:latest` y `:sha-<commit>`. El paquete hereda la visibilidad pública del repositorio por la etiqueta `org.opencontainers.image.source`, así que cualquiera puede hacer `docker pull` sin credenciales; el nombre de la imagen se pasa a minúsculas porque `ghcr.io` lo exige. Los merges que solo tocan `openspec/`, `evidencias/`, `AGENTS_LOG.md` o `docs/` no vuelven a publicar (`paths-ignore`).
 - **Notificaciones sin servicios externos:** la historia 7 guarda la notificación en una tabla y la muestra en la interfaz; un correo real queda fuera del alcance.
 - **Demo individual:** cada estudiante trabaja en local con `docker compose`.
 
@@ -188,7 +188,7 @@ e2e/*.spec.ts · playwright.config.ts · vitest.config.mts (alias de server-only
   - de negocio, opcionales: `auth_login_fallidos_total`, `simulador_lecturas_total`, `alertas_umbral_total{severidad}`. Una historia agrega su contador solo si tiene una acción de negocio relevante, en `src/modulos/<modulo>/metrics.ts` sobre el registro de `src/lib/metrics.ts` (por ejemplo `nodos_aislados_total` en la historia 6), sin editar `src/lib/`. En modo `demo` nunca es obligatorio.
 - **Alarmas:** por ahora no hay alarmas operativas automáticas; las alertas por umbral de la historia 5 son de negocio. **Pospuesto:** un perfil `observabilidad` del compose con Prometheus y Grafana (dashboard y reglas como "app caída", "5xx > 5 %" o "pico de alertas por umbral"), que se apoya en `/api/metrics` sin cambiar la app.
 
-**Despliegue (pospuesto):** la rúbrica pide un despliegue accesible, pero por ahora no se aborda. La opción evaluada fue Render (servicio web y Postgres gratuitos definidos en `render.yaml`, con los límites de la sección 12); la imagen publicada en `ghcr.io` permite retomarlo sin cambiar el build.
+**Despliegue (Render):** la rúbrica pide un despliegue accesible. `render.yaml` define un servicio web gratuito que ejecuta `ghcr.io/cristhianarce/procesos-modernos-software:latest`, con `PORT=3000`, `/api/health` como health check y `SESSION_SECRET` y `METRICS_TOKEN` generados por Render. Un servicio basado en imagen no se redespliega al publicar una imagen nueva, así que el último paso de `cd.yml` llama al *deploy hook* (secreto `RENDER_DEPLOY_HOOK_URL`) y se omite si el secreto no existe. Hoy no hay base de datos: se agrega con la primera migración (HU 3), y la base gratuita vence a los 30 días (límites en la sección 12).
 
 ## 5. Backlog de historias de usuario
 
@@ -345,7 +345,7 @@ Hoy es el sábado 21 de noviembre de 2026 y la entrega es el martes 24 a las 18:
   - La automatización de `cierre-post-merge`. El archivo se hace a mano con los mismos comandos, igual después del merge y uno a la vez.
   - El hook `guardia`.
   - Prometheus y Grafana.
-  - El despliegue.
+  - La base de datos en Render y las migraciones en el entorno público (las agrega la HU 3).
 
 **Cronograma**
 
@@ -371,7 +371,7 @@ Cada criterio de la rúbrica tiene evidencias concretas que se guardan en el rep
 
 ## 11. Riesgos y mitigaciones
 
-Los dos riesgos con mayor probabilidad de afectar la nota son que la demo individual falle en un portátil concreto y que falte el despliegue que pide la rúbrica, hoy pospuesto.
+Los dos riesgos con mayor probabilidad de afectar la nota son que la demo individual falle en un portátil concreto y que el despliegue gratuito se duerma o caduque justo en la demo.
 
 | Riesgo | Mitigación |
 | --- | --- |
@@ -381,7 +381,7 @@ Los dos riesgos con mayor probabilidad de afectar la nota son que la demo indivi
 | La demo no cabe en 10 minutos | Flujo único de 8 pasos (sección 7): checkout principal sin `npm ci`, BD ya migrada, `build-test` reducido en paralelo con `revisor-reglas`, solo G2 con un `CORREGIR`, una sola pasada de corrección; meta de 5 minutos en el ensayo |
 | Rutas largas en Windows (`node_modules` dentro de `Documents\EAFIT\...`) | `git config --global core.longpaths true` y `LongPathsEnabled`; el orquestador no crea worktrees (pospuestos) |
 | Conflictos entre historias desarrolladas en paralelo | Puntos de extensión en la línea base, un archivo y una migración por historia y reglas de nombres en las reglas del proyecto |
-| La rúbrica exige despliegue y está pospuesto | La imagen publicada en `ghcr.io` permite desplegar en cualquier proveedor de contenedores sin cambiar el build (la opción evaluada es Render, sección 12); mientras tanto, la fase 1 se presenta con `docker compose` sobre esa imagen |
+| El despliegue gratuito en Render se duerme tras 15 minutos y su base vence a los 30 días | Abrir la URL un par de minutos antes de la demo para despertar el servicio; la fase 1 también puede mostrarse con `docker compose` sobre la misma imagen; si la base caduca, se crea otra y se aplican de nuevo las migraciones |
 | La multiagencia resulta ser teatro | Puerta G2 y `revisor-reglas` con veredicto propio, `evidencias/issue-<n>/`, `AGENTS_LOG.md` y al menos un rechazo real con su corrección |
 | El flujo completo del orquestador no cabe en la demo de 10 minutos | Un solo modo reducido a 8 pasos (≤ 5 minutos), lo demás pospuesto, y respaldo con los skills de OpenSpec a mano |
 
@@ -391,8 +391,8 @@ Los puntos pendientes se verificaron el 21 de noviembre de 2026:
 
 - **Comandos de OpenSpec en Claude Code:** con OpenSpec 2.1.0 no existen `/opsx:*`; `openspec init --tools claude --scope project` instala skills (`/openspec-propose` y los demás) en `.claude/skills/` y una copia en `.agents/skills/`. La 2.1.1 salió el 19 de noviembre; se fija la serie 2.1.x. `openspec validate <change> --strict --type change --no-interactive` y `openspec archive <change> --yes` funcionan sin interacción. `verify` existe en el perfil extendido.
 - **`isolation: worktree` en subagentes:** está en la documentación oficial de Claude Code (crea el worktree en `.claude/worktrees/`). También se confirmó que la herramienta `Agent` acepta `model` y `effort` por invocación (además del frontmatter del agente) y que los subagentes no pueden lanzar workflows, así que el `decisor` lo lanza solo la sesión principal.
-- **Límites gratuitos de Render (para cuando se retome el despliegue):** confirmados en render.com/docs/free (suspensión a los 15 minutos, cerca de 1 minuto para despertar, 750 horas al mes, Postgres de 1 GB que vence a los 30 días más 14 de gracia, una base gratuita por espacio de trabajo, SMTP bloqueado). Los *Preview Environments* exigen plan Pro, así que no hay CD efímero por PR.
-- **GitHub:** el repositorio es público, así que CodeQL, `ghcr.io` y gitleaks (cuenta personal) son gratuitos; también los environments con revisores obligatorios, para cuando se retome el despliegue.
+- **Límites gratuitos de Render:** confirmados en render.com/docs/free (suspensión a los 15 minutos, cerca de 1 minuto para despertar, 750 horas al mes, Postgres de 1 GB que vence a los 30 días más 14 de gracia, una base gratuita por espacio de trabajo, SMTP bloqueado). Los *Preview Environments* exigen plan Pro, así que no hay CD efímero por PR.
+- **GitHub:** el repositorio es público, así que CodeQL, `ghcr.io` y gitleaks (cuenta personal) son gratuitos; también los environments con revisores obligatorios, si se separa un entorno de producción.
 - **Observabilidad:** `prom-client` y `pino` requieren el runtime de Node; los Route Handlers corren en Node por defecto, y no se usan en `proxy.ts`. `pino`, `thread-stream` y `pg` ya están en la lista automática de `serverExternalPackages` de Next.js; `prom-client` no, así que se declara en `next.config.ts` para que todas las rutas compartan el registro. `pino` sin transporte escribe JSON a stdout, que es como se usa; se verificará en la HU 1b con la salida `standalone`.
 - **Next.js 16** (16.4.6 a la fecha; la 16.4.5 trae el parche de seguridad de noviembre): `middleware.ts` se renombró `proxy.ts` y corre en Node; `create-next-app` activa Cache Components por defecto; `output: "standalone"` no copia `public/` ni `.next/static`; Vitest no renderiza Server Components asíncronos. El descubrimiento de `menu.ts` con `import.meta.glob` (Turbopack 16.3+) se probará en la HU 1b; si falla, se usa el `registro.ts` manual.
 
