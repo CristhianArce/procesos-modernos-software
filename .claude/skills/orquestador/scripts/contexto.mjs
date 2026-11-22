@@ -4,6 +4,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { dirTrabajo, esPrincipal, fallar, opciones, raizRepo } from "./comun.mjs";
+import { registrarCierre } from "./tiempos.mjs";
 
 export const PUNTOS_EXTENSION = ["menu.ts", "paneles.ts", "on-alerta.ts", "metrics.ts"];
 const listar = (d) => (existsSync(d) ? readdirSync(d).sort() : []);
@@ -139,5 +140,7 @@ if (esPrincipal(import.meta.url)) {
   const trabajo = o.trabajo ?? dirTrabajo(n);
   mkdirSync(trabajo, { recursive: true });
   writeFileSync(join(trabajo, "contexto.md"), generarContexto(raiz));
+  // Cierra el paso 2 en tiempos.md (si la corrida se está midiendo): el orquestador no necesita otra llamada.
+  registrarCierre(join(trabajo, "tiempos.md"), 2);
   console.log(join(trabajo, "contexto.md"));
 }

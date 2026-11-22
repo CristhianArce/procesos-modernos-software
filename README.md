@@ -98,7 +98,7 @@ Cada historia de usuario es un issue de GitHub con criterios de aceptación nume
 - La [configuración inicial](#configuración-inicial-una-vez-por-portátil) hecha (`gh auth status` en verde, OpenSpec 2.1 y Claude Code).
 - El issue existe, abierto, sin PR y con sus `CA-n` (las historias del backlog llevan la etiqueta `historia`). Para redactarlo y publicarlo, en Claude Code: `/crear-hu <descripción o fila del backlog>`.
 - El checkout principal está en `main`, actualizado y **limpio** (`git switch main`, `git pull`, `git status` sin cambios; `.flujo/` se ignora). El orquestador crea la rama de la historia en este checkout, así que corre **una sola sesión de Claude en ese clon** mientras dura; si necesitas otra, usa otro clon.
-- La BD de desarrollo está levantada y migrada y las dependencias instaladas:
+- Docker está en marcha, `.env` existe y las dependencias están instaladas (la BD la levanta, migra y siembra `build-test`, así que de estos comandos solo `npm ci` es obligatorio; los de Docker sirven para comprobarla a mano):
 
   ```
   docker compose up -d --wait db

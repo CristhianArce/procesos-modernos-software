@@ -2,7 +2,8 @@
 // Uso: node .claude/skills/orquestador/scripts/tiempos.mjs inicio <n> [--desde <fase>] [--trabajo <dir>]
 //      node .claude/skills/orquestador/scripts/tiempos.mjs cerrar <n> <paso> [--trabajo <dir>]
 //      node .claude/skills/orquestador/scripts/tiempos.mjs resumen <n> [--meta <segundos>] [--trabajo <dir>]
-// "cerrar" lo llama estado.mjs al escribir "Última fase cerrada", así que el orquestador solo invoca inicio y resumen.
+// Las marcas las dejan registrar-agente.mjs (al registrar cada agente y cada paso de la sesión) y contexto.mjs (paso 2),
+// así que el orquestador solo invoca inicio y resumen. estado.mjs también marca al escribir "Última fase cerrada".
 // La duración de un paso va del cierre del paso anterior (o del inicio de la corrida) a su propio cierre.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -71,7 +72,8 @@ export function calcular(inicio, marcas, ahora, meta = META_SEGUNDOS) {
   }
   const ultimo = marcas.at(-1)?.paso ?? 0;
   if (fin > previo && ultimo < 8) {
-    const paso = ultimo + 1;
+    // Tras verificar (6) o corregir (7), lo que queda hasta el resumen es el paso 8: el 7 es opcional.
+    const paso = ultimo >= 6 ? 8 : ultimo + 1;
     pasos.push({ paso, nombre: `${NOMBRES[paso] ?? `Paso ${paso}`} (hasta el resumen)`, segundos: (fin - previo) / 1000 });
   }
   const total = Math.max(0, (fin - t0) / 1000);

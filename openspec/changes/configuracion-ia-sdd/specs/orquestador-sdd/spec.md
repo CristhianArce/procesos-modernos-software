@@ -21,7 +21,7 @@ El skill `orquestador` SHALL declarar que el modelo no puede invocarlo por su cu
 - **THEN** declara que la invocación por el modelo está deshabilitada
 
 ### Requirement: Orquestación de punta a punta en 5 minutos
-Con un issue abierto y la base de datos levantada y migrada, `/orquestador <n>` SHALL terminar en 5 minutos o menos con un único PR en borrador que cita el issue y el nombre del change, y con `evidencias/issue-<n>/` commiteado en su rama (CA-6).
+Con un issue abierto, Docker en marcha y las credenciales de la base de datos en `.env`, `/orquestador <n>` SHALL terminar en 5 minutos o menos con un único PR en borrador que cita el issue y el nombre del change, y con `evidencias/issue-<n>/` commiteado en su rama (CA-6).
 
 #### Scenario: Issue de prueba (CA-6)
 - **WHEN** la persona ejecuta `/orquestador <n>` sobre el issue de prueba abierto

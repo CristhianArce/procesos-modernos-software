@@ -277,7 +277,7 @@ El flujo completo del orquestador es demasiado largo para la demo de 5 a 10 minu
 Ajustes para que quepa en el tiempo (meta: 5 minutos o menos en el ensayo):
 
 - Trabaja en el checkout principal, en la rama `feature/issue-<n>-<slug>`, creada desde `main`: reutiliza `node_modules` y no corre `npm ci`.
-- `db` ya está levantada y migrada antes de empezar.
+- Docker en marcha y `.env` listo antes de empezar; `build-test` levanta, migra y siembra `db`.
 - `build-test` reducido: `typecheck`, `test:unit` y `test:integration`; el lint y `next build` los corre el CI.
 - `revisor-reglas` (sonnet / medium) corre en paralelo con `build-test`.
 - Solo G2, con máximo un `CORREGIR`; G3 está pospuesto.

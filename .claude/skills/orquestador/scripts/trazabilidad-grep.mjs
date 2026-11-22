@@ -1,8 +1,10 @@
 // Busca cada CA-n de issue.md en las specs y tareas de un change (apoyo para G2) y, con --pruebas <n>,
 // en los nombres de las pruebas automatizadas que citan "#<n> CA-k" (pasos 6 y 8 del orquestador).
-// Uso: node .claude/skills/orquestador/scripts/trazabilidad-grep.mjs <issue.md> <dir-del-change> [--pruebas <n>] [--salida <trabajo>/trazabilidad.md]
+// Uso: node .claude/skills/orquestador/scripts/trazabilidad-grep.mjs <issue.md> <dir-del-change> [--pruebas <n>] [--decisiones <trabajo>/decisiones.md] [--salida <trabajo>/trazabilidad.md]
 // Salida: JSON { criterios: { "CA-1": { requisitos, escenarios, tareas, pruebas? } }, sinCobertura, tareasSinCriterio,
-//   bloquesSinCriterio, criteriosInexistentes, tareasSinNumero, sinPrueba? }. Con --salida, además escribe la tabla en Markdown.
+//   bloquesSinCriterio, criteriosInexistentes, tareasSinNumero, decisionesSinFila?, sinPrueba? }. Con --salida, además escribe la tabla en Markdown.
+// Con --decisiones, decisionesSinFila lista cada "decisión #k" que cita el change y no tiene fila en decisiones.md
+// (lo que G2 rechazaría): el orquestador lo corrige antes de gastar una vuelta del agente.
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { esPrincipal, fallar, opciones, raizRepo } from "./comun.mjs";
@@ -98,8 +100,27 @@ export function pruebasDeHistoria(n, raiz) {
   return r;
 }
 
+// Números de decisión que cita el change ("decisión #k") en proposal, design, tasks y specs.
+export function decisionesCitadas(dirChange) {
+  const archivos = ["proposal.md", "design.md", "tasks.md"].map((a) => join(dirChange, a)).filter((a) => existsSync(a));
+  const nums = new Set();
+  for (const a of [...archivos, ...specsDe(dirChange)]) {
+    // Acepta una sola ("decisión #4") y listas ("decisión #1, #5, #6", "decisiones #11 y #12").
+    for (const m of readFileSync(a, "utf8").matchAll(/decisi[oó]n(?:es)?\s+#\d+(?:\s*(?:,|y|e)\s*#\d+)*/gi)) {
+      for (const k of m[0].matchAll(/#(\d+)/g)) nums.add(Number(k[1]));
+    }
+  }
+  return [...nums].sort((a, b) => a - b);
+}
+
+// Números con fila en decisiones.md (primera columna de la tabla).
+export function decisionesRegistradas(textoDecisiones) {
+  return new Set([...textoDecisiones.matchAll(/^\|\s*#?(\d+)\s*\|/gm)].map((m) => Number(m[1])));
+}
+
 // pruebas: null (G2: todavía no hay pruebas) o la lista que devuelve pruebasDeHistoria.
-export function analizar(textoIssue, dirChange, pruebas = null) {
+// textoDecisiones: null (no se comprueba) o el contenido de decisiones.md.
+export function analizar(textoIssue, dirChange, pruebas = null, textoDecisiones = null) {
   const ids = criteriosDelIssue(textoIssue);
   const criterios = Object.fromEntries(ids.map((id) => [id, { requisitos: [], escenarios: [], tareas: [], ...(pruebas ? { pruebas: [] } : {}) }]));
   const inexistentes = new Set();
@@ -147,6 +168,10 @@ export function analizar(textoIssue, dirChange, pruebas = null) {
   const sinCobertura = ids.filter((id) => criterios[id].escenarios.length === 0 || criterios[id].tareas.length === 0);
   const criteriosInexistentes = [...inexistentes].sort((a, b) => Number(a.slice(3)) - Number(b.slice(3)));
   const r = { criterios, sinCobertura, tareasSinCriterio, bloquesSinCriterio, criteriosInexistentes, tareasSinNumero };
+  if (textoDecisiones !== null) {
+    const hay = decisionesRegistradas(textoDecisiones);
+    r.decisionesSinFila = decisionesCitadas(dirChange).filter((k) => !hay.has(k)).map((k) => `#${k}`);
+  }
   if (pruebas) r.sinPrueba = ids.filter((id) => criterios[id].pruebas.length === 0);
   return r;
 }
@@ -167,6 +192,7 @@ export function aMarkdown(r) {
     ...r.tareasSinCriterio.map((t) => `- Tarea sin CA ni decisión: ${t}`),
     ...r.tareasSinNumero.map((t) => `- Tarea sin número: ${t}`),
     ...r.criteriosInexistentes.map((c) => `- Cita a un criterio que no está en el issue: ${c}`),
+    ...(r.decisionesSinFila ?? []).map((d) => `- Decisión citada sin fila en decisiones.md: ${d}`),
   ];
   const ok = r.sinCobertura.length === 0 && huerfanos.length === 0;
   return [
@@ -196,10 +222,12 @@ export function aMarkdown(r) {
 if (esPrincipal(import.meta.url)) {
   const o = opciones(process.argv.slice(2));
   const [issue, change] = o._;
-  if (!issue || !change) fallar("Uso: trazabilidad-grep.mjs <issue.md> <dir-del-change> [--pruebas <n>] [--salida <ruta.md>]", 2);
+  if (!issue || !change) fallar("Uso: trazabilidad-grep.mjs <issue.md> <dir-del-change> [--pruebas <n>] [--decisiones <ruta.md>] [--salida <ruta.md>]", 2);
   if (o.pruebas !== undefined && !/^\d+$/.test(String(o.pruebas))) fallar("--pruebas espera el número del issue", 2);
   const pruebas = o.pruebas !== undefined ? pruebasDeHistoria(Number(o.pruebas), raizRepo()) : null;
-  const r = analizar(readFileSync(issue, "utf8"), change, pruebas);
+  // Sin el archivo, ninguna decisión citada tiene fila: se informa igual.
+  const decisiones = typeof o.decisiones === "string" ? (existsSync(o.decisiones) ? readFileSync(o.decisiones, "utf8") : "") : null;
+  const r = analizar(readFileSync(issue, "utf8"), change, pruebas, decisiones);
   if (typeof o.salida === "string") writeFileSync(o.salida, aMarkdown(r));
   console.log(JSON.stringify(r, null, 2));
 }

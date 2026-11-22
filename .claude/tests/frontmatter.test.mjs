@@ -61,6 +61,27 @@ test("CA-2: G2 recibe preguntas.md y preguntas.md llega a las evidencias", () =>
   }
 });
 
+test("CA-6: el orquestador registra con un script, no pega CLAUDE.md, prepara G2 y deja lint y build al CI (decisión 29)", () => {
+  const texto = leer(".claude/skills/orquestador/SKILL.md");
+  // Cada script que nombra el skill existe: una ruta rota detendría la corrida.
+  for (const [, ruta] of texto.matchAll(/`node (\.claude\/skills\/[\w./-]+\.mjs)/g)) {
+    assert.ok(existsSync(join(RAIZ, ruta)), `SKILL.md nombra un script que no existe: ${ruta}`);
+  }
+  assert.match(texto, /scripts\/registrar-agente\.mjs <n> "<paso>"/);
+  assert.doesNotMatch(texto, /estado\.mjs escribir <n> "Última fase cerrada"/, "las marcas las deja registrar-agente.mjs");
+  assert.doesNotMatch(texto, /Reglas del proyecto: <secciones 3 a 8/, "CLAUDE.md ya está en el contexto de los agentes");
+  assert.match(texto, /\*\*no se las pegues\*\*/);
+  assert.match(texto, /--decisiones \.flujo\/issue-<n>\/decisiones\.md/);
+  assert.match(texto, /\*\*corrige solo los hallazgos\*\*/);
+  assert.match(texto, /build-test\.mjs <n> --comprobar-bd/);
+  assert.match(texto, /no corras `npm run lint`, `npm run build` ni `openspec validate --all`/);
+  // Los revisores encuentran las reglas sin que se las pasen.
+  for (const a of ["revisor-salida", "revisor-reglas"]) {
+    assert.match(leer(`.claude/agents/${a}.md`), /si no las ves, léelas de `<raiz>\/CLAUDE\.md`/, `${a}: falta el respaldo de CLAUDE.md`);
+  }
+  assert.match(leer(".claude/agents/revisor-salida.md"), /`decisionesSinFila`/);
+});
+
 test("CA-2: los seis skills de OpenSpec están versionados", () => {
   for (const s of SKILLS_OPENSPEC) assert.ok(existsSync(join(RAIZ, ".claude", "skills", s, "SKILL.md")), `falta ${s}`);
 });

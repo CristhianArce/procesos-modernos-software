@@ -9,7 +9,8 @@ import { leer, RAIZ } from "./util.mjs";
 import { escribirCampo, leerCampo } from "../skills/orquestador/scripts/estado.mjs";
 import { calcular, componer, leerMarcas, resumenMarkdown } from "../skills/orquestador/scripts/tiempos.mjs";
 import { extraerPuerto } from "../skills/orquestador/scripts/puerto.mjs";
-import { aMarkdown, analizar, criteriosDelIssue, pruebasDeHistoria, pruebasDeTexto } from "../skills/orquestador/scripts/trazabilidad-grep.mjs";
+import { aMarkdown, analizar, criteriosDelIssue, decisionesCitadas, decisionesRegistradas, pruebasDeHistoria, pruebasDeTexto } from "../skills/orquestador/scripts/trazabilidad-grep.mjs";
+import { filaDeAgente, registrarAgente } from "../skills/orquestador/scripts/registrar-agente.mjs";
 import { planRenombres } from "../skills/orquestador/scripts/migracion-timestamp.mjs";
 import { agentesDesdeLog, copiarEvidencias } from "../skills/orquestador/scripts/copiar-evidencias.mjs";
 import { capacidadesEspecificadas, changesActivos, generarContexto, rutasDelContrato, tablasDeMigraciones } from "../skills/orquestador/scripts/contexto.mjs";
@@ -296,4 +297,95 @@ test("CA-6: contexto.mjs sobre un repo vacío no falla y lo dice", () => {
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test("CA-6: trazabilidad-grep.mjs --decisiones señala cada decisión citada sin fila en decisiones.md", () => {
+  const dir = temporal();
+  try {
+    mkdirSync(join(dir, "specs", "acerca"), { recursive: true });
+    writeFileSync(join(dir, "specs", "acerca", "spec.md"), "## ADDED Requirements\n### Requirement: R (CA-1)\nEl sistema SHALL x (Derivado: decisión #2).\n#### Scenario: E (CA-1)\n- **WHEN** x\n- **THEN** y\n");
+    writeFileSync(join(dir, "tasks.md"), "## 1. Capa\n\n- [ ] 1.1 Hacer algo (CA-1)\n- [ ] 1.2 Otra (Derivado: decisión #3)\n");
+    writeFileSync(join(dir, "design.md"), "La versión sale de package.json (Decisión #1) y se cachea (decisión #12).\n");
+    assert.deepEqual(decisionesCitadas(dir), [1, 2, 3, 12]);
+    const decisiones = "# Decisiones\n\n| # | Fecha | Fase | Decisión |\n|---|---|---|---|\n| 1 | 2026-11-21 | 3 | a |\n| #3 | 2026-11-21 | 3 | b |\n";
+    assert.deepEqual([...decisionesRegistradas(decisiones)], [1, 3]);
+    const issue = "## Criterios numerados\n\n- CA-1: a\n";
+    const r = analizar(issue, dir, null, decisiones);
+    assert.deepEqual(r.decisionesSinFila, ["#2", "#12"]);
+    const md = aMarkdown(r);
+    assert.match(md, /- Decisión citada sin fila en decisiones\.md: #2/);
+    assert.match(md, /Veredicto: incompleta/, "una decisión sin fila la rechazaría G2");
+    assert.deepEqual(analizar(issue, dir, null, "").decisionesSinFila, ["#1", "#2", "#3", "#12"], "decisiones.md vacío: faltan todas");
+    // Listas, como las escribió la HU 3: "decisión #1, #5, #6" y "decisiones #11 y #12".
+    writeFileSync(join(dir, "proposal.md"), "Se apoya en la decisión #1, #5, #6 y en las decisiones #20 y #21. La tarea 3.2 (#99 no es una decisión).\n");
+    assert.deepEqual(decisionesCitadas(dir), [1, 2, 3, 5, 6, 12, 20, 21]);
+    assert.equal(analizar(issue, dir).decisionesSinFila, undefined, "sin --decisiones, la salida no cambia");
+    // Como comando: el archivo de decisiones del ejemplo cubre la única decisión que cita change-ok.
+    const run = spawnSync(process.execPath, [join(SCRIPTS, "trazabilidad-grep.mjs"), join(FIX, "trabajo-ejemplo", "issue.md"), join(FIX, "change-ok"),
+      "--decisiones", join(FIX, "trabajo-ejemplo", "decisiones.md")], { encoding: "utf8" });
+    assert.deepEqual(JSON.parse(run.stdout).decisionesSinFila, []);
+    const sinArchivo = spawnSync(process.execPath, [join(SCRIPTS, "trazabilidad-grep.mjs"), join(FIX, "trabajo-ejemplo", "issue.md"), join(FIX, "change-ok"),
+      "--decisiones", join(dir, "no-existe.md")], { encoding: "utf8" });
+    assert.deepEqual(JSON.parse(sinArchivo.stdout).decisionesSinFila, ["#1"]);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("CA-6: registrar-agente.mjs agrega la fila con la hora real, marca el paso y actualiza estado.md", () => {
+  const dir = temporal();
+  try {
+    const run = (...a) => spawnSync(process.execPath, a, { encoding: "utf8" });
+    const R = join(SCRIPTS, "registrar-agente.mjs");
+    assert.equal(run(join(SCRIPTS, "tiempos.mjs"), "inicio", "900", "--trabajo", dir).status, 0);
+    assert.equal(run(R, "900", "1 Preparar", "preparador", "sonnet / medium", "a1b2", "OK", "--trabajo", dir).status, 0);
+    assert.equal(run(join(SCRIPTS, "contexto.mjs"), "900", "--raiz", join(FIX, "repo-ejemplo"), "--trabajo", dir).status, 0);
+    assert.equal(run(R, "900", "3 Propuesta", "sesión (openspec-propose)", "opus", "-", "acerca propuesto", "--trabajo", dir).status, 0);
+    const corregir = run(R, "900", "4 G2 (intento 1)", "revisor-salida", "sonnet / medium", "c3d4", "CORREGIR", "1", "CRITICAL:", "decisiones", "sin", "fila", "--trabajo", dir);
+    assert.equal(corregir.status, 0, corregir.stderr);
+    const estado = () => readFileSync(join(dir, "estado.md"), "utf8");
+    assert.equal(leerCampo(estado(), "Última fase cerrada"), "3", "un CORREGIR no cierra la fase 4");
+    assert.equal(run(R, "900", "4 G2 (intento 2)", "revisor-salida", "sonnet / medium", "e5f6", "APROBADO", "--trabajo", dir).status, 0);
+    assert.equal(leerCampo(estado(), "Última fase cerrada"), "4");
+    const log = readFileSync(join(dir, "agentes-log.md"), "utf8");
+    assert.match(log, /\| Fecha-hora \| Paso \| Agente \| Modelo \/ effort \| Id del agente \| Veredicto \| Rechazos \|/, "crea el registro desde la plantilla");
+    assert.match(log, /\| \d{4}-\d{2}-\d{2}T[\d:.]+Z \| 4 G2 \(intento 1\) \| revisor-salida \| sonnet \/ medium \| c3d4 \| CORREGIR \| 1 CRITICAL: decisiones sin fila \|/);
+    assert.match(log, /\| 3 Propuesta \| sesión \(openspec-propose\) \| opus \| — \| acerca propuesto \| — \|/);
+    const { marcas } = leerMarcas(readFileSync(join(dir, "tiempos.md"), "utf8"));
+    assert.deepEqual(marcas.map((m) => m.paso), [1, 2, 3, 4, 4], "contexto.mjs cierra el paso 2 y cada intento de G2 deja su marca");
+    assert.equal(run(join(SCRIPTS, "tiempos.mjs"), "resumen", "900", "--trabajo", dir).status, 0, "el resumen admite un paso repetido");
+    // Un rechazo real, en un solo argumento: con #, paréntesis, punto y coma, barra vertical y un "--" dentro.
+    const rechazo = "1 CRITICAL: tarea 3.2 cita decisión #4 (sin fila); falta --strict | y más";
+    assert.equal(run(R, "900", "6 Verificar", "revisor-reglas", "sonnet / high", "g7h8", "1 CRITICAL", rechazo, "--trabajo", dir).status, 0);
+    const agentes = agentesDesdeLog(readFileSync(join(dir, "agentes-log.md"), "utf8"), 900);
+    assert.equal((agentes.match(/^\| (?!Paso|---)/gm) ?? []).length, 5, "copiar-evidencias entiende las filas del script");
+    assert.match(agentes, /\| 1 CRITICAL \| 1 CRITICAL: tarea 3\.2 cita decisión #4 \(sin fila\); falta --strict \\\| y más \|/, "el rechazo llega entero a agentes.md");
+    assert.equal(run(R, "900", "Preparar", "preparador", "sonnet", "x", "OK", "--trabajo", dir).status, 2, "el paso empieza por su número");
+    assert.equal(run(R, "900", "1").status, 2);
+    assert.equal(filaDeAgente({ paso: "6 Verificar", agente: "revisor-reglas", modelo: "sonnet / high", id: "z", veredicto: "0 CRITICAL", rechazos: "a | b\nc" }, new Date("2026-11-22T10:00:00Z")),
+      "| 2026-11-22T10:00:00.000Z | 6 Verificar | revisor-reglas | sonnet / high | z | 0 CRITICAL | a \\| b c |");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("CA-6: sin tiempos.md, registrar-agente.mjs registra igual y no mide", () => {
+  const dir = temporal();
+  try {
+    const r = registrarAgente("900", { paso: "1 Preparar", agente: "preparador", modelo: "sonnet / medium", id: "a", veredicto: "OK" }, dir);
+    assert.equal(r.medido, false);
+    assert.ok(!existsSync(join(dir, "tiempos.md")));
+    assert.match(readFileSync(join(dir, "agentes-log.md"), "utf8"), /\| 1 Preparar \| preparador \|/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("CA-6: tiempos.mjs atribuye al paso 8 lo que queda tras verificar o corregir", () => {
+  const ahora = new Date("2026-11-21T10:10:00Z");
+  const tras6 = calcular("2026-11-21T10:00:00Z", [{ paso: 5, hora: "2026-11-21T10:05:00Z" }, { paso: 6, hora: "2026-11-21T10:08:00Z" }], ahora);
+  assert.deepEqual(tras6.pasos.map((p) => [p.paso, p.segundos]), [[5, 300], [6, 180], [8, 120]]);
+  assert.match(tras6.pasos[2].nombre, /Commit, PR y evidencias \(hasta el resumen\)/);
+  const tras7 = calcular("2026-11-21T10:00:00Z", [{ paso: 7, hora: "2026-11-21T10:09:00Z" }], ahora);
+  assert.equal(tras7.pasos.at(-1).paso, 8);
 });

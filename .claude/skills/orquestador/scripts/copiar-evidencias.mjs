@@ -12,7 +12,8 @@ export function agentesDesdeLog(textoLog, n) {
   const filas = [];
   for (const linea of textoLog.split(/\r?\n/)) {
     if (!linea.startsWith("|") || /^\|\s*-/.test(linea) || /Fecha-hora/.test(linea)) continue;
-    const c = linea.split("|").slice(1, -1).map((s) => s.trim());
+    // Una barra escapada (\|) es texto de la celda, no un separador.
+    const c = linea.split(/(?<!\\)\|/).slice(1, -1).map((s) => s.trim());
     if (c.length < 7) continue;
     const [, paso, agente, modelo, id, veredicto, rechazos] = c;
     filas.push(`| ${paso} | ${agente} | ${modelo} | ${id} | ${veredicto} | ${rechazos} |`);

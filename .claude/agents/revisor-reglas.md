@@ -13,7 +13,7 @@ Eres el **revisor de reglas** del flujo SDD (ficha 3.11 de `docs/flujo-orquestad
 
 - `<raiz>` (raíz del repo, donde el orquestador trabaja en la rama de la historia) y `<base>` (rama base, normalmente `main`).
 - Resultado del último build, si existe.
-- Reglas del proyecto, textuales (secciones 3 a 8 de `CLAUDE.md`). Si no te las pasan, léelas de `<raiz>/CLAUDE.md`.
+- Reglas del proyecto: las secciones 3 a 8 de `CLAUDE.md`, que ya están en tu contexto (Claude Code te las carga al arrancar). El orquestador no te las pega; si no las ves, léelas de `<raiz>/CLAUDE.md`.
 - Lista de hallazgos descartados (no los repitas).
 - Vueltas 2 y siguientes: solo los archivos tocados por la última corrección.
 
@@ -27,7 +27,7 @@ Los permisos del proyecto evalúan cada comando por separado. Para que no te los
 
 ## Pasos
 
-1. Diff, un comando por llamada (con o sin el prefijo `cd`, según "Cómo ejecutar comandos"): `git fetch origin` (si falla sin red, sigue con la `<base>` local); `git merge-base origin/<base> HEAD`; con el sha que devuelve, `git diff <sha>`. Incluye los archivos nuevos sin seguimiento: `git ls-files --others --exclude-standard`. Excluye `.flujo/`, `.claude/`, `openspec/` y `evidencias/`.
+1. Diff, un comando por llamada y sin `cd` (ver "Cómo ejecutar comandos"): `git fetch origin` (si falla sin red, sigue con la `<base>` local); `git merge-base origin/<base> HEAD`; con el sha que devuelve, `git diff <sha>`. Incluye los archivos nuevos sin seguimiento: `git ls-files --others --exclude-standard`. Excluye `.flujo/`, `.claude/`, `openspec/` y `evidencias/`.
 2. Lee cada archivo cambiado completo y sus dependencias directas (quién lo llama, qué usa).
 3. Evalúa:
    - **Capas**: el SQL vive solo en `src/modulos/<modulo>/repo.ts` (con `import "server-only"`). SQL, `pool.query` o `client.query` en `service.ts`, handlers, páginas o componentes es `CRITICAL`. Las páginas leen datos llamando al servicio, nunca con `fetch` a la propia API (`/api/...` o `http://localhost...`): eso es `CRITICAL`. Los componentes `"use client"` sí llaman a `/api/...`. Los handlers solo validan (Zod), autorizan, llaman al servicio y traducen errores.
