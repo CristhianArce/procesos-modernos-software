@@ -1,7 +1,7 @@
 # CD: al fusionar en main publica la imagen en GitHub Container Registry.
-# Etiquetas: latest y sha-<commit>. El despliegue en un entorno público está pospuesto.
-# Los paquetes nuevos nacen privados: la primera vez hay que marcarlo público
-# (perfil del propietario > Packages > procesos-modernos-software > Package settings).
+# Etiquetas: latest y sha-<commit>. Si existe el secreto RENDER_DEPLOY_HOOK_URL, avisa a Render para redesplegar.
+# El paquete hereda la visibilidad del repositorio (público) por la etiqueta
+# org.opencontainers.image.source que agrega docker/metadata-action.
 name: CD
 
 on:
@@ -31,6 +31,9 @@ jobs:
     permissions:
       contents: read
       packages: write
+    env:
+      # Opcional: si el secreto no existe, el paso de Render se omite.
+      RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
     steps:
       - uses: actions/checkout@v6
       # ghcr.io exige el nombre en minúsculas y el dueño del repositorio puede llevar mayúsculas.
@@ -61,3 +64,8 @@ jobs:
           cache-to: type=gha,mode=max
       - name: Comprobar la imagen publicada
         run: docker buildx imagetools inspect ${{ env.IMAGEN }}:latest
+      # Los servicios de Render basados en imagen no se redespliegan solos al publicar una nueva:
+      # el deploy hook vuelve a descargar :latest. La URL es un secreto del repositorio.
+      - name: Avisar a Render
+        if: env.RENDER_DEPLOY_HOOK_URL != ''
+        run: curl -fsS --max-time 30 --retry 2 -X POST "$RENDER_DEPLOY_HOOK_URL" > /dev/null
