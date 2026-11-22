@@ -68,13 +68,16 @@ Si varias sesiones de Claude trabajan en el mismo clon, no cambies de rama en el
 Requisitos: los de la [configuración inicial](#configuración-inicial-una-vez-por-portátil).
 
 ```
-cp .env.example .env                          # completar los valores locales
+cp .env.example .env                          # completar los valores locales (POSTGRES_*, SESSION_SECRET, METRICS_TOKEN)
 docker compose up -d --wait db                # Postgres
 docker compose run --rm flyway migrate info   # aplicar migraciones
-npm ci && npm run seed                        # datos semilla
+npm ci
+DATABASE_URL="postgres://<POSTGRES_USER>:<POSTGRES_PASSWORD>@localhost:$(docker compose port db 5432 | sed 's/.*://')/<POSTGRES_DB>" npm run seed   # datos semilla
 docker compose up -d --build --wait app       # la app, sana según /api/health
 docker compose port app 3000                  # puerto local asignado
 ```
+
+Los puertos del host son efímeros (así varias historias corren a la vez), por eso el seed toma el puerto de la BD de `docker compose port`. Para apagar todo y borrar los datos: `docker compose down -v`.
 
 O, sin compilar, con la imagen publicada:
 
