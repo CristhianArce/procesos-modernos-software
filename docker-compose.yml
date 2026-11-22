@@ -1,0 +1,63 @@
+# Entorno local. Arranque (un `docker compose up` a secas no migra ni carga la semilla):
+#   docker compose up -d --wait db
+#   docker compose run --rm flyway migrate info
+#   DATABASE_URL=postgres://<usuario>:<clave>@localhost:<puerto de `docker compose port db 5432`>/<bd> npm run seed
+#   docker compose up -d --build --wait app
+#   docker compose port app 3000
+# Las variables salen de .env (copia de .env.example). Los puertos del host son efímeros
+# para que varias historias o personas corran a la vez sin chocar.
+name: ${COMPOSE_PROJECT_NAME:-tablero}
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?Falta POSTGRES_USER en .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Falta POSTGRES_PASSWORD en .env}
+      POSTGRES_DB: ${POSTGRES_DB:?Falta POSTGRES_DB en .env}
+    ports:
+      - "5432"
+    volumes:
+      - datos:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  # Servicio de un solo uso: solo corre con `docker compose run --rm flyway migrate info`.
+  flyway:
+    image: flyway/flyway:11
+    profiles: ["tools"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      FLYWAY_URL: ${FLYWAY_URL:-jdbc:postgresql://db:5432/${POSTGRES_DB}}
+      FLYWAY_USER: ${FLYWAY_USER:-${POSTGRES_USER}}
+      FLYWAY_PASSWORD: ${FLYWAY_PASSWORD:-${POSTGRES_PASSWORD}}
+      FLYWAY_LOCATIONS: filesystem:/flyway/sql
+    volumes:
+      - ./db/migration:/flyway/sql:ro
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      SESSION_SECRET: ${SESSION_SECRET:?Falta SESSION_SECRET en .env}
+      METRICS_TOKEN: ${METRICS_TOKEN:?Falta METRICS_TOKEN en .env}
+    ports:
+      - "3000"
+    healthcheck:
+      # node:24-slim no trae curl ni wget.
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
+
+volumes:
+  datos:

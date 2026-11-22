@@ -1,0 +1,19 @@
+# Nada de secretos ni de material del flujo dentro de la imagen.
+.env
+.env.*
+!.env.example
+.git
+.github
+.flujo
+.claude
+.agents
+openspec
+evidencias
+docs
+e2e
+node_modules
+.next
+test-results
+playwright-report
+*.md
+!README.md
