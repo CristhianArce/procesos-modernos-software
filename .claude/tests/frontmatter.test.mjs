@@ -32,11 +32,11 @@ test("CA-2: existen los tres agentes que usa el flujo", () => {
   assert.deepEqual(AGENTES_IMPRESCINDIBLES.filter((a) => !hay.includes(a)), []);
 });
 
-test("CA-2: modelos según flujo-orquestador 1.6 (opus genera, sonnet revisa, lo mecánico en low o haiku)", () => {
+test("CA-2: modelos según flujo-orquestador 1.6 (opus genera, sonnet revisa; trazabilidad, fuera del flujo, en haiku)", () => {
   const agente = (a) => frontmatter(leer(`.claude/agents/${a}.md`));
   assert.equal(agente("trazabilidad").model, "haiku");
   assert.equal(agente("preparador").model, "sonnet");
-  assert.equal(agente("preparador").effort, "low");
+  assert.equal(agente("preparador").effort, "medium");
   assert.equal(agente("revisor-salida").model, "sonnet");
   assert.equal(agente("revisor-reglas").model, "sonnet");
   assert.equal(agente("revisor-reglas").effort, "high");
@@ -47,8 +47,18 @@ test("CA-2: la sesión del orquestador (propuesta, implementación y corrección
   assert.equal(frontmatter(texto).model, "opus");
   assert.doesNotMatch(texto, /Todo con sonnet/);
   // El effort que se pasa al lanzar un agente tiene prioridad sobre su frontmatter: deben coincidir.
-  assert.match(texto, /`preparador` \(`subagent_type: preparador`, `model: sonnet`, `effort: low`\)/);
+  assert.match(texto, /`preparador` \(`subagent_type: preparador`, `model: sonnet`, `effort: medium`\)/);
   assert.match(texto, /agente `revisor-reglas` \(`model: sonnet`, `effort: high`\)/);
+});
+
+test("CA-2: G2 recibe preguntas.md y preguntas.md llega a las evidencias", () => {
+  // Si el orquestador no le pasa la ruta, el criterio 3c de revisor-salida no puede revisarse.
+  assert.match(leer(".claude/skills/orquestador/SKILL.md"), /Preguntas: \.flujo\/issue-<n>\/preguntas\.md\./);
+  assert.match(leer(".claude/skills/orquestador/scripts/copiar-evidencias.mjs"), /"preguntas\.md"/);
+  // El estado `diferida` es la salida para lo que la persona no puede responder: los tres lo conocen.
+  for (const ruta of [".claude/agents/preparador.md", ".claude/agents/revisor-salida.md", ".claude/skills/orquestador/SKILL.md"]) {
+    assert.match(leer(ruta), /`diferida`/, `${ruta}: falta el estado diferida`);
+  }
 });
 
 test("CA-2: los seis skills de OpenSpec están versionados", () => {

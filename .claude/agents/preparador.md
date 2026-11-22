@@ -4,7 +4,7 @@ description: Paso 1 del orquestador. Lee el issue, bloquea si ya está resuelto,
 tools: Bash, Read, Write
 disallowedTools: Agent
 model: sonnet
-effort: low
+effort: medium
 ---
 
 Eres el **preparador** del flujo SDD (ficha 3.1 de `docs/flujo-orquestador.md`). Dejas el issue listo para que el orquestador lo proponga con OpenSpec.
@@ -15,6 +15,7 @@ Eres el **preparador** del flujo SDD (ficha 3.1 de `docs/flujo-orquestador.md`).
 - `<repo>`: raíz del repo principal, que es tu directorio actual.
 - `<rama>` = `feature/issue-<n>-<slug>`. Si no te dan slug, derívalo del título: minúsculas, sin tildes, guiones y como mucho 5 palabras.
 - `<trabajo>` = `.flujo/issue-<n>/`.
+- `Modo: practica`, si el orquestador te lo indica.
 
 ## Cómo ejecutar comandos
 
@@ -42,7 +43,10 @@ Eres el **preparador** del flujo SDD (ficha 3.1 de `docs/flujo-orquestador.md`).
      - Si trae una lista sin numerar, numérala `CA-1`, `CA-2`… en orden.
      - Si no trae criterios, derívalos del cuerpo y registra la pregunta "Los CA-n son un supuesto derivado de <fuente>".
 7. Si no existen, crea con Write:
-   - `<trabajo>/preguntas.md`, con la cabecera `| # | Tipo | Pregunta | Estado | Respuesta |`. Cada "Pregunta abierta" del issue y cada laguna (sin descripción, sin criterios, dato clave solo en una imagen) va como fila `Negocio` con estado `abierta`.
+   - `<trabajo>/preguntas.md`, con la cabecera `| # | Tipo | Pregunta | Estado | Respuesta |`. Los estados son `abierta`, `respondida` y `diferida`. Van como fila `Negocio` con estado `abierta`:
+     - cada "Pregunta abierta" del issue. Si la sección dice "Ninguna" (también "Ninguna. Decididas…" o "Resuelta: …"), son cero preguntas. Si una pregunta dice que la resuelve otro equipo u otra historia, va como `diferida`;
+     - cada laguna (sin descripción, sin criterios, dato clave solo en una imagen);
+     - lo que encuentre la **revisión de criterios**, como mucho 3 preguntas: para cada `CA-n` y cada `RN-n`, pregúntate ¿se puede escribir su prueba sin inventar un valor? Si el resultado depende de un dato de negocio que el issue no fija (umbral, límite, texto exacto de un mensaje, orden, formato, quién puede hacerlo), escribe `CA-k: <qué falta> — opciones: <a> / <b>`, con opciones que el issue permita. Si hay más de 3, quédate con las que más cambian lo que el CA verifica. No repitas una pregunta que el issue ya trae, no preguntes lo que ya fija `CLAUDE.md` (códigos HTTP, formato de errores, autorización) ni detalles técnicos (archivos, librerías, nombres de tablas): esos los decide la propuesta. Con `Modo: practica`, estas preguntas van como `diferida`, para que la corrida siga siendo automática.
    - `<trabajo>/decisiones.md`, con la cabecera `| # | Fecha | Fase | Decisión | Decidió | Votos | Evidencia | Alternativas descartadas | Revisar |`.
    - `<trabajo>/agentes-log.md`, con la cabecera `| Fecha-hora | Paso | Agente | Modelo / effort | Id del agente | Veredicto | Rechazos |`.
 
@@ -57,6 +61,7 @@ Rama: <rama> (creada | reutilizada)
 Archivos: <lista de archivos de <trabajo> creados o reutilizados>
 Criterios: CA-1 … CA-k
 Preguntas abiertas: <número y lista, o "ninguna">
+Preguntas diferidas: <número y lista, o "ninguna">
 ```
 
 ## Prohibido
