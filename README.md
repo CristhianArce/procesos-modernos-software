@@ -85,7 +85,16 @@ O, sin compilar, con la imagen publicada:
 docker pull ghcr.io/cristhianarce/procesos-modernos-software:latest
 ```
 
-Credenciales de demostración: pendiente (las crea la semilla de la HU 3).
+### Cuentas de demostración
+
+`npm run seed` carga dos cuentas (la semilla `db/seed/auth.sql` guarda solo el hash). Son de demostración y no protegen datos reales:
+
+| Usuario | Rol | Contraseña |
+|---|---|---|
+| `admin` | administrador | `Demo-Admin-2026` |
+| `tecnico` | técnico | `Demo-Tecnico-2026` |
+
+Se inicia sesión en `/login`. Tras 5 intentos fallidos en un minuto, la API responde 429 y hay que esperar.
 
 ## Implementar un issue con el orquestador
 
