@@ -1,5 +1,6 @@
 import "server-only";
 import { db } from "@/lib/db";
+import type { ConsultaRecientes } from "./schema";
 
 export type LecturaNueva = { sensorId: string; voltaje: number; corriente: number; potencia: number };
 export type Lectura = LecturaNueva & { id: string; tomadaEn: string };
@@ -33,6 +34,28 @@ export async function ultimasPorSensor(sensorIds: string[]): Promise<Lectura[]> 
     `SELECT DISTINCT ON (sensor_id) ${COLUMNAS} FROM lecturas
      WHERE sensor_id = ANY($1::uuid[]) ORDER BY sensor_id, tomada_en DESC, id DESC`,
     [sensorIds],
+  );
+  return rows.map(aLectura);
+}
+
+/** De la más reciente a la más antigua, filtradas por sensor si se indica (decisión #8). */
+export async function recientes({ sensorId, limite }: ConsultaRecientes): Promise<Lectura[]> {
+  const { rows } = await db().query<Fila>(
+    `SELECT ${COLUMNAS} FROM lecturas WHERE ($1::uuid IS NULL OR sensor_id = $1)
+     ORDER BY tomada_en DESC, id DESC LIMIT $2`,
+    [sensorId ?? null, limite],
+  );
+  return rows.map(aLectura);
+}
+
+/** Las `limite` lecturas más recientes de cada sensor, en una sola consulta, de la más antigua a la más reciente (decisión #12). */
+export async function recientesPorSensor(sensorIds: string[], limite: number): Promise<Lectura[]> {
+  const { rows } = await db().query<Fila>(
+    `SELECT ${COLUMNAS} FROM (
+       SELECT ${COLUMNAS}, row_number() OVER (PARTITION BY sensor_id ORDER BY tomada_en DESC, id DESC) AS n
+       FROM lecturas WHERE sensor_id = ANY($1::uuid[])
+     ) t WHERE n <= $2 ORDER BY sensor_id, tomada_en, id`,
+    [sensorIds, limite],
   );
   return rows.map(aLectura);
 }

@@ -3,7 +3,7 @@ import { ErrorHttp } from "@/lib/errores";
 import { ultimasLecturas, type Lectura } from "@/modulos/lecturas/service";
 import { obtenerNodo } from "@/modulos/nodos/service";
 import * as repo from "../repo";
-import { crearSensor, editarSensor, eliminarSensor, listarSensores, obtenerSensor } from "../service";
+import { crearSensor, editarSensor, eliminarSensor, listarSensores, listarTodosLosSensores, obtenerSensor } from "../service";
 
 vi.mock("../repo");
 vi.mock("@/modulos/nodos/service");
@@ -55,6 +55,11 @@ describe("servicio de sensores", () => {
     const sensores = await listarSensores(nodoId);
     expect(sensores.map((s) => s.ultimaLectura)).toEqual([lectura, null]);
     expect(ultimas).toHaveBeenCalledWith([id, otro.id]);
+  });
+
+  it("#22 CA-1: listar todos los sensores delega en el repo", async () => {
+    r.listarTodos.mockResolvedValue([sensor]);
+    expect(await listarTodosLosSensores()).toEqual([sensor]);
   });
 
   it("#21 CA-4: obtener, editar y eliminar lanzan 404 si el sensor no existe", async () => {

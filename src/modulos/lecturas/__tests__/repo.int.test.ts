@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { db } from "@/lib/db";
-import { insertar, ultimasPorSensor } from "../repo";
+import { insertar, recientes, recientesPorSensor, ultimasPorSensor } from "../repo";
 
 const prefijo = `int-repo-lecturas-${randomUUID().slice(0, 8)}`;
 let sensores: string[];
@@ -38,5 +38,34 @@ describe("repo de lecturas", () => {
     const ultimas = await ultimasPorSensor([a, sinLecturas]);
 
     expect(ultimas).toEqual([reciente]);
+  });
+
+  // Lecturas con fechas fijas en el futuro, para que el orden no dependa de las demás pruebas.
+  const conFechas = async (sensorId: string, horas: number[]) =>
+    (
+      await db().query(
+        `INSERT INTO lecturas (sensor_id, voltaje, corriente, potencia, tomada_en)
+         SELECT $1::uuid, h, 1, h, now() + make_interval(hours => h) FROM unnest($2::int[]) AS h RETURNING id, voltaje`,
+        [sensorId, horas],
+      )
+    ).rows as { id: string; voltaje: number }[];
+
+  it("#22 CA-6: recientes va de la más reciente a la más antigua, respeta el límite y filtra por sensor", async () => {
+    const [, b] = sensores;
+    const filas = await conFechas(b, [101, 103, 102]);
+    const id = (h: number) => filas.find((f) => f.voltaje === h)!.id;
+
+    expect((await recientes({ sensorId: b, limite: 2 })).map((l) => l.id)).toEqual([id(103), id(102)]);
+    expect((await recientes({ limite: 1 }))[0].id).toBe(id(103));
+  });
+
+  it("#22 CA-2: recientesPorSensor trae como mucho el límite por sensor, las más recientes, en orden ascendente", async () => {
+    const [, , c] = sensores;
+    const filas = await conFechas(c, [201, 204, 202, 203]);
+    const id = (h: number) => filas.find((f) => f.voltaje === h)!.id;
+
+    const serie = (await recientesPorSensor([c], 3)).map((l) => l.id);
+
+    expect(serie).toEqual([id(202), id(203), id(204)]);
   });
 });

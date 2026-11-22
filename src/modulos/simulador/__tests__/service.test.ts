@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ErrorHttp } from "@/lib/errores";
+import { registrarAlertas } from "@/modulos/alertas/service";
 import { registrarLecturas } from "@/modulos/lecturas/service";
 import { listarSensores, type SensorConLectura } from "@/modulos/sensores/service";
 import { simular } from "../service";
 
 vi.mock("@/modulos/lecturas/service");
+vi.mock("@/modulos/alertas/service");
 vi.mock("@/modulos/sensores/service");
 
 const sensores = vi.mocked(listarSensores);
@@ -36,6 +38,13 @@ describe("servicio del simulador", () => {
       { sensorId: "s1", voltaje: 120, corriente: 10.25, potencia: 1230 },
       { sensorId: "s2", voltaje: 120, corriente: 10.25, potencia: 1230 },
     ]);
+  });
+
+  it("#22 CA-3: evalúa las alertas con las lecturas registradas y los sensores del nodo", async () => {
+    const delNodo = [sensor("s1")];
+    sensores.mockResolvedValue(delNodo);
+    const lecturas = await simular(nodoId, () => 0.5);
+    expect(vi.mocked(registrarAlertas)).toHaveBeenCalledWith(lecturas, delNodo);
   });
 
   it("#21 CA-6: un nodo sin sensores devuelve cero lecturas", async () => {

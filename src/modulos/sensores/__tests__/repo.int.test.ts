@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { db } from "@/lib/db";
-import { actualizar, buscar, crear, eliminar, listarPorNodo } from "../repo";
+import { actualizar, buscar, crear, eliminar, listarPorNodo, listarTodos } from "../repo";
 
 const prefijo = `int-repo-sensores-${randomUUID().slice(0, 8)}`;
 let nodoId: string;
@@ -31,6 +31,12 @@ describe("repo de sensores", () => {
     const sensores = await listarPorNodo(nodoId);
     expect(sensores).toContainEqual(propio);
     expect(sensores.map((s) => s.id)).not.toContain(ajeno.id);
+  });
+
+  it("#22 CA-1: listarTodos incluye los sensores de nodos distintos", async () => {
+    const propio = await crear({ nodoId, nombre: "T1" });
+    const ajeno = await crear({ nodoId: otroNodoId, nombre: "T2" });
+    expect(await listarTodos()).toEqual(expect.arrayContaining([propio, ajeno]));
   });
 
   it("#21 CA-4: buscar devuelve el sensor, o null si no existe", async () => {

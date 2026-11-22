@@ -28,6 +28,9 @@ export async function listarSensores(nodoId: string): Promise<SensorConLectura[]
   return conUltimaLectura(await repo.listarPorNodo(nodoId));
 }
 
+/** Todos los sensores de la red, sin su última lectura: el dashboard trae su serie aparte (HU 5, decisión #12). */
+export const listarTodosLosSensores = (): Promise<Sensor[]> => repo.listarTodos();
+
 /** 404 si el nodo no existe (decisión #13). */
 export async function crearSensor(entrada: SensorCrear): Promise<SensorConLectura> {
   await obtenerNodo(entrada.nodoId);

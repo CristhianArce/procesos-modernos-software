@@ -55,6 +55,12 @@ export async function listarPorNodo(nodoId: string): Promise<Sensor[]> {
   return rows.map(aSensor);
 }
 
+/** Todos los sensores de la red, para el dashboard (HU 5, decisión #12). */
+export async function listarTodos(): Promise<Sensor[]> {
+  const { rows } = await db().query<Fila>(`SELECT ${COLUMNAS} FROM sensores ORDER BY creado_en, id`);
+  return rows.map(aSensor);
+}
+
 export async function buscar(id: string): Promise<Sensor | null> {
   const { rows } = await db().query<Fila>(`SELECT ${COLUMNAS} FROM sensores WHERE id = $1`, [id]);
   return rows[0] ? aSensor(rows[0]) : null;

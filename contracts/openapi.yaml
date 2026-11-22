@@ -95,6 +95,27 @@ components:
         tomadaEn:
           type: string
           format: date-time
+    Alerta:
+      type: object
+      description: Una lectura superó el umbral máximo de su sensor en una magnitud. Una sola severidad y sin estado.
+      required: [id, sensorId, magnitud, valor, umbral, creadaEn]
+      properties:
+        id:
+          type: string
+          format: uuid
+        sensorId:
+          type: string
+          format: uuid
+        magnitud:
+          type: string
+          enum: [voltaje, corriente, potencia]
+        valor:
+          type: number
+        umbral:
+          type: number
+        creadaEn:
+          type: string
+          format: date-time
     Sensor:
       type: object
       required: [id, nodoId, nombre, umbralVoltaje, umbralCorriente, umbralPotencia, creadoEn, ultimaLectura]
@@ -167,6 +188,14 @@ components:
       description: Identificador UUID. Uno que no existe o está mal formado responde 404.
       schema:
         type: string
+    SensorIdConsulta:
+      name: sensorId
+      in: query
+      required: false
+      description: Filtra por sensor. Un sensor que no existe devuelve una lista vacía.
+      schema:
+        type: string
+        format: uuid
   responses:
     DatosInvalidos:
       description: Datos inválidos, con el detalle de cada campo; no se guarda nada
@@ -567,3 +596,61 @@ paths:
           $ref: "#/components/responses/SinPermiso"
         "404":
           $ref: "#/components/responses/NoEncontrado"
+  /api/lecturas:
+    get:
+      summary: Listar las lecturas más recientes
+      description: Administradores y técnicos. De la más reciente a la más antigua.
+      security:
+        - sesion: []
+      parameters:
+        - $ref: "#/components/parameters/SensorIdConsulta"
+        - name: limite
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        "200":
+          description: Lecturas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Lectura"
+        "400":
+          $ref: "#/components/responses/DatosInvalidos"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+  /api/alertas:
+    get:
+      summary: Listar las alertas por umbral más recientes
+      description: Administradores y técnicos. De la más reciente a la más antigua.
+      security:
+        - sesion: []
+      parameters:
+        - $ref: "#/components/parameters/SensorIdConsulta"
+        - name: limite
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Alertas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Alerta"
+        "400":
+          $ref: "#/components/responses/DatosInvalidos"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
