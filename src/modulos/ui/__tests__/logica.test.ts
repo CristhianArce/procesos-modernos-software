@@ -8,13 +8,14 @@ describe("estado frente a un umbral", () => {
     expect(nivelFrenteAUmbral(126, 125)).toBe("critico");
   });
 
-  it("ui-scada: desde el 90 % del umbral es advertencia", () => {
-    expect(nivelFrenteAUmbral(112.5, 125)).toBe("advertencia");
+  it("ui-scada: desde el 98 % del umbral es advertencia", () => {
+    expect(nivelFrenteAUmbral(122.5, 125)).toBe("advertencia");
     expect(nivelFrenteAUmbral(125, 125)).toBe("advertencia");
   });
 
-  it("ui-scada: por debajo del 90 % o sin umbral es normal", () => {
-    expect(nivelFrenteAUmbral(112.4, 125)).toBe("normal");
+  it("ui-scada: por debajo del 98 % o sin umbral es normal (120 V nominal frente a 125 V)", () => {
+    expect(nivelFrenteAUmbral(122.4, 125)).toBe("normal");
+    expect(nivelFrenteAUmbral(120, 125)).toBe("normal");
     expect(nivelFrenteAUmbral(9999, null)).toBe("normal");
   });
 

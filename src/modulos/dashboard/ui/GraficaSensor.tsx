@@ -13,7 +13,7 @@ export function GraficaSensor({ lecturas }: { lecturas: Lectura[] }) {
           <figcaption className="text-xs text-tenue">{titulo}</figcaption>
           <LineChart width={220} height={100} data={lecturas}>
             <XAxis dataKey="tomadaEn" hide />
-            <YAxis domain={["auto", "auto"]} width={44} tick={{ fontSize: 10 }} />
+            <YAxis domain={["auto", "auto"]} width={44} tick={{ fontSize: 10, fill: "var(--sc-texto-tenue)" }} stroke="var(--sc-borde-fuerte)" />
             <Line dataKey={magnitud} dot={false} isAnimationActive={false} stroke="var(--sc-acento)" />
           </LineChart>
         </figure>

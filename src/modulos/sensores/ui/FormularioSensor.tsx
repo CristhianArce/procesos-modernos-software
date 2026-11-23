@@ -36,24 +36,24 @@ export function FormularioSensor({ nodoId }: { nodoId: string }) {
   }
 
   return (
-    <form onSubmit={enviar} className="mt-4 max-w-md space-y-3">
-      <h3 className="font-semibold">Nuevo sensor</h3>
+    <form onSubmit={enviar} className="mt-6 grid max-w-3xl gap-3 border-t border-borde pt-4 sm:grid-cols-2">
+      <h3 className="text-xs font-semibold tracking-wider text-tenue uppercase sm:col-span-2">Nuevo sensor</h3>
       <label className="block">
-        <span className="text-sm text-tenue">Nombre</span>
-        <input name="nombre" type="text" required maxLength={80} className="mt-1 w-full rounded border border-borde-fuerte bg-fondo-2 p-2" />
+        <span className="etiqueta-campo">Nombre</span>
+        <input name="nombre" type="text" required maxLength={80} className="campo" />
       </label>
       {UMBRALES.map(({ campo, etiqueta }) => (
         <label key={campo} className="block">
-          <span className="text-sm text-tenue">{etiqueta}</span>
-          <input name={campo} type="number" min="0" step="any" className="mt-1 w-full rounded border border-borde-fuerte bg-fondo-2 p-2" />
+          <span className="etiqueta-campo">{etiqueta}</span>
+          <input name={campo} type="number" min="0" step="any" className="campo" />
         </label>
       ))}
       {error && (
-        <p role="alert" className="text-sm text-critico">
+        <p role="alert" className="text-sm text-critico sm:col-span-2">
           {error}
         </p>
       )}
-      <button type="submit" disabled={enviando} className="rounded bg-acento px-4 py-2 font-medium text-fondo disabled:opacity-60">
+      <button type="submit" disabled={enviando} className="boton-primario sm:col-span-2 sm:justify-self-start">
         Agregar sensor
       </button>
     </form>

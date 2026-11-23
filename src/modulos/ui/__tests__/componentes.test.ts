@@ -1,4 +1,4 @@
-import { createElement, type ReactElement } from "react";
+import { createElement, type ComponentProps, type ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { IndicadorEstado } from "../IndicadorEstado";
@@ -22,13 +22,13 @@ describe("componentes base", () => {
   });
 
   it("ui-scada: la insignia usa el tono del estado", () => {
-    const h = html(createElement(Insignia, { tono: "advertencia", children: "3 alertas" }));
+    const h = html(createElement(Insignia, { tono: "advertencia" } as ComponentProps<typeof Insignia>, "3 alertas"));
     expect(h).toContain('data-tono="advertencia"');
     expect(h).toContain("3 alertas");
   });
 
   it("ui-scada: la tarjeta tiene título como encabezado y su contenido", () => {
-    const h = html(createElement(Tarjeta, { titulo: "Potencia total", children: "hola" }));
+    const h = html(createElement(Tarjeta, { titulo: "Potencia total" } as ComponentProps<typeof Tarjeta>, "hola"));
     expect(h).toMatch(/<h2[^>]*>Potencia total<\/h2>/);
     expect(h).toContain("hola");
   });

@@ -14,7 +14,7 @@ export const ESTADOS: Record<Estado, { etiqueta: string; forma: Forma }> = {
 };
 
 /** Fracción del umbral desde la que un valor se muestra en advertencia (decisión #4). */
-export const FRACCION_ADVERTENCIA = 0.9;
+export const FRACCION_ADVERTENCIA = 0.98;
 
 /** Nivel de un valor frente a su umbral máximo: por encima, crítico (lo que genera una alerta). */
 export function nivelFrenteAUmbral(valor: number | null, umbral: number | null): Estado {

@@ -156,6 +156,122 @@
     font-family: var(--sc-fuente-mono);
     font-variant-numeric: tabular-nums;
   }
+
+  /* Controles y tablas compartidos por todas las pantallas. */
+  .boton-primario {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: var(--sc-radio);
+    background: var(--sc-acento);
+    color: var(--sc-fondo);
+    font-weight: 600;
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+    transition: background-color 0.15s;
+  }
+  .boton-primario:hover {
+    background: var(--sc-acento-fuerte);
+  }
+  .boton-primario:disabled {
+    opacity: 0.6;
+    cursor: progress;
+  }
+
+  .boton-fantasma {
+    display: inline-grid;
+    place-items: center;
+    min-width: 2.25rem;
+    height: 2.25rem;
+    border-radius: var(--sc-radio);
+    color: var(--sc-texto-tenue);
+    transition:
+      background-color 0.15s,
+      color 0.15s;
+  }
+  .boton-fantasma:hover {
+    background: var(--sc-panel);
+    color: var(--sc-texto);
+  }
+
+  .campo {
+    width: 100%;
+    border-radius: var(--sc-radio);
+    border: 1px solid var(--sc-borde-fuerte);
+    background: var(--sc-fondo-2);
+    color: var(--sc-texto);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+  }
+  .campo::placeholder {
+    color: var(--sc-texto-apagado);
+  }
+  .campo:focus-visible {
+    outline-offset: 0;
+    border-color: var(--sc-acento);
+  }
+
+  .etiqueta-campo {
+    display: block;
+    font-size: 0.8125rem;
+    color: var(--sc-texto-tenue);
+    margin-bottom: 0.25rem;
+  }
+
+  .tabla {
+    width: 100%;
+    text-align: left;
+    font-size: 0.875rem;
+    border-collapse: collapse;
+  }
+  .tabla th {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--sc-texto-tenue);
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--sc-borde);
+    white-space: nowrap;
+  }
+  .tabla td {
+    padding: 0.625rem 0.75rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--sc-borde) 60%, transparent);
+    vertical-align: middle;
+  }
+  .tabla tbody tr:hover {
+    background: color-mix(in srgb, var(--sc-panel-2) 70%, transparent);
+  }
+
+  .titulo-pagina {
+    font-size: 1.375rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--sc-texto);
+  }
+  .subtitulo-pagina {
+    margin-top: 0.125rem;
+    font-size: 0.875rem;
+    color: var(--sc-texto-tenue);
+  }
+
+  /* Retícula de plano técnico para fondos amplios (login). */
+  .fondo-reticula {
+    background-image:
+      linear-gradient(color-mix(in srgb, var(--sc-borde) 35%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in srgb, var(--sc-borde) 35%, transparent) 1px, transparent 1px);
+    background-size: 32px 32px;
+    background-position: center;
+  }
+
+  .enlace {
+    color: var(--sc-acento);
+    text-underline-offset: 3px;
+  }
+  .enlace:hover {
+    text-decoration: underline;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

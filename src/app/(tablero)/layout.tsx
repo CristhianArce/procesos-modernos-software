@@ -1,27 +1,17 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { sesionActual } from "@/lib/dal";
 import { registro } from "@/nav/registro";
+import { Shell } from "@/shell/Shell";
 
-// Núcleo: ninguna historia edita este layout. El menú sale de los menu.ts de cada módulo.
+// Núcleo: ninguna historia edita este layout. El menú sale de los menu.ts de cada módulo y el shell visual vive en src/shell.
 export default async function LayoutTablero({ children }: { children: React.ReactNode }) {
   const sesion = await sesionActual();
   if (!sesion) redirect("/login"); // proxy.ts ya redirige; esto cubre una cookie que vence entre ambos
 
+  const items = registro.menuPara(sesion.rol).map(({ etiqueta, href }) => ({ etiqueta, href }));
   return (
-    <div className="flex flex-1">
-      <nav aria-label="Menú principal" className="w-56 shrink-0 border-r border-borde p-4">
-        <ul className="space-y-2">
-          {registro.menuPara(sesion.rol).map((item) => (
-            <li key={item.href}>
-              <Link href={item.href} className="hover:underline">
-                {item.etiqueta}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </nav>
-      <main className="flex-1 p-6">{children}</main>
-    </div>
+    <Shell rol={sesion.rol} items={items}>
+      {children}
+    </Shell>
   );
 }

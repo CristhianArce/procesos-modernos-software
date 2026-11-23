@@ -5,7 +5,7 @@ import { BotonSimular } from "./BotonSimular";
 export async function PanelSimulador({ nodoId }: { nodoId: string }) {
   const sesion = await sesionActual();
   if (sesion?.rol !== "administrador") {
-    return <p className="mt-2 text-tenue">Solo un administrador puede simular lecturas.</p>;
+    return <p className="text-sm text-tenue">Solo un administrador puede simular lecturas.</p>;
   }
   return <BotonSimular nodoId={nodoId} />;
 }

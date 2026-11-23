@@ -18,8 +18,8 @@ export function BotonSimular({ nodoId }: { nodoId: string }) {
   }
 
   return (
-    <div className="mt-2">
-      <button type="button" onClick={simular} disabled={enviando} className="rounded bg-acento px-4 py-2 font-medium text-fondo disabled:opacity-60">
+    <div>
+      <button type="button" onClick={simular} disabled={enviando} className="boton-primario">
         Simular lecturas
       </button>
       {error && (

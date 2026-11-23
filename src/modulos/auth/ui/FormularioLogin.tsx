@@ -35,22 +35,25 @@ export function FormularioLogin() {
   }
 
   return (
-    <form onSubmit={enviar} className="w-full max-w-sm space-y-4">
-      <h1 className="text-2xl font-semibold">Iniciar sesión</h1>
+    <form onSubmit={enviar} className="w-full space-y-4">
+      <div>
+        <h1 className="text-xl font-semibold text-texto">Iniciar sesión</h1>
+        <p className="mt-1 text-sm text-tenue">Usa tu cuenta de operador.</p>
+      </div>
       <label className="block">
-        <span className="text-sm text-tenue">Usuario</span>
-        <input name="usuario" type="text" autoComplete="username" required maxLength={64} className="mt-1 w-full rounded border border-borde-fuerte bg-fondo-2 p-2" />
+        <span className="etiqueta-campo">Usuario</span>
+        <input name="usuario" type="text" autoComplete="username" required maxLength={64} className="campo" />
       </label>
       <label className="block">
-        <span className="text-sm text-tenue">Contraseña</span>
-        <input name="contrasena" type="password" autoComplete="current-password" required maxLength={128} className="mt-1 w-full rounded border border-borde-fuerte bg-fondo-2 p-2" />
+        <span className="etiqueta-campo">Contraseña</span>
+        <input name="contrasena" type="password" autoComplete="current-password" required maxLength={128} className="campo" />
       </label>
       {error && (
-        <p role="alert" className="text-sm text-critico">
+        <p role="alert" className="rounded-sc border border-critico/40 bg-critico/10 px-3 py-2 text-sm text-critico">
           {error}
         </p>
       )}
-      <button type="submit" disabled={enviando} className="w-full rounded bg-acento p-2 font-medium text-fondo disabled:opacity-60">
+      <button type="submit" disabled={enviando} className="boton-primario w-full">
         Iniciar sesión
       </button>
     </form>

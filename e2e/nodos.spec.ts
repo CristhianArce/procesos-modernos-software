@@ -25,7 +25,7 @@ test("#21 CA-1: el administrador crea un nodo desde /nodos y lo ve en la lista c
 
   const fila = page.getByRole("row", { name: new RegExp(nombre) });
   await expect(fila).toContainText("Laboratorio");
-  await expect(fila).toContainText("conectado");
+  await expect(fila).toContainText("Conectado"); // ui-scada: etiqueta del indicador de conexión
 });
 
 test("#21 CA-7: la ficha de un nodo de la semilla muestra sus datos, sus sensores y los paneles", async ({ page }) => {
@@ -34,7 +34,7 @@ test("#21 CA-7: la ficha de un nodo de la semilla muestra sus datos, sus sensore
 
   await expect(page.getByRole("heading", { name: "Subestación Norte" })).toBeVisible();
   await expect(page.getByText("Bello, Antioquia")).toBeVisible();
-  await expect(page.getByText("conectado")).toBeVisible();
+  await expect(page.getByText("Conectado", { exact: true })).toBeVisible(); // ui-scada: indicador de conexión
   await expect(page.getByRole("heading", { name: "Sensores" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Simulador" })).toBeVisible();
   await expect(page.getByRole("row", { name: /Transformador principal/ })).toContainText("125 V");
