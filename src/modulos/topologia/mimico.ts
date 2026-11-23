@@ -42,7 +42,11 @@ export type DatosMimico = { nodos: NodoMimico[]; enlaces: EnlaceMimico[] };
 export const LIENZO: Caja = { x: 0, y: 0, ancho: 1200, alto: 700 };
 const ANCHO_MIN = 200;
 const ANCHO_MAX = 6000;
-const SEPARACION_SIN_UBICAR = 180;
+const SEPARACION_SIN_UBICAR = 220;
+/** Caracteres de un nombre en el mímico (el completo va en el tooltip y en aria-label). */
+const LARGO_NOMBRE = 32;
+
+export const nombreCorto = (nombre: string) => (nombre.length <= LARGO_NOMBRE ? nombre : `${nombre.slice(0, LARGO_NOMBRE - 1).trimEnd()}…`);
 
 const r1 = (x: number) => Math.round(x * 10) / 10;
 const r2 = (x: number) => Math.round(x * 100) / 100;

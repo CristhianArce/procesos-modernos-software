@@ -362,6 +362,9 @@
   .aviso {
     animation: sc-entrar 0.2s ease-out;
   }
+  .esqueleto {
+    animation: sc-pulso 1.4s ease-in-out infinite;
+  }
   /* Editor de la topología. */
   .mimico-nodo[data-editando] {
     cursor: move;
@@ -392,6 +395,12 @@
   }
 }
 
+@keyframes sc-pulso {
+  50% {
+    opacity: 0.55;
+  }
+}
+
 @keyframes sc-entrar {
   from {
     opacity: 0;
@@ -409,7 +418,8 @@
   .mimico-flujo,
   .mimico-nodo[data-parpadeo] .mimico-simbolo,
   .panel-nodo,
-  .aviso {
+  .aviso,
+  .esqueleto {
     animation: none;
   }
 }

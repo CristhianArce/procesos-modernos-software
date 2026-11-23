@@ -66,6 +66,14 @@ describe("datos del mímico", () => {
   });
 });
 
+describe("etiquetas del mímico", () => {
+  it("ui-scada: un nombre largo se recorta con puntos suspensivos para no pisar a sus vecinos", async () => {
+    const { nombreCorto } = await import("../mimico");
+    expect(nombreCorto("Alimentador Residencial Laureles")).toBe("Alimentador Residencial Laureles");
+    expect(nombreCorto("Alimentador Residencial Laureles del Norte")).toBe("Alimentador Residencial Laurele…");
+  });
+});
+
 describe("flujo de energía", () => {
   it("ui-scada: más potencia es una línea más gruesa y un flujo más rápido", () => {
     const bajo = estiloFlujo(300, 3000)!;

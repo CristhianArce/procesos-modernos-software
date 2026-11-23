@@ -17,7 +17,7 @@ export function TablaNodos({ nodos }: { nodos: EstadoNodo[] }) {
   return (
     <div>
       <label className="relative block max-w-sm">
-        <span className="sr-only">Buscar nodo por nombre o ubicación</span>
+        <span className="sr-only">Buscar nodo</span>
         <Icono nombre="buscar" tamano={16} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-apagado" />
         <input type="search" value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Buscar por nombre o ubicación" className="campo pl-9" />
       </label>

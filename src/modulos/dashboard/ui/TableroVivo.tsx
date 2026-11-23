@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import { useEstadoVivo } from "@/modulos/estado/ui/EstadoVivo";
 import { FranjaIndicadores } from "@/modulos/estado/ui/FranjaIndicadores";
@@ -13,6 +14,7 @@ import { LeyendaMimico } from "@/modulos/topologia/ui/LeyendaMimico";
 import { Mimico, type Edicion } from "@/modulos/topologia/ui/Mimico";
 import { PanelNodo } from "@/modulos/topologia/ui/PanelNodo";
 import { pedir } from "@/modulos/topologia/ui/peticiones";
+import { EstadoVacio } from "@/modulos/ui/EstadoVacio";
 import { Tarjeta } from "@/modulos/ui/Tarjeta";
 
 /** Datos del mímico con la última instantánea; los nodos con una alerta recién llegada parpadean. */
@@ -157,10 +159,23 @@ export function TableroVivo({ topologia: inicial, puedeEditar }: Props) {
               />
             </div>
           )}
-          <div className="relative h-[clamp(22rem,50vw,640px)]">
-            <Mimico datos={datos} onAbrir={setAbierto} seleccionado={abierto} edicion={edicion} />
-            {nodoAbierto && !editando && <PanelNodo nodo={nodoAbierto} generadaEn={instantanea.generadaEn} onCerrar={cerrar} />}
-          </div>
+          {datos.nodos.length === 0 ? (
+            <EstadoVacio
+              titulo="Aún no hay nodos en la red"
+              accion={
+                <Link href="/nodos" className="enlace text-sm font-medium">
+                  Ir a Nodos
+                </Link>
+              }
+            >
+              Cuando existan nodos, el mímico los dibuja aquí. Un administrador puede crearlos en Nodos y ubicarlos con el editor.
+            </EstadoVacio>
+          ) : (
+            <div className="relative h-[clamp(22rem,50vw,640px)]">
+              <Mimico datos={datos} onAbrir={setAbierto} seleccionado={abierto} edicion={edicion} />
+              {nodoAbierto && !editando && <PanelNodo nodo={nodoAbierto} generadaEn={instantanea.generadaEn} onCerrar={cerrar} />}
+            </div>
+          )}
           <div className="mt-3">
             <LeyendaMimico />
           </div>

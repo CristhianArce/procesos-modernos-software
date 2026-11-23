@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { MAGNITUDES } from "@/modulos/alertas/magnitudes";
-import { conUnidad, formatearFecha, TITULO, UNIDAD } from "@/modulos/dashboard/formato";
+import { formatearFecha, TITULO, UNIDAD } from "@/modulos/dashboard/formato";
 import type { DetalleNodo, SensorDetalle } from "@/modulos/estado/service";
+import { cifraConUnidad } from "@/modulos/ui/formato";
 import { IndicadorEstado } from "@/modulos/ui/IndicadorEstado";
 import { Medidor } from "@/modulos/ui/Medidor";
 import { Sparkline } from "@/modulos/ui/Sparkline";
@@ -85,8 +86,8 @@ export function ContenidoPanelNodo({ nodo, detalle, error, onCerrar }: PropsCont
                       <span className="text-tenue">{formatearFecha(a.creadaEn)}</span>
                       <br />
                       {`${a.sensorNombre} · ${a.magnitud} `}
-                      <span className="text-critico">{conUnidad(a.valor, a.magnitud)}</span>
-                      {` > ${conUnidad(a.umbral, a.magnitud)}`}
+                      <span className="text-critico">{cifraConUnidad(a.valor, UNIDAD[a.magnitud])}</span>
+                      {` > ${cifraConUnidad(a.umbral, UNIDAD[a.magnitud])}`}
                     </li>
                   ))}
                 </ul>

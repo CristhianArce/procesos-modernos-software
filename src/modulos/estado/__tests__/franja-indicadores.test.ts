@@ -46,3 +46,12 @@ describe("franja de indicadores", () => {
     expect(html({ alertasActivas: 0, nodosDesconectados: 0 })).not.toMatch(/data-tono="(critico|desconectado)"/);
   });
 });
+
+describe("cifras con unidad", () => {
+  it("ui-scada: usan coma decimal y como mucho dos decimales, como el resto del tablero", async () => {
+    const { cifraConUnidad } = await import("@/modulos/ui/formato");
+    expect(cifraConUnidad(120.06, "V")).toBe("120,06 V");
+    expect(cifraConUnidad(1, "V")).toBe("1 V");
+    expect(cifraConUnidad(2049.556, "W")).toBe("2.049,56 W");
+  });
+});

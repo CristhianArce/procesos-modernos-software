@@ -6,7 +6,7 @@ import { formatoCorriente, formatoPotencia, formatoTension } from "@/modulos/ui/
 import { Icono } from "@/modulos/ui/Icono";
 import { IconoEstado } from "@/modulos/ui/IconoEstado";
 import { ESTADOS } from "@/modulos/ui/estado";
-import { desplazar, encuadre, zoomEn, type Caja, type DatosMimico, type EnlaceMimico, type NodoMimico, type Punto } from "../mimico";
+import { desplazar, encuadre, nombreCorto, zoomEn, type Caja, type DatosMimico, type EnlaceMimico, type NodoMimico, type Punto } from "../mimico";
 import { RETICULA } from "../editor";
 import { SimboloNodo, TIPO } from "./SimboloNodo";
 
@@ -160,7 +160,7 @@ const Nodo = memo(
           </g>
         </g>
         <text className="mimico-nombre" y="42" textAnchor="middle">
-          {n.nombre}
+          {nombreCorto(n.nombre)}
         </text>
         <text className="mimico-valor" y="57" textAnchor="middle">
           {n.sinUbicar ? "sin ubicar" : n.conexion === "desconectado" ? "desconectado" : formatoPotencia(n.potencia)}

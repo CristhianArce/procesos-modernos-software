@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { MAGNITUDES, type Magnitud } from "@/modulos/alertas/magnitudes";
-import { conUnidad, formatearFecha } from "@/modulos/dashboard/formato";
+import { formatearFecha, UNIDAD } from "@/modulos/dashboard/formato";
+import { cifraConUnidad } from "@/modulos/ui/formato";
 import { Insignia } from "@/modulos/ui/Insignia";
 import { filtrarAlarmas, ordenarAlarmas, severidad, type AlertaReciente } from "../alarmas";
 import { useEstadoVivo } from "./EstadoVivo";
@@ -28,8 +29,8 @@ function Alarma({ a, activa }: { a: AlertaReciente; activa: boolean }) {
         <span className="text-tenue">{` · ${a.sensorNombre}`}</span>
       </p>
       <p className="cifra text-xs text-tenue">
-        {a.magnitud} <span className="text-critico">{conUnidad(a.valor, a.magnitud)}</span>
-        {` · umbral ${conUnidad(a.umbral, a.magnitud)}`}
+        {a.magnitud} <span className="text-critico">{cifraConUnidad(a.valor, UNIDAD[a.magnitud])}</span>
+        {` · umbral ${cifraConUnidad(a.umbral, UNIDAD[a.magnitud])}`}
       </p>
     </li>
   );

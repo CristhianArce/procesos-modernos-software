@@ -103,3 +103,36 @@ Recharts pesa unos 100 KiB gzip de los 238 KiB de `/dashboard`. Las minigráfica
 | Ruta | Antes de F0 | F4 | F5 |
 |---|---|---|---|
 | `/dashboard` (gzip) | 238,1 KiB | 147,4 KiB | 150,1 KiB |
+
+## Decisiones de F6 (pulido)
+
+29. **Estados de carga, error y vacío.** Hay componentes reutilizables: `Cargando` (esqueleto con `aria-busy`), `EstadoError` (alerta con «Reintentar») y `EstadoVacio`.
+    - `(tablero)/error.tsx` cubre cualquier fallo de una pantalla del tablero sin perder el shell.
+    - `nodos/[id]/not-found.tsx` da la ficha de un nodo inexistente.
+    - El mímico sin nodos dice cómo empezar.
+    - **`loading.tsx` solo para `/dashboard`:** con un `loading.tsx` general, la ficha de un nodo inexistente respondía 200 en vez de 404, porque el streaming empieza antes de `notFound()`; lo detectó la e2e `#21 CA-4`.
+30. **Cifras.** Alarmas, avisos, medidores y panel lateral usan coma decimal y hasta dos decimales (`cifraConUnidad`). El formato de la #22 (`conUnidad`) se conserva donde lo usan sus pruebas.
+31. **Mímico legible.** Los nombres de más de 32 caracteres se recortan con «…»; el nombre completo va en el tooltip y en `aria-label`. Los avisos pasaron arriba a la derecha, bajo la barra superior, para no tapar el panel lateral.
+32. **Movimiento reducido (CA-6).** `src/__tests__/movimiento.test.ts` comprueba que cada clase animada de `globals.css` tiene su anulación con `prefers-reduced-motion`. La e2e lo verifica en Chromium con `reducedMotion: "reduce"`.
+33. **e2e de otras historias.** `e2e/login.spec.ts` (`#20 CA-2`) buscaba `getByRole("alert")` en toda la página, y el anunciador de rutas de Next también tiene `role="alert"`; se acotó al formulario. Es un fallo que también tendría `main`.
+34. **Playwright.** Se instaló el Chromium de Playwright con permiso (fuera del repo, en `~/Library/Caches/ms-playwright`). Las capturas de `docs/ui-scada/capturas/` son JPEG a 1440, 1024 y 768 px, tomadas con la semilla y el simulador continuo.
+
+## Criterios de aceptación: verificación final
+
+| # | Criterio | Cómo se verificó |
+|---|---|---|
+| 1 | Mímico con 12 nodos o más, enlaces, flujo animado y colores por estado | e2e `ui-scada: CA-1` (13 nodos, flujo, color del trazo por estado) y capturas |
+| 2 | Una lectura sobre el umbral deja el nodo en advertencia o crítico en menos de 5 s y aparece en alarmas | e2e `ui-scada: CA-2` (crítico y alarma en menos de 5 s); con el simulador continuo, unos 0,6 s en el servidor más el sondeo de 2,5 s |
+| 3 | Clic en un nodo abre su panel con medidores y minigráficas; se abre y se cierra con teclado | e2e `ui-scada: CA-3` (Enter, foco en el título, 6 medidores, Esc y el foco vuelve al nodo; clic y Cerrar) |
+| 4 | El administrador mueve un nodo y crea o borra un enlace, y persiste tras recargar; el técnico no ve los controles y recibe 403 | e2e `ui-scada: CA-4` (3 pruebas) y pruebas de integración de la API |
+| 5 | Sin cambios en `package.json`; lint, typecheck, pruebas y build en verde | `git diff main -- package.json package-lock.json` vacío; todo en verde al cerrar cada fase |
+| 6 | Con `prefers-reduced-motion` no hay flujo animado ni parpadeos | `movimiento.test.ts` y e2e `ui-scada: CA-6` en Chromium |
+
+**Rendimiento.** Con 20 nodos (13 de la semilla y 7 temporales) y el simulador encendido, en 20 s no hubo tareas largas (> 50 ms) en el navegador. Cada sondeo pesó 2,8 KB y respondió en unos 24 ms de media.
+
+| Ruta (JS de primera carga, gzip) | Antes de F0 | Final |
+|---|---|---|
+| `/dashboard` | 238,1 KiB | 150,9 KiB (−37 %) |
+| `/nodos` | 137,3 KiB | 142,0 KiB |
+| `/nodos/[id]` | 136,7 KiB | 140,5 KiB |
+| `/login` | 133,4 KiB | 132,7 KiB |
