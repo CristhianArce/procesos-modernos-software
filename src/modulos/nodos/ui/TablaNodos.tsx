@@ -58,8 +58,8 @@ export function TablaNodos({ nodos }: { nodos: EstadoNodo[] }) {
                   <td>
                     <IndicadorEstado estado={n.nivel} />
                   </td>
-                  <td className="cifra text-right">{formatoTension(n.voltaje)}</td>
-                  <td className="cifra text-right">{formatoPotencia(n.potencia)}</td>
+                  <td className="cifra text-right whitespace-nowrap">{formatoTension(n.voltaje)}</td>
+                  <td className="cifra text-right whitespace-nowrap">{formatoPotencia(n.potencia)}</td>
                   <td>{n.alertasActivas > 0 ? <Insignia tono="critico">{n.alertasActivas}</Insignia> : <span className="text-apagado">—</span>}</td>
                 </tr>
               ))}

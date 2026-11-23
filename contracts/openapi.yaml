@@ -180,6 +180,74 @@ components:
         umbralPotencia:
           type: [number, "null"]
           exclusiveMinimum: 0
+    TipoNodo:
+      type: string
+      description: Símbolo del nodo en el mímico, del origen de la energía al consumo.
+      enum: [generacion, subestacion, transformador, alimentador, carga]
+    Posicion:
+      type: object
+      required: [tipo, x, y]
+      properties:
+        tipo:
+          $ref: "#/components/schemas/TipoNodo"
+        x:
+          type: number
+          minimum: 0
+          maximum: 2000
+        "y":
+          type: number
+          minimum: 0
+          maximum: 2000
+    PosicionGuardada:
+      allOf:
+        - $ref: "#/components/schemas/Posicion"
+        - type: object
+          required: [nodoId]
+          properties:
+            nodoId:
+              type: string
+              format: uuid
+    NodoTopologia:
+      type: object
+      required: [id, nombre, estado, tipo, x, "y"]
+      description: Un nodo aún sin ubicar trae tipo, x e y nulos.
+      properties:
+        id:
+          type: string
+          format: uuid
+        nombre:
+          type: string
+        estado:
+          type: string
+          enum: [conectado, desconectado]
+        tipo:
+          oneOf:
+            - $ref: "#/components/schemas/TipoNodo"
+            - type: "null"
+        x:
+          type: [number, "null"]
+        "y":
+          type: [number, "null"]
+    EnlaceCrear:
+      type: object
+      required: [origenId, destinoId]
+      description: El sentido (origen → destino) es el del flujo de energía en el mímico. Los dos nodos deben ser distintos.
+      properties:
+        origenId:
+          type: string
+          format: uuid
+        destinoId:
+          type: string
+          format: uuid
+    Enlace:
+      allOf:
+        - $ref: "#/components/schemas/EnlaceCrear"
+        - type: object
+          required: [id]
+          properties:
+            id:
+              type: string
+              format: uuid
   parameters:
     Id:
       name: id
@@ -654,3 +722,107 @@ paths:
           $ref: "#/components/responses/DatosInvalidos"
         "401":
           $ref: "#/components/responses/NoAutenticado"
+  /api/topologia:
+    get:
+      summary: Consultar la topología de la red para el mímico
+      description: Administradores y técnicos. Todos los nodos, con su posición si la tienen, y los enlaces.
+      security:
+        - sesion: []
+      responses:
+        "200":
+          description: Nodos y enlaces
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [nodos, enlaces]
+                properties:
+                  nodos:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/NodoTopologia"
+                  enlaces:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Enlace"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+  /api/topologia/nodos/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    put:
+      summary: Ubicar un nodo en el mímico
+      description: Solo administradores. Crea o reemplaza el tipo y la posición del nodo.
+      security:
+        - sesion: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Posicion"
+      responses:
+        "200":
+          description: Posición guardada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PosicionGuardada"
+        "400":
+          $ref: "#/components/responses/DatosInvalidos"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+        "403":
+          $ref: "#/components/responses/SinPermiso"
+        "404":
+          $ref: "#/components/responses/NoEncontrado"
+  /api/topologia/enlaces:
+    post:
+      summary: Crear un enlace entre dos nodos
+      description: Solo administradores. Hay como máximo un enlace por par de nodos, sin importar el sentido.
+      security:
+        - sesion: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EnlaceCrear"
+      responses:
+        "201":
+          description: Enlace creado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Enlace"
+        "400":
+          $ref: "#/components/responses/DatosInvalidos"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+        "403":
+          $ref: "#/components/responses/SinPermiso"
+        "404":
+          $ref: "#/components/responses/NoEncontrado"
+        "409":
+          description: Ya existe un enlace entre esos nodos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/topologia/enlaces/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    delete:
+      summary: Borrar un enlace
+      description: Solo administradores.
+      security:
+        - sesion: []
+      responses:
+        "204":
+          description: Enlace borrado
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+        "403":
+          $ref: "#/components/responses/SinPermiso"
+        "404":
+          $ref: "#/components/responses/NoEncontrado"
