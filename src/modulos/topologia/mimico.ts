@@ -25,7 +25,17 @@ export type NodoMimico = Punto & {
   parpadeo?: boolean;
 };
 
-export type EnlaceMimico = { id: string; x1: number; y1: number; x2: number; y2: number; activo: boolean; flujo: Flujo | null };
+export type EnlaceMimico = {
+  id: string;
+  /** «Origen → Destino», para lectores de pantalla y el editor. */
+  etiqueta: string;
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  activo: boolean;
+  flujo: Flujo | null;
+};
 export type DatosMimico = { nodos: NodoMimico[]; enlaces: EnlaceMimico[] };
 
 /** Lienzo por defecto cuando no hay nodos (el de la semilla cabe en él). */
@@ -77,7 +87,7 @@ export function armarMimico(topologia: Topologia, estados: readonly NodoVivo[]):
     const b = nodoPorId.get(e.destinoId);
     if (!a || !b) return [];
     const activo = a.conexion === "conectado" && b.conexion === "conectado";
-    return [{ id: e.id, x1: a.x, y1: a.y, x2: b.x, y2: b.y, activo, flujo: activo ? estiloFlujo(b.potencia, maxima) : null }];
+    return [{ id: e.id, etiqueta: `${a.nombre} → ${b.nombre}`, x1: a.x, y1: a.y, x2: b.x, y2: b.y, activo, flujo: activo ? estiloFlujo(b.potencia, maxima) : null }];
   });
   return { nodos, enlaces };
 }

@@ -87,3 +87,19 @@ Recharts pesa unos 100 KiB gzip de los 238 KiB de `/dashboard`. Las minigráfica
 |---|---|---|---|
 | `/dashboard` (gzip) | 238,1 KiB | 141,0 KiB | 147,4 KiB |
 | `/nodos` (gzip) | 137,3 KiB | 139,6 KiB | 141,5 KiB |
+
+## Decisiones de F5 (editor del administrador)
+
+25. **Editor.** El reductor es puro (`src/modulos/topologia/editor.ts`). Las posiciones quedan *pendientes* hasta pulsar «Guardar posiciones», que hace un `PUT` por cada nodo que cambió de verdad. Los enlaces, en cambio, se crean y se borran al momento (`POST`/`DELETE`) y la topología se vuelve a leer.
+    - **Movimiento:** arrastrando con el ratón o con las flechas (Mayús: pasos de 50), con ajuste a una retícula de 10 y dentro del lienzo.
+    - **Enlaces:** se eligen dos nodos, por clic o Enter, y el enlace va del primero al segundo; elegir el mismo nodo cancela. Para borrar, se elige el enlace (una línea ancha invisible que es un botón enfocable) y luego «Borrar enlace».
+    - **Tipo:** el nodo elegido puede cambiar de tipo, lo que sirve para ubicar los nodos «sin ubicar».
+    - **Salir:** si hay posiciones sin guardar, pide confirmación.
+    - **Panel lateral:** no se abre mientras se edita.
+26. **Rol.** El dashboard solo monta la barra del editor si la sesión es de administrador. Ocultarla es cosmético: la API de topología responde 403 al técnico, y lo prueban las pruebas de integración y `e2e/topologia.spec.ts`.
+27. **Topología en el cliente.** El dashboard la guarda en su estado y la vuelve a leer al editar o si la instantánea trae nodos distintos (un nodo creado o borrado en otra pantalla aparece sin recargar la página).
+28. **e2e del CA-4** (`e2e/topologia.spec.ts`): mover un nodo con el teclado y guardar, crear y borrar un enlace, y comprobar que el técnico no ve los controles y recibe 403. Las pruebas devuelven la topología a su estado inicial. Están listadas con `npx playwright test --list`, pero no se ejecutaron porque falta el Chromium de Playwright; los mismos flujos se verificaron en el navegador integrado.
+
+| Ruta | Antes de F0 | F4 | F5 |
+|---|---|---|---|
+| `/dashboard` (gzip) | 238,1 KiB | 147,4 KiB | 150,1 KiB |

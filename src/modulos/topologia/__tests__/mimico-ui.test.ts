@@ -13,8 +13,8 @@ const datos: DatosMimico = {
     { id: "d", nombre: "Laureles", tipo: "alimentador", x: 400, y: 400, sinUbicar: true, conexion: "desconectado", nivel: "desconectado", voltaje: null, corriente: null, potencia: null, alertasActivas: 0 },
   ],
   enlaces: [
-    { id: "e1", x1: 100, y1: 200, x2: 700, y2: 200, activo: true, flujo: { grosor: 3, duracionS: 2 } },
-    { id: "e2", x1: 100, y1: 200, x2: 400, y2: 400, activo: false, flujo: null },
+    { id: "e1", etiqueta: "Central Oriente → Hospital", x1: 100, y1: 200, x2: 700, y2: 200, activo: true, flujo: { grosor: 3, duracionS: 2 } },
+    { id: "e2", etiqueta: "Central Oriente → Laureles", x1: 100, y1: 200, x2: 400, y2: 400, activo: false, flujo: null },
   ],
 };
 
@@ -66,5 +66,38 @@ describe("mímico en vivo", () => {
     expect(h.match(/data-parpadeo="true"/g)).toHaveLength(1);
     expect(etiqueta("Central Oriente")).toContain('aria-expanded="true"');
     expect(etiqueta("Hospital")).toContain('aria-expanded="false"');
+  });
+});
+
+describe("mímico en modo edición", () => {
+  const edicion = {
+    origen: "g",
+    enlaceSeleccionado: "e1",
+    onMoverNodo() {},
+    onDesplazarNodo() {},
+    onElegirNodo() {},
+    onElegirEnlace() {},
+  };
+  const conNombres: DatosMimico = { ...datos, enlaces: datos.enlaces.map((e) => ({ ...e, etiqueta: `${e.id} origen → destino` })) };
+  const h = () => renderToStaticMarkup(createElement(Mimico, { datos: conNombres, edicion }));
+
+  it("ui-scada: explica cómo editar y cada nodo enlaza a esa explicación", () => {
+    const html = h();
+    expect(html).toContain("Modo edición");
+    expect(html.match(/aria-describedby="mimico-ayuda-edicion"/g)).toHaveLength(3);
+  });
+
+  it("ui-scada: cada enlace es un botón enfocable con su origen y destino; el seleccionado lo indica", () => {
+    const html = h();
+    expect(html).toMatch(/role="button" tabindex="0" aria-label="Enlace e1 origen → destino" aria-pressed="true"/);
+    expect(html).toMatch(/role="button" tabindex="0" aria-label="Enlace e2 origen → destino" aria-pressed="false"/);
+  });
+
+  it("ui-scada: el nodo elegido como origen de un enlace queda marcado", () => {
+    expect(h()).toMatch(/<g role="button"[^>]*aria-label="Central Oriente[^>]*data-origen="true"/);
+  });
+
+  it("ui-scada: fuera del modo edición los enlaces no son botones", () => {
+    expect(renderToStaticMarkup(createElement(Mimico, { datos: conNombres }))).not.toContain('aria-label="Enlace');
   });
 });

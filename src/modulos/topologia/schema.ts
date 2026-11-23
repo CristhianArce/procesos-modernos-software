@@ -1,10 +1,7 @@
 import { z } from "zod";
-import { TIPOS_NODO } from "./tipos";
+import { LIENZO_MAX, TIPOS_NODO } from "./tipos";
 
-export { TIPOS_NODO, type TipoNodo } from "./tipos";
-
-/** Las coordenadas viven en un lienzo de 0 a 2000 en cada eje (la migración tiene la misma restricción). */
-export const LIENZO_MAX = 2000;
+export { LIENZO_MAX, TIPOS_NODO, type TipoNodo } from "./tipos";
 
 const coordenada = z.number().min(0).max(LIENZO_MAX);
 

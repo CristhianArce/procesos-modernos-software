@@ -362,6 +362,28 @@
   .aviso {
     animation: sc-entrar 0.2s ease-out;
   }
+  /* Editor de la topología. */
+  .mimico-nodo[data-editando] {
+    cursor: move;
+  }
+  .mimico-nodo[data-origen] .anillo-foco {
+    opacity: 1;
+    stroke: var(--sc-advertencia);
+    stroke-dasharray: 4 3;
+  }
+  .mimico-enlace-golpe {
+    stroke: transparent;
+    cursor: pointer;
+    outline: none;
+  }
+  .mimico-enlace-golpe:hover,
+  .mimico-enlace-golpe:focus-visible {
+    stroke: color-mix(in srgb, var(--sc-foco) 35%, transparent);
+  }
+  .mimico-grupo-enlace[data-seleccionado] .mimico-enlace {
+    stroke: var(--sc-advertencia);
+    opacity: 1;
+  }
 }
 
 @keyframes sc-parpadeo {
