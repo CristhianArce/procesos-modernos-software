@@ -10,7 +10,7 @@ export default async function LayoutTablero({ children }: { children: React.Reac
 
   return (
     <div className="flex flex-1">
-      <nav aria-label="Menú principal" className="w-56 shrink-0 border-r border-gray-200 p-4">
+      <nav aria-label="Menú principal" className="w-56 shrink-0 border-r border-borde p-4">
         <ul className="space-y-2">
           {registro.menuPara(sesion.rol).map((item) => (
             <li key={item.href}>

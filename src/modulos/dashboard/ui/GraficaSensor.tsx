@@ -10,11 +10,11 @@ export function GraficaSensor({ lecturas }: { lecturas: Lectura[] }) {
     <div className="mt-3 grid gap-3 sm:grid-cols-3">
       {Object.entries(TITULO).map(([magnitud, titulo]) => (
         <figure key={magnitud}>
-          <figcaption className="text-xs text-gray-600">{titulo}</figcaption>
+          <figcaption className="text-xs text-tenue">{titulo}</figcaption>
           <LineChart width={220} height={100} data={lecturas}>
             <XAxis dataKey="tomadaEn" hide />
             <YAxis domain={["auto", "auto"]} width={44} tick={{ fontSize: 10 }} />
-            <Line dataKey={magnitud} dot={false} isAnimationActive={false} stroke="#1d4ed8" />
+            <Line dataKey={magnitud} dot={false} isAnimationActive={false} stroke="var(--sc-acento)" />
           </LineChart>
         </figure>
       ))}

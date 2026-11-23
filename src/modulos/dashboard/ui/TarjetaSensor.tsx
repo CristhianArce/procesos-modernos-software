@@ -7,7 +7,7 @@ import { GraficaSensor } from "./GraficaSensor";
 export function TarjetaSensor({ nombre, lecturas }: { nombre: string; lecturas: Lectura[] }) {
   const ultima = lecturas.at(-1);
   return (
-    <article className="rounded border border-gray-200 p-4">
+    <article className="rounded border border-borde p-4">
       <h3 className="font-semibold">{nombre}</h3>
       {ultima ? (
         <>
@@ -17,7 +17,7 @@ export function TarjetaSensor({ nombre, lecturas }: { nombre: string; lecturas: 
           <GraficaSensor lecturas={lecturas} />
         </>
       ) : (
-        <p className="mt-1 text-sm text-gray-600">Sin lecturas</p>
+        <p className="mt-1 text-sm text-tenue">Sin lecturas</p>
       )}
     </article>
   );

@@ -15,11 +15,11 @@ export async function PanelSensores({ nodoId }: { nodoId: string }) {
   return (
     <div>
       {sensores.length === 0 ? (
-        <p className="mt-2 text-gray-600">Este nodo aún no tiene sensores.</p>
+        <p className="mt-2 text-tenue">Este nodo aún no tiene sensores.</p>
       ) : (
         <table className="mt-2 w-full text-left text-sm">
           <thead>
-            <tr className="border-b border-gray-200">
+            <tr className="border-b border-borde">
               <th className="py-2">Sensor</th>
               <th className="py-2">Umbral de voltaje</th>
               <th className="py-2">Umbral de corriente</th>
@@ -29,7 +29,7 @@ export async function PanelSensores({ nodoId }: { nodoId: string }) {
           </thead>
           <tbody>
             {sensores.map((sensor) => (
-              <tr key={sensor.id} className="border-b border-gray-100">
+              <tr key={sensor.id} className="border-b border-borde/60">
                 <td className="py-2">{sensor.nombre}</td>
                 <td className="py-2">{umbral(sensor.umbralVoltaje, "V")}</td>
                 <td className="py-2">{umbral(sensor.umbralCorriente, "A")}</td>

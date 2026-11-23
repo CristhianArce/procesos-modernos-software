@@ -14,9 +14,9 @@ export default async function FichaNodo({ params }: { params: Promise<{ id: stri
     <article>
       <h1 className="text-2xl font-semibold">{nodo.nombre}</h1>
       <dl className="mt-4 grid max-w-md grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-        <dt className="text-gray-600">Ubicación</dt>
+        <dt className="text-tenue">Ubicación</dt>
         <dd>{nodo.ubicacion ?? "—"}</dd>
-        <dt className="text-gray-600">Estado</dt>
+        <dt className="text-tenue">Estado</dt>
         <dd>{nodo.estado}</dd>
       </dl>
       {registro.paneles.map((panel) => (

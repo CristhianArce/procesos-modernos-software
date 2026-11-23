@@ -38,19 +38,19 @@ export function FormularioLogin() {
     <form onSubmit={enviar} className="w-full max-w-sm space-y-4">
       <h1 className="text-2xl font-semibold">Iniciar sesión</h1>
       <label className="block">
-        <span className="text-sm text-gray-700">Usuario</span>
-        <input name="usuario" type="text" autoComplete="username" required maxLength={64} className="mt-1 w-full rounded border border-gray-300 p-2" />
+        <span className="text-sm text-tenue">Usuario</span>
+        <input name="usuario" type="text" autoComplete="username" required maxLength={64} className="mt-1 w-full rounded border border-borde-fuerte bg-fondo-2 p-2" />
       </label>
       <label className="block">
-        <span className="text-sm text-gray-700">Contraseña</span>
-        <input name="contrasena" type="password" autoComplete="current-password" required maxLength={128} className="mt-1 w-full rounded border border-gray-300 p-2" />
+        <span className="text-sm text-tenue">Contraseña</span>
+        <input name="contrasena" type="password" autoComplete="current-password" required maxLength={128} className="mt-1 w-full rounded border border-borde-fuerte bg-fondo-2 p-2" />
       </label>
       {error && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-sm text-critico">
           {error}
         </p>
       )}
-      <button type="submit" disabled={enviando} className="w-full rounded bg-gray-900 p-2 text-white disabled:opacity-60">
+      <button type="submit" disabled={enviando} className="w-full rounded bg-acento p-2 font-medium text-fondo disabled:opacity-60">
         Iniciar sesión
       </button>
     </form>

@@ -3,11 +3,11 @@ import { conUnidad, formatearFecha } from "../formato";
 
 /** Alertas en el orden recibido: la más reciente primero (CA-4). */
 export function ListaAlertas({ alertas, nombres }: { alertas: Alerta[]; nombres: Map<string, string> }) {
-  if (alertas.length === 0) return <p className="mt-2 text-gray-600">Sin alertas</p>;
+  if (alertas.length === 0) return <p className="mt-2 text-tenue">Sin alertas</p>;
   return (
     <table className="mt-2 w-full text-left text-sm">
       <thead>
-        <tr className="border-b border-gray-200">
+        <tr className="border-b border-borde">
           <th className="py-2">Fecha</th>
           <th className="py-2">Sensor</th>
           <th className="py-2">Magnitud</th>
@@ -17,7 +17,7 @@ export function ListaAlertas({ alertas, nombres }: { alertas: Alerta[]; nombres:
       </thead>
       <tbody>
         {alertas.map((a) => (
-          <tr key={a.id} data-testid="alerta" className="border-b border-gray-100">
+          <tr key={a.id} data-testid="alerta" className="border-b border-borde/60">
             <td className="py-2">{formatearFecha(a.creadaEn)}</td>
             <td className="py-2">{nombres.get(a.sensorId) ?? "—"}</td>
             <td className="py-2">{a.magnitud}</td>

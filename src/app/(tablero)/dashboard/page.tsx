@@ -22,7 +22,7 @@ export default async function PaginaDashboard() {
       <h1 className="text-2xl font-semibold">Dashboard</h1>
       <h2 className="mt-6 text-lg font-semibold">Sensores</h2>
       {sensores.length === 0 ? (
-        <p className="mt-2 text-gray-600">Aún no hay sensores.</p>
+        <p className="mt-2 text-tenue">Aún no hay sensores.</p>
       ) : (
         <div className="mt-2 grid gap-4 lg:grid-cols-2">
           {sensores.map((s) => (

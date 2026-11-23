@@ -26,19 +26,19 @@ export function FormularioNodo() {
     <form onSubmit={enviar} className="mt-6 max-w-md space-y-3">
       <h2 className="text-lg font-semibold">Nuevo nodo</h2>
       <label className="block">
-        <span className="text-sm text-gray-700">Nombre</span>
-        <input name="nombre" type="text" required maxLength={80} className="mt-1 w-full rounded border border-gray-300 p-2" />
+        <span className="text-sm text-tenue">Nombre</span>
+        <input name="nombre" type="text" required maxLength={80} className="mt-1 w-full rounded border border-borde-fuerte bg-fondo-2 p-2" />
       </label>
       <label className="block">
-        <span className="text-sm text-gray-700">Ubicación</span>
-        <input name="ubicacion" type="text" maxLength={120} className="mt-1 w-full rounded border border-gray-300 p-2" />
+        <span className="text-sm text-tenue">Ubicación</span>
+        <input name="ubicacion" type="text" maxLength={120} className="mt-1 w-full rounded border border-borde-fuerte bg-fondo-2 p-2" />
       </label>
       {error && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-sm text-critico">
           {error}
         </p>
       )}
-      <button type="submit" disabled={enviando} className="rounded bg-gray-900 px-4 py-2 text-white disabled:opacity-60">
+      <button type="submit" disabled={enviando} className="rounded bg-acento px-4 py-2 font-medium text-fondo disabled:opacity-60">
         Crear nodo
       </button>
     </form>

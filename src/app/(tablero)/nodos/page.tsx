@@ -12,11 +12,11 @@ export default async function PaginaNodos() {
     <section>
       <h1 className="text-2xl font-semibold">Nodos</h1>
       {nodos.length === 0 ? (
-        <p className="mt-4 text-gray-600">Aún no hay nodos.</p>
+        <p className="mt-4 text-tenue">Aún no hay nodos.</p>
       ) : (
         <table className="mt-4 w-full text-left text-sm">
           <thead>
-            <tr className="border-b border-gray-200">
+            <tr className="border-b border-borde">
               <th className="py-2">Nombre</th>
               <th className="py-2">Ubicación</th>
               <th className="py-2">Estado</th>
@@ -24,7 +24,7 @@ export default async function PaginaNodos() {
           </thead>
           <tbody>
             {nodos.map((nodo) => (
-              <tr key={nodo.id} className="border-b border-gray-100">
+              <tr key={nodo.id} className="border-b border-borde/60">
                 <td className="py-2">
                   <Link href={`/nodos/${nodo.id}`} className="hover:underline">
                     {nodo.nombre}

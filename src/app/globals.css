@@ -1,5 +1,170 @@
 @import "tailwindcss";
 
-body {
-  font-family: system-ui, sans-serif;
+/*
+ * Sistema de diseño de la sala de control (docs/ui-scada/plan.md, decisiones 1 a 7).
+ * Los valores crudos viven en :root (--sc-*); @theme inline los expone a Tailwind,
+ * así que cambiar de tema solo cambia variables.
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* Superficies */
+  --sc-fondo: #0a0f1a;
+  --sc-fondo-2: #0e1524;
+  --sc-panel: #121b2d;
+  --sc-panel-2: #18233a;
+  --sc-borde: #24324d;
+  --sc-borde-fuerte: #34476b;
+
+  /* Texto (sobre --sc-panel: texto 14,6:1, tenue 7,8:1, apagado 5,2:1; todo AA) */
+  --sc-texto: #e6edf7;
+  --sc-texto-tenue: #9fb0c8;
+  --sc-texto-apagado: #7d8ea8;
+
+  /* Acento y foco */
+  --sc-acento: #38bdf8;
+  --sc-acento-fuerte: #7dd3fc;
+  --sc-foco: #facc15;
+
+  /* Estados: ≥ 5,2:1 sobre --sc-panel y --sc-panel-2, válidos también como texto (AA) */
+  --sc-normal: #34d399;
+  --sc-advertencia: #fbbf24;
+  --sc-critico: #f87171;
+  --sc-desconectado: #94a3b8;
+  --sc-sin-datos: #818cf8;
+
+  /* Flujo de energía en el mímico */
+  --sc-flujo: #38bdf8;
+
+  /* Forma */
+  --sc-radio: 6px;
+  --sc-radio-lg: 10px;
+  --sc-sombra: 0 1px 0 rgb(255 255 255 / 0.03) inset, 0 8px 24px rgb(0 0 0 / 0.35);
+  --sc-esp: 4px;
+
+  /* Tipografía: pila del sistema, cifras monoespaciadas */
+  --sc-fuente: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --sc-fuente-mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo, Consolas, monospace;
+}
+
+/* Tema claro preparado (decisión #1): aún sin selector en la interfaz. */
+[data-tema="claro"] {
+  color-scheme: light;
+  --sc-fondo: #eef2f7;
+  --sc-fondo-2: #e4eaf2;
+  --sc-panel: #ffffff;
+  --sc-panel-2: #f5f7fb;
+  --sc-borde: #d3dbe7;
+  --sc-borde-fuerte: #b4c0d3;
+  --sc-texto: #0f172a;
+  --sc-texto-tenue: #3c4a60;
+  --sc-texto-apagado: #56657c;
+  --sc-acento: #0369a1;
+  --sc-acento-fuerte: #075985;
+  --sc-foco: #b45309;
+  --sc-normal: #047857;
+  --sc-advertencia: #92400e;
+  --sc-critico: #b91c1c;
+  --sc-desconectado: #475569;
+  --sc-sin-datos: #4f46e5;
+  --sc-flujo: #0284c7;
+  --sc-sombra: 0 1px 2px rgb(15 23 42 / 0.06), 0 4px 16px rgb(15 23 42 / 0.06);
+}
+
+@theme inline {
+  --color-fondo: var(--sc-fondo);
+  --color-fondo-2: var(--sc-fondo-2);
+  --color-panel: var(--sc-panel);
+  --color-panel-2: var(--sc-panel-2);
+  --color-borde: var(--sc-borde);
+  --color-borde-fuerte: var(--sc-borde-fuerte);
+  --color-texto: var(--sc-texto);
+  --color-tenue: var(--sc-texto-tenue);
+  --color-apagado: var(--sc-texto-apagado);
+  --color-acento: var(--sc-acento);
+  --color-acento-fuerte: var(--sc-acento-fuerte);
+  --color-foco: var(--sc-foco);
+  --color-normal: var(--sc-normal);
+  --color-advertencia: var(--sc-advertencia);
+  --color-critico: var(--sc-critico);
+  --color-desconectado: var(--sc-desconectado);
+  --color-sin-datos: var(--sc-sin-datos);
+  --color-flujo: var(--sc-flujo);
+  --radius-sc: var(--sc-radio);
+  --radius-sc-lg: var(--sc-radio-lg);
+  --shadow-sc: var(--sc-sombra);
+  --font-sans: var(--sc-fuente);
+  --font-mono: var(--sc-fuente-mono);
+}
+
+@layer base {
+  html {
+    background: var(--sc-fondo);
+    color: var(--sc-texto);
+    font-family: var(--sc-fuente);
+  }
+
+  body {
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgb(56 189 248 / 0.06), transparent 60%),
+      var(--sc-fondo);
+  }
+
+  /* Foco visible y consistente en toda la app (AA). */
+  :focus-visible {
+    outline: 2px solid var(--sc-foco);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  ::selection {
+    background: rgb(56 189 248 / 0.35);
+  }
+}
+
+@layer components {
+  /* Color del estado en `currentColor`: lo heredan iconos, bordes e insignias. */
+  [data-estado="normal"],
+  [data-tono="normal"] {
+    --sc-estado: var(--sc-normal);
+  }
+  [data-estado="advertencia"],
+  [data-tono="advertencia"] {
+    --sc-estado: var(--sc-advertencia);
+  }
+  [data-estado="critico"],
+  [data-tono="critico"] {
+    --sc-estado: var(--sc-critico);
+  }
+  [data-estado="desconectado"],
+  [data-tono="desconectado"] {
+    --sc-estado: var(--sc-desconectado);
+  }
+  [data-estado="sin-datos"],
+  [data-tono="sin-datos"] {
+    --sc-estado: var(--sc-sin-datos);
+  }
+  [data-tono="acento"] {
+    --sc-estado: var(--sc-acento);
+  }
+  [data-tono="neutro"] {
+    --sc-estado: var(--sc-texto-tenue);
+  }
+
+  .cifra {
+    font-family: var(--sc-fuente-mono);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
