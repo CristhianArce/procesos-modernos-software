@@ -1,5 +1,7 @@
 import "server-only";
 import { db } from "@/lib/db";
+import type { Magnitud } from "@/modulos/alertas/schema";
+import type { AlertaReciente } from "./alarmas";
 import type { Conexion, FilaSensor, PuntoTendencia } from "./calculo";
 
 type Fila = {
@@ -84,4 +86,36 @@ export async function tendencia(minutos: number, pasoS: number): Promise<PuntoTe
     [minutos, pasoS],
   );
   return rows.map((f) => ({ tensionMedia: f.tension, potenciaTotal: f.potencia, nodosReportando: f.nodos, alertas: f.alertas }));
+}
+
+type FilaAlerta = {
+  id: string;
+  nodo_id: string;
+  nodo_nombre: string;
+  sensor_nombre: string;
+  magnitud: Magnitud;
+  valor: number;
+  umbral: number;
+  creada_en: Date;
+};
+
+/** Las `limite` alertas más recientes, con el nombre de su nodo y de su sensor; solo las de un nodo si se indica. */
+export async function alertasRecientes({ limite, nodoId }: { limite: number; nodoId?: string }): Promise<AlertaReciente[]> {
+  const { rows } = await db().query<FilaAlerta>(
+    `SELECT a.id, n.id AS nodo_id, n.nombre AS nodo_nombre, s.nombre AS sensor_nombre, a.magnitud, a.valor, a.umbral, a.creada_en
+     FROM alertas a JOIN sensores s ON s.id = a.sensor_id JOIN nodos n ON n.id = s.nodo_id
+     WHERE ($2::uuid IS NULL OR n.id = $2)
+     ORDER BY a.creada_en DESC, a.id DESC LIMIT $1`,
+    [limite, nodoId ?? null],
+  );
+  return rows.map((f) => ({
+    id: f.id,
+    nodoId: f.nodo_id,
+    nodoNombre: f.nodo_nombre,
+    sensorNombre: f.sensor_nombre,
+    magnitud: f.magnitud,
+    valor: f.valor,
+    umbral: f.umbral,
+    creadaEn: f.creada_en.toISOString(),
+  }));
 }

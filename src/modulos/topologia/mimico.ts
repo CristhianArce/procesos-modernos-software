@@ -1,4 +1,5 @@
-import type { Conexion, EstadoNodo } from "@/modulos/estado/calculo";
+import type { Conexion } from "@/modulos/estado/calculo";
+import type { NodoVivo } from "@/modulos/estado/vivo";
 import type { Estado } from "@/modulos/ui/estado";
 import type { TipoNodo } from "./schema";
 import type { Topologia } from "./service";
@@ -20,6 +21,8 @@ export type NodoMimico = Punto & {
   corriente: number | null;
   potencia: number | null;
   alertasActivas: number;
+  /** Tiene una alerta que acaba de llegar: el nodo parpadea unos segundos. */
+  parpadeo?: boolean;
 };
 
 export type EnlaceMimico = { id: string; x1: number; y1: number; x2: number; y2: number; activo: boolean; flujo: Flujo | null };
@@ -41,7 +44,7 @@ export function estiloFlujo(potencia: number | null, maxima: number): Flujo | nu
   return { grosor: r1(2 + 4 * f), duracionS: r2(2.5 - 1.9 * f) };
 }
 
-export function armarMimico(topologia: Topologia, estados: EstadoNodo[]): DatosMimico {
+export function armarMimico(topologia: Topologia, estados: readonly NodoVivo[]): DatosMimico {
   const porId = new Map(estados.map((e) => [e.id, e]));
   const ubicados = topologia.nodos.filter((n) => n.x !== null && n.y !== null);
   const fondo = Math.max(LIENZO.alto, ...ubicados.map((n) => n.y!)) + 160;

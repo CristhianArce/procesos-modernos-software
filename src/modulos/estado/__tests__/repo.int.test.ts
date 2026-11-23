@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { db } from "@/lib/db";
-import { alertasActivasPorNodo, filasSensores, tendencia } from "../repo";
+import { alertasActivasPorNodo, alertasRecientes, filasSensores, tendencia } from "../repo";
 
 const prefijo = `int-repo-estado-${randomUUID().slice(0, 8)}`;
 let conDatos: string;
@@ -58,5 +58,16 @@ describe("repo del estado de la red", () => {
     expect(puntos.every((p) => typeof p.nodosReportando === "number" && typeof p.alertas === "number")).toBe(true);
     expect(puntos.reduce((a, p) => a + p.alertas, 0)).toBeGreaterThanOrEqual(2);
     expect(puntos.some((p) => p.potenciaTotal !== null && p.potenciaTotal >= 242)).toBe(true);
+  });
+
+  it("ui-scada: las alertas recientes traen el nombre de su nodo y de su sensor, la más reciente primero, y se filtran por nodo", async () => {
+    const todas = await alertasRecientes({ limite: 500 });
+    const mias = todas.filter((a) => a.nodoId === conDatos);
+    expect(mias).toHaveLength(3);
+    expect(mias[0]).toMatchObject({ nodoNombre: prefijo, sensorNombre: "a", magnitud: "voltaje", umbral: 125 });
+    expect(mias.at(-1)!.valor).toBe(132); // la de hace dos horas va al final
+    const delNodo = await alertasRecientes({ limite: 2, nodoId: conDatos });
+    expect(delNodo).toHaveLength(2);
+    expect(delNodo.every((a) => a.nodoId === conDatos)).toBe(true);
   });
 });

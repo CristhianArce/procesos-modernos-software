@@ -1,4 +1,4 @@
-export type Conexion = "en-linea" | "sin-conexion" | "conectando";
+import type { Conexion } from "@/modulos/estado/ui/EstadoVivo";
 
 const VISTA = {
   "en-linea": { texto: "En línea", estado: "normal" },
@@ -6,7 +6,7 @@ const VISTA = {
   "sin-conexion": { texto: "Sin conexión", estado: "critico" },
 } as const;
 
-/** Estado de la conexión con los datos. En F4 lo alimenta el sondeo de /api/estado. */
+/** Estado de la conexión con los datos (lo alimenta el sondeo de /api/estado). */
 export function EstadoConexion({ conexion }: { conexion: Conexion }) {
   const { texto, estado } = VISTA[conexion];
   return (

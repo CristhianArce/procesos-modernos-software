@@ -349,6 +349,34 @@
   }
 }
 
+/* Nodo con alerta nueva: parpadeo suave unos segundos; nodo abierto en el panel lateral: anillo fijo. */
+@layer components {
+  .mimico-nodo[data-parpadeo] .mimico-simbolo {
+    animation: sc-parpadeo 1.2s ease-in-out 5;
+  }
+  .mimico-nodo[data-seleccionado] .anillo-foco {
+    opacity: 1;
+    stroke: var(--sc-acento);
+  }
+  .panel-nodo,
+  .aviso {
+    animation: sc-entrar 0.2s ease-out;
+  }
+}
+
+@keyframes sc-parpadeo {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@keyframes sc-entrar {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+}
+
 @keyframes sc-flujo {
   to {
     stroke-dashoffset: -16;
@@ -356,7 +384,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mimico-flujo {
+  .mimico-flujo,
+  .mimico-nodo[data-parpadeo] .mimico-simbolo,
+  .panel-nodo,
+  .aviso {
     animation: none;
   }
 }

@@ -1,6 +1,6 @@
 import { IconoEstado } from "@/modulos/ui/IconoEstado";
 import { ESTADOS, ORDEN_ESTADOS } from "@/modulos/ui/estado";
-import { TIPOS_NODO } from "../schema";
+import { TIPOS_NODO } from "../tipos";
 import { SimboloNodo, TIPO } from "./SimboloNodo";
 
 /** Qué significa cada forma, color y línea del mímico. */

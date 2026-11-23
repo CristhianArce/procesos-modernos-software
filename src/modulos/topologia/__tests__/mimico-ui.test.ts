@@ -56,3 +56,15 @@ describe("mímico de la red", () => {
     for (const t of ["Acercar", "Alejar", "Encuadrar toda la red"]) expect(h).toContain(`aria-label="${t}"`);
   });
 });
+
+describe("mímico en vivo", () => {
+  it("ui-scada: un nodo con alerta nueva parpadea y el nodo abierto queda marcado como seleccionado", () => {
+    const vivo: DatosMimico = { ...datos, nodos: datos.nodos.map((n) => ({ ...n, parpadeo: n.id === "c" })) };
+    const h = renderToStaticMarkup(createElement(Mimico, { datos: vivo, seleccionado: "g" }));
+    const etiqueta = (nombre: string) => h.match(new RegExp(`<g role="button"[^>]*aria-label="${nombre}[^>]*>`))![0];
+    expect(etiqueta("Hospital")).toContain('data-parpadeo="true"');
+    expect(h.match(/data-parpadeo="true"/g)).toHaveLength(1);
+    expect(etiqueta("Central Oriente")).toContain('aria-expanded="true"');
+    expect(etiqueta("Hospital")).toContain('aria-expanded="false"');
+  });
+});

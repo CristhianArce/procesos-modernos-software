@@ -61,3 +61,29 @@ Recharts pesa unos 100 KiB gzip de los 238 KiB de `/dashboard`. Las minigráfica
 | `/dashboard` | 238,1 KiB | 239,6 KiB | **141,0 KiB** (−41 %) |
 | `/nodos` | 137,3 KiB | 140,2 KiB | 139,6 KiB |
 | `/login` | 133,4 KiB | 133,4 KiB | 132,7 KiB |
+
+## Decisiones de F4 (datos en vivo)
+
+20. **Severidad de las alarmas.** El modelo tiene una sola severidad (RN-3 de la #22), así que se deriva del exceso sobre el umbral: *alta* desde +10 % y *media* por debajo. El panel ordena por severidad y, dentro de cada una, por hora. También se puede ordenar solo por hora, que es el orden del CA-4 de la #22. No hay confirmación de alarmas. `ListaAlertas` (la tabla de la #22) se retiró junto con su prueba, porque el panel de alarmas la reemplaza; la e2e de la #22 sigue usando `data-testid="alerta"`.
+21. **Instantánea en vivo.**
+    - **`GET /api/estado`:** viaja sin nombres y con cifras de 2 decimales, con `no-store`, y trae las 30 alertas más recientes.
+    - **Sondeo:** el proveedor `ProveedorEstadoVivo` está en el shell, así que la barra superior está en vivo en todas las pantallas. Consulta cada 2,5 s con un bucle de `setTimeout`, se pausa con la pestaña oculta, muestra «Sin conexión» si falla y lleva a `/login` con un 401.
+    - **Repintado:** los nodos, enlaces y alertas que no cambiaron conservan su objeto, y los nodos y enlaces del mímico se memorizan con comparación por valor.
+    - **Avisos:** hay uno por sensor y magnitud (uno nuevo reemplaza al anterior), dura 8 s y se ven como mucho 3.
+    - **Parpadeo:** el nodo con una alerta nueva parpadea mientras dura su aviso.
+22. **Panel lateral.** `GET /api/estado/nodos/{id}` trae los sensores con sus umbrales, sus 30 últimas lecturas y las 10 alertas recientes del nodo. Se vuelve a pedir con cada instantánea.
+    - **Contenido:** medidores frente a los umbrales y minigráficas por magnitud.
+    - **Teclado:** Enter lo abre, el foco pasa a su título, Esc lo cierra y el foco vuelve al nodo.
+23. **Simulador continuo.** Se enciende con `SIM_AUTO_MS` (≥ 500) desde `src/instrumentation.ts`; está apagado por defecto y nunca corre durante el build.
+    - **Deriva:** cada paso se acerca un 20 % a la base, con ruido de ±0,8 V y ±4 % de la corriente.
+    - **Base:** la tensión es de 120 V. La corriente sale de la última lectura, pero queda por debajo del 80 % de los umbrales de corriente y de potencia, porque una lectura vieja del botón puede estar por encima.
+    - **Picos:** hay un 0,5 % de probabilidad de pico por sensor y paso, con un exceso de entre +2 % y +15 % del umbral. El pico no arrastra la deriva.
+    - **Alcance:** omite los nodos desconectados y evalúa las alertas con `registrarAlertas`, el mismo camino que el botón.
+    - **Poda:** una vez por minuto borra las lecturas de más de 60 min, salvo la última de cada sensor.
+    - **En desarrollo:** el ciclo se arranca una sola vez por proceso, así que un cambio en su código exige reiniciar `next dev`.
+24. **Zod fuera del navegador.** `MAGNITUDES` y `TIPOS_NODO` se movieron a archivos sin Zod (`alertas/magnitudes.ts`, `topologia/tipos.ts`) y sus `schema.ts` los reexportan. Ninguna ruta carga Zod en el cliente.
+
+| Ruta | Antes de F0 | F3 | F4 |
+|---|---|---|---|
+| `/dashboard` (gzip) | 238,1 KiB | 141,0 KiB | 147,4 KiB |
+| `/nodos` (gzip) | 137,3 KiB | 139,6 KiB | 141,5 KiB |

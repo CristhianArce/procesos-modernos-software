@@ -8,6 +8,8 @@ const aplicar = async () => {
   for (const f of archivos) await db().query(readFileSync(`db/seed/${f}`, "utf8"));
 };
 const DE_LA_RED = "00000000-0000-4000-9000-%";
+// Las lecturas que crea la semilla (id fijo por sensor y paso): otras pueden venir del simulador en la misma BD.
+const DE_LA_SEMILLA_LECTURAS = `l.id IN (SELECT md5('topologia-lectura-' || s.id || '-' || n)::uuid FROM sensores s, generate_series(0, 29) AS n WHERE s.id::text LIKE $1)`;
 const uno = async (sql: string, p: unknown[] = []) => (await db().query(sql, p)).rows[0];
 
 afterAll(() => db().end());
@@ -23,7 +25,7 @@ describe("semilla de la topología", () => {
       uno(`SELECT (SELECT count(*) FROM nodos WHERE id::text LIKE $1)::int AS nodos,
                   (SELECT count(*) FROM nodo_topologia)::int AS posiciones,
                   (SELECT count(*) FROM enlaces WHERE id::text LIKE $1)::int AS enlaces,
-                  (SELECT count(*) FROM lecturas l JOIN sensores s ON s.id = l.sensor_id WHERE s.id::text LIKE $1)::int AS lecturas`, [DE_LA_RED]);
+                  (SELECT count(*) FROM lecturas l WHERE ${DE_LA_SEMILLA_LECTURAS})::int AS lecturas`, [DE_LA_RED]);
     const antes = await contar();
     await aplicar();
     expect(await contar()).toEqual(antes);
@@ -64,7 +66,7 @@ describe("semilla de la topología", () => {
     await aplicar();
     const { exceden } = await uno(
       `SELECT count(*)::int AS exceden FROM lecturas l JOIN sensores s ON s.id = l.sensor_id
-       WHERE s.id::text LIKE $1 AND (l.voltaje > s.umbral_voltaje OR l.corriente > s.umbral_corriente OR l.potencia > s.umbral_potencia)`,
+       WHERE ${DE_LA_SEMILLA_LECTURAS} AND (l.voltaje > s.umbral_voltaje OR l.corriente > s.umbral_corriente OR l.potencia > s.umbral_potencia)`,
       [DE_LA_RED],
     );
     expect(exceden).toBe(0);

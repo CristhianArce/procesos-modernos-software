@@ -27,6 +27,9 @@ function resumen({ nodos }: DatosMimico) {
   return partes.join("; ");
 }
 
+// Comparación por valor: cada sondeo arma objetos nuevos, pero solo se repinta lo que cambió.
+const igual = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+
 const Enlace = memo(function Enlace({ e }: { e: EnlaceMimico }) {
   const grosor = e.flujo?.grosor ?? 2;
   return (
@@ -45,16 +48,17 @@ const Enlace = memo(function Enlace({ e }: { e: EnlaceMimico }) {
       )}
     </g>
   );
-});
+}, (a, b) => igual(a.e, b.e));
 
 type PropsNodo = {
   n: NodoMimico;
+  seleccionado: boolean;
   onAbrir: (id: string) => void;
   onMostrar: (id: string, en?: Punto) => void;
   onOcultar: () => void;
 };
 
-const Nodo = memo(function Nodo({ n, onAbrir, onMostrar, onOcultar }: PropsNodo) {
+const Nodo = memo(function Nodo({ n, seleccionado, onAbrir, onMostrar, onOcultar }: PropsNodo) {
   const teclado = (ev: KeyboardEvent) => {
     if (ev.key === "Enter" || ev.key === " ") {
       ev.preventDefault();
@@ -66,6 +70,10 @@ const Nodo = memo(function Nodo({ n, onAbrir, onMostrar, onOcultar }: PropsNodo)
       role="button"
       tabIndex={0}
       aria-label={etiquetaNodo(n)}
+      aria-expanded={seleccionado}
+      data-nodo-id={n.id}
+      data-parpadeo={n.parpadeo || undefined}
+      data-seleccionado={seleccionado || undefined}
       data-estado={n.nivel}
       data-tipo={n.tipo}
       className="mimico-nodo"
@@ -95,12 +103,14 @@ const Nodo = memo(function Nodo({ n, onAbrir, onMostrar, onOcultar }: PropsNodo)
       </text>
     </g>
   );
-});
+}, (a, b) => a.seleccionado === b.seleccionado && a.onAbrir === b.onAbrir && a.onMostrar === b.onMostrar && a.onOcultar === b.onOcultar && igual(a.n, b.n));
 
 type Tooltip = { id: string; x: number; y: number };
 
 /** Mímico de la red en SVG propio: enlaces con flujo, nodos por tipo y estado, zoom, arrastre, encuadre y tooltip. */
-export function Mimico({ datos, onAbrir }: { datos: DatosMimico; onAbrir?: (id: string) => void }) {
+type Props = { datos: DatosMimico; onAbrir?: (id: string) => void; seleccionado?: string | null };
+
+export function Mimico({ datos, onAbrir, seleccionado = null }: Props) {
   const router = useRouter();
   const contenedor = useRef<HTMLDivElement>(null);
   const lienzo = useRef<SVGSVGElement>(null);
@@ -108,6 +118,11 @@ export function Mimico({ datos, onAbrir }: { datos: DatosMimico; onAbrir?: (id: 
   const [vista, setVista] = useState<Caja>(encuadreInicial);
   const [tooltip, setTooltip] = useState<Tooltip | null>(null);
   const arrastre = useRef<{ x: number; y: number; vista: Caja; escala: number } | null>(null);
+  // Los manejadores leen los datos de una ref: así no cambian en cada sondeo y los nodos memorizados no se repintan.
+  const ultimos = useRef(datos);
+  useEffect(() => {
+    ultimos.current = datos;
+  }, [datos]);
 
   const abrir = useCallback((id: string) => (onAbrir ? onAbrir(id) : router.push(`/nodos/${id}`)), [onAbrir, router]);
 
@@ -126,7 +141,7 @@ export function Mimico({ datos, onAbrir }: { datos: DatosMimico; onAbrir?: (id: 
       let p = en;
       if (!p) {
         // Con teclado no hay puntero: el tooltip va junto al nodo.
-        const n = datos.nodos.find((x) => x.id === id);
+        const n = ultimos.current.nodos.find((x) => x.id === id);
         const ctm = lienzo.current?.getScreenCTM();
         if (!n || !ctm) return;
         const s = new DOMPoint(n.x, n.y).matrixTransform(ctm);
@@ -135,7 +150,7 @@ export function Mimico({ datos, onAbrir }: { datos: DatosMimico; onAbrir?: (id: 
       // El tooltip mide 224 px: se recorta contra el borde derecho del mímico.
       setTooltip({ id, x: Math.max(8, Math.min(p.x - caja.left + 14, caja.width - 236)), y: p.y - caja.top + 14 });
     },
-    [datos.nodos],
+    [],
   );
   const ocultar = useCallback(() => setTooltip(null), []);
 
@@ -168,8 +183,8 @@ export function Mimico({ datos, onAbrir }: { datos: DatosMimico; onAbrir?: (id: 
 
   const capaEnlaces = useMemo(() => datos.enlaces.map((e) => <Enlace key={e.id} e={e} />), [datos.enlaces]);
   const capaNodos = useMemo(
-    () => datos.nodos.map((n) => <Nodo key={n.id} n={n} onAbrir={abrir} onMostrar={mostrar} onOcultar={ocultar} />),
-    [datos.nodos, abrir, mostrar, ocultar],
+    () => datos.nodos.map((n) => <Nodo key={n.id} n={n} seleccionado={n.id === seleccionado} onAbrir={abrir} onMostrar={mostrar} onOcultar={ocultar} />),
+    [datos.nodos, seleccionado, abrir, mostrar, ocultar],
   );
   const nodoTooltip = tooltip && datos.nodos.find((n) => n.id === tooltip.id);
   const descripcion = "mimico-resumen";
