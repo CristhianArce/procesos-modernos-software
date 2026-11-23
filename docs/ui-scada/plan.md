@@ -46,3 +46,18 @@ Recharts pesa unos 100 KiB gzip de los 238 KiB de `/dashboard`. Las minigráfica
 15. **e2e.** En `e2e/nodos.spec.ts`, la conexión ahora se muestra con el indicador («Conectado», con mayúscula); se ajustaron las dos aserciones.
 16. **`pg` como externo síncrono** (corrección de un fallo que ya estaba en `main`). Con `import { Pool } from "pg"`, Turbopack carga `pg` como externo ESM, que es asíncrono. Todo módulo que llega a la BD se vuelve asíncrono, y el `import.meta.glob` eager de `src/nav/registro.ts` recibe un espacio de nombres que nunca se llena. Por eso el panel Sensores no salía en la ficha, ni en desarrollo ni en producción, y la e2e `#21 CA-7` fallaba. `src/lib/db.ts` ahora carga `pg` con `require` (externo CommonJS). La salida `standalone` sigue incluyendo `pg`. Es un cambio al núcleo, aprobado en la conversación.
 17. **Topología (F2).** Las tablas son propias: `nodo_topologia(nodo_id, tipo, x, y)`, con coordenadas de 0 a 2000, y `enlaces(origen_id, destino_id)`, que no admite bucles y tiene un índice único por par de nodos sin importar el sentido. Las dos borran en cascada con el nodo. El sentido del enlace es el del flujo de energía. Un nodo sin posición sale en la API con `tipo`, `x` e `y` nulos. La semilla `topologia.sql` usa identificadores `…-9000-…` para no alterar los conteos de la semilla de la HU 4. Agrega 11 nodos a los 2 existentes (13 en total, uno desconectado), 13 enlaces, 12 sensores y 30 lecturas con deriva suave por sensor; ninguna lectura supera un umbral, así que no quedan alertas sin evaluar.
+18. **Mímico (F3).** Es SVG propio (`src/modulos/topologia/ui/Mimico.tsx`) y los cálculos son puros (`mimico.ts`).
+    - **Zoom y arrastre:** cambian el `viewBox`. Las coordenadas de pantalla se convierten con `getScreenCTM()`, así que se respeta `preserveAspectRatio`.
+    - **Flujo:** cada enlace fluye con la potencia del nodo destino. El grosor va de 2 a 6 y el ciclo, de 2,5 s a 0,6 s. Si uno de los extremos está desconectado, el enlace queda discontinuo y sin flujo.
+    - **Nodos sin ubicar:** se dibujan en una fila debajo de la red, como carga, con la etiqueta «sin ubicar».
+    - **Teclado:** cada nodo es un `role="button"` enfocable; el tooltip sale con el foco y Enter abre la ficha. En F4, Enter abrirá el panel lateral.
+    - **Lector de pantalla:** hay un resumen en texto (`aria-describedby`).
+19. **Gráficas sin Recharts.** Las tres gráficas por sensor ahora son SVG propio (`GraficaLinea`), renderizado en el servidor y sin JS en el cliente. Siguen cumpliendo los criterios de la historia #22 (tres gráficas con título por sensor). La e2e de la #22 se ajustó de `svg.recharts-surface` a `figure svg[role=img]`. Recharts sigue en `package.json` (sin cambios de dependencias), pero ninguna ruta lo carga. Si el equipo lo aprueba, se puede quitar aparte.
+
+## Medidas de JS (primera carga, gzip)
+
+| Ruta | Antes de F0 | F1 | F3 |
+|---|---|---|---|
+| `/dashboard` | 238,1 KiB | 239,6 KiB | **141,0 KiB** (−41 %) |
+| `/nodos` | 137,3 KiB | 140,2 KiB | 139,6 KiB |
+| `/login` | 133,4 KiB | 133,4 KiB | 132,7 KiB |

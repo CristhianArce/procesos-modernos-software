@@ -11,6 +11,7 @@ const TRAZOS = {
   salir: "M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10",
   buscar: "M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-4-4",
   rayo: "M13 2 4 14h7l-1 8 9-12h-7z",
+  encuadrar: "M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5",
   generico: "M5 5h14v14H5z",
 } as const;
 

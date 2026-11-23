@@ -60,3 +60,15 @@ describe("componentes base", () => {
     expect(html(createElement(Sparkline, { valores: [1], etiqueta: "x" }))).not.toContain("<path");
   });
 });
+
+describe("gráfica de línea", () => {
+  it("ui-scada: es una imagen con texto alternativo, el trazo y el mínimo y el máximo de la serie", async () => {
+    const { GraficaLinea } = await import("../GraficaLinea");
+    const h = html(createElement(GraficaLinea, { valores: [118.2, 121.5, 120], etiqueta: "Voltaje (V)" }));
+    expect(h).toContain('role="img"');
+    expect(h).toContain('aria-label="Voltaje (V): de 118,2 a 121,5, última 120"');
+    expect(h).toMatch(/<path[^>]*d="M/);
+    expect(h).toContain(">121,5<");
+    expect(h).toContain(">118,2<");
+  });
+});

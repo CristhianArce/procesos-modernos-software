@@ -274,6 +274,93 @@
   }
 }
 
+/* Mímico de la red (src/modulos/topologia/ui/Mimico.tsx). */
+@layer components {
+  .mimico-reticula {
+    stroke: color-mix(in srgb, var(--sc-borde) 45%, transparent);
+    stroke-width: 1;
+  }
+  .mimico-enlace {
+    stroke: var(--sc-borde-fuerte);
+    stroke-linecap: round;
+  }
+  .mimico-enlace[data-activo="false"] {
+    stroke: var(--sc-desconectado);
+    stroke-dasharray: 8 8;
+    opacity: 0.55;
+  }
+  /* Flujo de energía: guiones que avanzan de origen a destino; la duración depende de la potencia. */
+  .mimico-flujo {
+    stroke: var(--sc-flujo);
+    stroke-linecap: round;
+    stroke-dasharray: 2 14;
+    animation: sc-flujo var(--duracion, 2s) linear infinite;
+    filter: drop-shadow(0 0 3px rgb(56 189 248 / 0.55));
+  }
+  .mimico-nodo {
+    cursor: pointer;
+    outline: none;
+    color: var(--sc-estado);
+  }
+  .mimico-simbolo > * {
+    fill: var(--sc-panel);
+    stroke: currentColor;
+    stroke-width: 2.5;
+  }
+  .mimico-simbolo > .mimico-detalle {
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+  }
+  .mimico-nodo[data-estado="desconectado"] .mimico-simbolo > * {
+    stroke-dasharray: 5 4;
+  }
+  .mimico-nodo .anillo-foco {
+    fill: color-mix(in srgb, var(--sc-estado) 10%, transparent);
+    stroke: var(--sc-foco);
+    stroke-width: 2;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .mimico-nodo:hover .anillo-foco {
+    opacity: 0.6;
+    stroke: currentColor;
+  }
+  .mimico-nodo:focus-visible .anillo-foco {
+    opacity: 1;
+  }
+  .mimico-nombre {
+    fill: var(--sc-texto);
+    font-size: 12px;
+    font-weight: 600;
+    paint-order: stroke;
+    stroke: var(--sc-fondo-2);
+    stroke-width: 4px;
+    stroke-linejoin: round;
+  }
+  .mimico-valor {
+    fill: var(--sc-texto-tenue);
+    font-family: var(--sc-fuente-mono);
+    font-size: 11px;
+    paint-order: stroke;
+    stroke: var(--sc-fondo-2);
+    stroke-width: 4px;
+    stroke-linejoin: round;
+  }
+}
+
+@keyframes sc-flujo {
+  to {
+    stroke-dashoffset: -16;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mimico-flujo {
+    animation: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
