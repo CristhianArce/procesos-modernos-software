@@ -47,7 +47,7 @@ SDD (desarrollo guiado por especificaciones) significa que primero se escribe qu
 | Continua que vuelve atrás | Un reintento: el mismo paso se repite con los hallazgos corregidos |
 | Punteada con flecha | Salida por excepción hacia «Bloqueado» |
 
-En el paso 5 la sesión escribe el código y, al mismo tiempo, tres agentes escriben las pruebas, uno por tipo (unitarias, integración y e2e). Las pruebas salen de las specs y del diseño, no del código ya escrito. Al terminar, la sesión las recoge, comprueba que cada tarea de pruebas tiene su archivo y alinea el código con las firmas que los agentes tuvieron que suponer.
+En el paso 5 la sesión deja primero escritas la migración y la semilla y completa en `design.md` las firmas y los textos visibles; después escribe el código y, al mismo tiempo, tres agentes escriben las pruebas, uno por tipo (unitarias, integración y e2e). Las pruebas salen de las specs, del diseño, de la migración y de la semilla, no del código ya escrito: lo que ya está escrito se lee, no se supone. Al cerrar, la sesión comprueba que los runners detectan cada archivo con un solo `vitest list`, corre la trazabilidad y marca todas las casillas **antes** del único `build-test` del paso 6: cualquier edición posterior al build impide el commit.
 
 <details>
 <summary>Fuente del diagrama (mermaid), para editarlo</summary>
@@ -73,13 +73,13 @@ flowchart LR
     subgraph S5["5 Implementar el código (sesión)"]
         OA["skill openspec-apply-change<br/>ejecuta tasks.md"]
     end
-    VER -->|APROBADO| INI["Sesión: lanza en paralelo<br/>el código y 3 agentes de pruebas"]
+    VER -->|APROBADO| INI["Sesión: deja migración, semilla<br/>y textos visibles; lanza en paralelo<br/>el código y 3 agentes de pruebas"]
     INI --> OA
     INI ==>|"segundo plano"| TU[["escritor-pruebas<br/>unitarias"]]
     INI ==>|"segundo plano"| TI[["escritor-pruebas<br/>integración"]]
     INI ==>|"segundo plano"| TE[["escritor-pruebas<br/>e2e"]]
 
-    OA --> UNI["5 Unir<br/>Sesión: espera a los 3 agentes y ajusta<br/>los nombres que las pruebas supusieron"]
+    OA --> UNI["5 Unir<br/>Sesión: espera a los 3 agentes, ajusta<br/>los nombres que supusieron<br/>y comprueba que los runners ven cada archivo"]
     TU --> UNI
     TI --> UNI
     TE --> UNI
@@ -89,7 +89,7 @@ flowchart LR
     S7 -->|"repite build-test"| V6
     V6 --> S8["8 PR borrador<br/>y evidencias"]
     S8 --> CI["CI del PR<br/>openspec validate --all<br/>y revisión humana"]
-    CI --> ARC["Último commit del mismo PR<br/>openspec archive"]
+    CI --> ARC["Después de mezclar: PR chore<br/>/archivar-change-openspec<br/>(openspec archive)"]
 
     VER -.->|"BLOQUEAR o 2.º CORREGIR"| BLOQ(["Bloqueado"])
     UNI -.->|"tareas pendientes sin motivo"| BLOQ
@@ -128,13 +128,13 @@ flowchart LR
 | # | Paso | Quién | Qué deja |
 |---|---|---|---|
 | 1 | **Preparar**: crea la rama `feature/issue-<n>-<slug>` desde `main`, copia el issue y extrae los `CA-n`; bloquea si el issue está cerrado o ya tiene PR | agente `preparador` | `issue.md`, `preguntas.md`, `decisiones.md` |
-| 2 | **Contexto**: lista lo que ya existe (capacidades de `openspec/specs/`, tablas de `db/migration/`, módulos, semillas, rutas del contrato) para que la propuesta no suponga nada | script `contexto.mjs` | `contexto.md` |
+| 2 | **Contexto**: lista lo que ya existe (capacidades de `openspec/specs/`, tablas de `db/migration/`, módulos, semillas, rutas del contrato) para que la propuesta no suponga nada; las capacidades que comparten ruta o palabras con el issue vienen completas (requisitos y escenarios) para copiarlas en un `MODIFIED` | script `contexto.mjs` | `contexto.md` |
 | 3 | **Propuesta**: pregunta a la persona las dudas de negocio y genera proposal, specs, design y tasks | skill `openspec-propose` | `openspec/changes/<change>/` |
-| 4 | **Revisar la propuesta**: `openspec validate --strict`, trazabilidad CA → requisito → tarea, formato y alcance; con CORREGIR se arregla y se repite una sola vez | script `trazabilidad-grep.mjs` y agente `revisor-salida` | veredicto en `gates.md` |
-| 5 | **Implementar**: la sesión ejecuta `tasks.md` (código, migración, semilla y contrato) mientras tres agentes escriben en paralelo las pruebas, uno por tipo; al final la sesión las une y alinea las firmas | skill `openspec-apply-change` y tres agentes `escritor-pruebas` | código y pruebas en la rama, tareas `[x]`, `pruebas-supuestos-<tipo>.md` si hubo firmas supuestas |
+| 4 | **Revisar la propuesta**: `openspec validate --strict`, trazabilidad CA → requisito → tarea, deltas contra las specs base (`MODIFIED` de un requisito que existe, `ADDED` de uno que no), formato y alcance; con CORREGIR se arregla y se repite una sola vez | script `trazabilidad-grep.mjs` y agente `revisor-salida` | veredicto en `gates.md` |
+| 5 | **Implementar**: la sesión escribe primero la migración y la semilla y fija firmas y textos visibles en `design.md`; luego ejecuta `tasks.md` (código y contrato) mientras tres agentes escriben en paralelo las pruebas, uno por tipo; al final la sesión las une, alinea las firmas, comprueba con un solo `vitest list` que ve cada archivo, corre la trazabilidad y marca todas las casillas antes del build | skill `openspec-apply-change` y tres agentes `escritor-pruebas` | código y pruebas en la rama, tareas `[x]`, `pruebas-supuestos-<tipo>.md` si hubo firmas supuestas |
 | 6 | **Verificar**: `typecheck` y `test:unit`, en paralelo con la revisión del diff contra las reglas del proyecto | skill `build-test` y agente `revisor-reglas` | `verificacion.md`, último build en `estado.md` |
 | 7 | **Corregir** (solo si hace falta): una pasada para los hallazgos CRITICAL o un build rojo, y se repite el paso 6 | la sesión | build en verde |
-| 8 | **Commit, PR y evidencias**: commit con `#<n>` y `Change: <change>`, PR en borrador y copia a `evidencias/issue-<n>/` | skills `commit` y `abrir-pr`, script `copiar-evidencias.mjs` | PR en borrador |
+| 8 | **Commit, PR y evidencias**: commit con `#<n>` y `Change: <change>` (un solo comando: verifica el build, agrega, commitea y sube), PR en borrador que **queda abierto** (un solo comando, que verifica el estado `OPEN`) y copia a `evidencias/issue-<n>/` | skills `commit` y `abrir-pr`, scripts `commitear.mjs`, `abrir-pr.mjs` y `copiar-evidencias.mjs` | PR en borrador abierto |
 
 Sin build verde no hay commit.
 
@@ -160,9 +160,10 @@ Así el orquestador no necesita Docker ni base de datos y se mantiene liviano. E
 |---|---|---|
 | Skill `orquestador` | `.claude/skills/orquestador/` | Dirige los 8 pasos. Lo invoca solo la persona, con `/orquestador <n>` |
 | Agentes `preparador`, `revisor-salida`, `revisor-reglas` | `.claude/agents/` | Preparar el issue, revisar la propuesta y revisar el código. Son de solo lectura |
-| Agente `escritor-pruebas` | `.claude/agents/` | Escribe las pruebas de un tipo (unitarias, integración o e2e); se lanzan tres a la vez, en segundo plano, mientras la sesión escribe el código. Solo crea archivos de prueba y no ejecuta nada |
+| Agente `escritor-pruebas` | `.claude/agents/` | Escribe las pruebas de un tipo (unitarias, integración o e2e); se lanzan tres a la vez, en segundo plano, mientras la sesión escribe el código. Solo crea archivos de prueba (las unitarias siempre `*.test.ts`) y no ejecuta nada |
 | Skills `openspec-*` | `.claude/skills/` | Los comandos de OpenSpec: `explore`, `propose`, `apply`, `archive`, `sync-specs` y `update-change`. El orquestador usa `propose` y `apply` |
 | Skills `build-test`, `commit`, `abrir-pr` | `.claude/skills/` | Compilar y probar, commitear, abrir el PR |
+| Skill `archivar-change-openspec` | `.claude/skills/` | Después de mezclar el PR de la historia: archiva el change con `openspec archive` para pasar los deltas a `openspec/specs/` y abre un PR `chore`. Lo invoca solo la persona, con `/archivar-change-openspec <n>` |
 | Skill `crear-hu` | `.claude/skills/` | Redactar una historia con `CA-n` y publicarla como issue |
 | Scripts `.mjs` | `.claude/skills/orquestador/scripts/` | `estado`, `contexto`, `trazabilidad-grep`, `registrar-agente`, `tiempos`, `puede-commitear`, `copiar-evidencias` |
 | Plantillas | `.claude/skills/orquestador/plantillas/` | Formato de cada archivo de `<trabajo>` |
@@ -173,7 +174,7 @@ Así el orquestador no necesita Docker ni base de datos y se mantiene liviano. E
 
 ## 5. Dónde queda cada cosa
 
-- **`<trabajo>` = `.flujo/issue-<n>/`:** carpeta de trabajo de la corrida. Está fuera de git. Cada paso lee sus entradas de ahí y escribe su salida antes de cerrar. Contiene `estado.md`, `issue.md`, `preguntas.md`, `decisiones.md`, `contexto.md`, `gates.md`, `trazabilidad.md`, `verificacion.md`, `agentes-log.md`, `tiempos.md` y `pr-body.md`.
+- **`<trabajo>` = `.flujo/issue-<n>/`:** carpeta de trabajo de la corrida. Está fuera de git. Cada paso lee sus entradas de ahí y escribe su salida antes de cerrar. Contiene `estado.md`, `issue.md`, `preguntas.md`, `decisiones.md`, `contexto.md`, `gates.md`, `trazabilidad.md`, `verificacion.md`, `agentes-log.md`, `tiempos.md`, `pr-body.md` y, si los agentes de pruebas suponen alguna firma, `pruebas-supuestos-<tipo>.md`.
 - **`evidencias/issue-<n>/`:** copia de lo anterior que sí se commitea, para que el PR muestre qué decidió y qué revisó cada agente.
 - **`openspec/changes/<change>/`:** la especificación de la historia.
 
@@ -192,8 +193,8 @@ Así el orquestador no necesita Docker ni base de datos y se mantiene liviano. E
 
 1. El CI corre todos los controles de la sección 3.
 2. Una persona revisa.
-3. Con el CI en verde y la revisión terminada, una persona archiva en el mismo PR, como último commit: `openspec archive <change> --yes`, que pasa la especificación a `openspec/specs/`.
-4. Una persona fusiona.
+3. Una persona fusiona el PR. El orquestador nunca fusiona ni archiva.
+4. **Después de mezclar**, una persona corre `/archivar-change-openspec <n>` desde `main`: archiva el change (`openspec archive <change> --yes`), que pasa la especificación a `openspec/specs/`, y lo sube en una rama `chore/archivar-<change>` con su propio PR. **Este paso es obligatorio**: sin él los specs vigentes quedan desactualizados y la siguiente historia que los modifique falla en la revisión de la propuesta.
 
 ## 8. Cómo probar que el flujo funciona
 

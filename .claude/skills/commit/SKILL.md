@@ -11,24 +11,21 @@ Guía: `docs/flujo-orquestador.md`. Todos los comandos van desde la raíz del re
 
 ## Pasos
 
-1. **Verificar el build**:
-   ```bash
-   node .claude/skills/orquestador/scripts/puede-commitear.mjs <n> <ruta1> <ruta2> ...
-   ```
-   Si imprime `NO COMMITEAR`, **no commitees**. Devuelve el motivo al orquestador, que debe correr `build-test` de nuevo. Un commit que solo incluye `evidencias/` no exige build.
-2. **Agregar solo las rutas explícitas**: `git add <ruta1> <ruta2> ...`. Nunca uses `git add -A` ni `git add .`. Excluye siempre `.flujo/`, `.env` y `.claude/`.
-3. **Commitear**. El mensaje sigue el estilo del repo, con el porqué breve y la línea del change, y sin menciones a la IA (la autoría de cada agente queda en `evidencias/issue-<n>/agentes.md`):
-   ```bash
-   git commit -m "<tipo>: <descripción> (#<n>)" -m "<porqué>" -m "Change: <change>"
-   ```
-   `<tipo>` es `feat`, `fix`, `test`, `docs` o `chore`.
-4. **Subir**: `git push -u origin <rama>`, con `<rama>` = `feature/issue-<n>-<slug>`.
+**Una sola llamada** (verifica el build, agrega solo las rutas explícitas, commitea y sube):
+
+```bash
+node .claude/skills/orquestador/scripts/commitear.mjs <n> --rama feature/issue-<n>-<slug> --mensaje "<tipo>: <descripción> (#<n>)" --porque "<porqué breve>" --change <change> <ruta1> <ruta2> ...
+```
+
+- `<tipo>` es `feat`, `fix`, `test`, `docs` o `chore`. El mensaje cita el issue y el script agrega la línea `Change: <change>`. Sin menciones a la IA: la autoría de cada agente queda en `evidencias/issue-<n>/agentes.md`.
+- El script rechaza (código 1, `NO COMMITEAR: <motivo>`) un build que no esté en verde o sea anterior a la última edición de las rutas (un commit que solo incluye `evidencias/` no exige build), las carpetas, `.`, y las rutas de `.flujo/`, `.claude/`, `node_modules/` y `.env`. Con `NO COMMITEAR`, **no commitees por otro medio**: devuelve el motivo al orquestador, que debe correr `build-test` de nuevo.
+- Los pasos manuales equivalentes, si el script no se puede usar: `node .claude/skills/orquestador/scripts/puede-commitear.mjs <n> <rutas>`, `git add <rutas>`, `git commit -m ... -m ... -m "Change: <change>"` y `git push -u origin <rama>`.
 
 ## Salida
 
-El sha del commit (`git log` no hace falta: lo imprime `git commit`), la rama y si se hizo push.
+`COMMIT <sha> en <rama> (push hecho)`.
 
 ## Prohibido
 
-- `--amend`, `--no-verify`, `--force`, `git reset`, `git rebase` y commitear sin el paso 1.
-- Commitear `.flujo/`, `.env` o `.claude/`.
+- `--amend`, `--no-verify`, `--force`, `git reset`, `git rebase` y commitear sin la verificación del build.
+- `git add -A` y `git add .`. Commitear `.flujo/`, `.env` o `.claude/`.

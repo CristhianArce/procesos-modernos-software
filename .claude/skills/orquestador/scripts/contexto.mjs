@@ -74,11 +74,61 @@ export function capacidadesEspecificadas(dirSpecs) {
     });
 }
 
+// Palabras del issue que no distinguen una capacidad de otra.
+const VACIAS = new Set([
+  "usuario", "usuarios", "historia", "criterios", "aceptación", "entonces", "cuando", "sistema", "tablero", "página", "pagina",
+  "consulta", "consultar", "datos", "lista", "debe", "deben", "puede", "pueden", "sobre", "desde", "hasta", "quiero", "regla",
+  "reglas", "negocio", "alcance", "técnicas", "vinculantes", "decisión", "decisiones", "preguntas", "abiertas", "ninguna",
+  "definición", "hecho", "contexto", "dependencias", "ejemplo",
+]);
+const sinTildes = (t) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+const palabras = (t) => new Set((sinTildes(t).match(/[a-zñ]{6,}/g) ?? []).filter((p) => !VACIAS.has(sinTildes(p))));
+const RUTA_API = /\/api\/[a-z][\w-]*/g;
+const MAX_RELACIONADAS = 5;
+
+// Capacidades relacionadas con el issue: comparten una ruta /api/... citada o al menos dos palabras con su nombre o con los
+// nombres de sus requisitos. Devuelve [{ capacidad, requisitos, bloques, puntaje }] de la más a la menos parecida; `bloques` es
+// el texto exacto de sus requisitos y escenarios (lo que un delta MODIFIED debe copiar entero).
+export function capacidadesRelacionadas(textoIssue, dirSpecs) {
+  const delIssue = palabras(textoIssue);
+  const rutas = new Set(textoIssue.match(RUTA_API) ?? []);
+  return capacidadesEspecificadas(dirSpecs)
+    .map((c) => {
+      const texto = readFileSync(join(dirSpecs, c.capacidad, "spec.md"), "utf8");
+      const propias = palabras(`${c.capacidad.replace(/-/g, " ")} ${c.requisitos.join(" ")}`);
+      const comunes = [...delIssue].filter((p) => propias.has(p)).length;
+      const comparteRuta = [...rutas].some((r) => texto.includes(r));
+      const bloques = (texto.split(/^## Requirements\s*$/m)[1] ?? "").split(/^## /m)[0].trim();
+      return { ...c, bloques, puntaje: comunes + (comparteRuta ? 2 : 0), relacionada: comunes >= 2 || comparteRuta };
+    })
+    .filter((c) => c.relacionada)
+    .sort((a, b) => b.puntaje - a.puntaje || a.capacidad.localeCompare(b.capacidad))
+    .slice(0, MAX_RELACIONADAS);
+}
+
 // Changes de OpenSpec en curso (sin archivar): otra historia puede estar tocando lo mismo.
 export const changesActivos = (dirChanges) =>
   listar(dirChanges).filter((c) => c !== "archive" && statSync(join(dirChanges, c)).isDirectory());
 
-export function generarContexto(raiz) {
+// Primera frase del Purpose, acotada: la tabla solo ubica la capacidad; el texto completo va en las relacionadas.
+const resumir = (proposito) => {
+  const frase = proposito.split(/(?<=\.)\s/)[0];
+  return frase.length > 140 ? `${frase.slice(0, 137).trimEnd()}…` : frase;
+};
+
+// Texto de las capacidades relacionadas: nombre y propósito, y sus requisitos y escenarios tal cual (para copiar en un MODIFIED).
+function seccionRelacionadas(relacionadas) {
+  if (relacionadas.length === 0) return [];
+  return [
+    "## Capacidades relacionadas con la historia",
+    "",
+    "Comparten ruta o palabras con el issue. Su texto va completo: un delta `## MODIFIED Requirements` copia el bloque entero del requisito (encabezado exacto y todos sus escenarios) y lo edita; un requisito nuevo va en `## ADDED Requirements` con un nombre que no exista aquí.",
+    "",
+    ...relacionadas.flatMap((c) => [`### ${c.capacidad}`, "", c.proposito, "", "````markdown", c.bloques, "````", ""]),
+  ];
+}
+
+export function generarContexto(raiz, textoIssue = "") {
   const tablas = tablasDeMigraciones(join(raiz, "db", "migration"));
   const modulos = modulosConExtension(join(raiz, "src", "modulos"));
   const semillas = listar(join(raiz, "db", "seed")).filter((a) => a.endsWith(".sql"));
@@ -96,9 +146,10 @@ export function generarContexto(raiz) {
     "",
     "| Capacidad | Propósito | Requisitos |",
     "|---|---|---|",
-    ...capacidades.map((c) => `| ${c.capacidad} | ${c.proposito || "(sin Purpose)"} | ${c.requisitos.join("; ") || "(ninguno)"} |`),
+    ...capacidades.map((c) => `| ${c.capacidad} | ${resumir(c.proposito) || "(sin Purpose)"} | ${c.requisitos.join("; ") || "(ninguno)"} |`),
     ...(capacidades.length ? [] : ["| (ninguna) | | |"]),
     "",
+    ...seccionRelacionadas(textoIssue ? capacidadesRelacionadas(textoIssue, join(raiz, "openspec", "specs")) : []),
     "## Changes activos",
     "",
     ...(changes.length ? changes.map((c) => `- openspec/changes/${c}/`) : ["- (ninguno)"]),
@@ -139,7 +190,9 @@ if (esPrincipal(import.meta.url)) {
   const raiz = o.raiz ?? raizRepo();
   const trabajo = o.trabajo ?? dirTrabajo(n);
   mkdirSync(trabajo, { recursive: true });
-  writeFileSync(join(trabajo, "contexto.md"), generarContexto(raiz));
+  // El preparador deja issue.md antes del paso 2; sin él, el contexto sale sin la sección de capacidades relacionadas.
+  const rutaIssue = join(trabajo, "issue.md");
+  writeFileSync(join(trabajo, "contexto.md"), generarContexto(raiz, existsSync(rutaIssue) ? readFileSync(rutaIssue, "utf8") : ""));
   // Cierra el paso 2 en tiempos.md (si la corrida se está midiendo): el orquestador no necesita otra llamada.
   registrarCierre(join(trabajo, "tiempos.md"), 2);
   console.log(join(trabajo, "contexto.md"));

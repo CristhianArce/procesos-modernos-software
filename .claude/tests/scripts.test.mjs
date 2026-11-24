@@ -8,10 +8,10 @@ import { join } from "node:path";
 import { leer, RAIZ } from "./util.mjs";
 import { escribirCampo, leerCampo } from "../skills/orquestador/scripts/estado.mjs";
 import { calcular, componer, leerMarcas, resumenMarkdown } from "../skills/orquestador/scripts/tiempos.mjs";
-import { aMarkdown, analizar, criteriosDelIssue, decisionesCitadas, decisionesRegistradas, pruebasDeHistoria, pruebasDeTexto } from "../skills/orquestador/scripts/trazabilidad-grep.mjs";
+import { aMarkdown, analizar, criteriosDelIssue, decisionesCitadas, decisionesRegistradas, deltasContraBase, operacionesDeDelta, pruebasDeHistoria, pruebasDeTexto } from "../skills/orquestador/scripts/trazabilidad-grep.mjs";
 import { filaDeAgente, registrarAgente } from "../skills/orquestador/scripts/registrar-agente.mjs";
 import { agentesDesdeLog, copiarEvidencias } from "../skills/orquestador/scripts/copiar-evidencias.mjs";
-import { capacidadesEspecificadas, changesActivos, generarContexto, rutasDelContrato, tablasDeMigraciones } from "../skills/orquestador/scripts/contexto.mjs";
+import { capacidadesEspecificadas, capacidadesRelacionadas, changesActivos, generarContexto, rutasDelContrato, tablasDeMigraciones } from "../skills/orquestador/scripts/contexto.mjs";
 
 const FIX = join(RAIZ, ".claude", "fixtures");
 const SCRIPTS = join(RAIZ, ".claude", "skills", "orquestador", "scripts");
@@ -213,4 +213,113 @@ test("CA-6: un agente en segundo plano (--paralelo) deja su fila sin marca de ti
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+const escribirSpec = (dir, capacidad, lineas) => {
+  mkdirSync(join(dir, capacidad), { recursive: true });
+  writeFileSync(join(dir, capacidad, "spec.md"), lineas.join("\n"));
+};
+
+test("CA-8: contexto.mjs trae completas las capacidades que comparten palabras o ruta con el issue", () => {
+  const dir = temporal();
+  try {
+    escribirSpec(dir, "dashboard-de-lecturas", [
+      "# x", "", "## Purpose", "", "Muestra las lecturas y las alertas.", "", "## Requirements", "",
+      "### Requirement: Última lectura de cada sensor en el dashboard", "El sistema SHALL mostrarla.", "",
+      "#### Scenario: Con lecturas", "- **WHEN** hay una", "- **THEN** se ve", "",
+    ]);
+    escribirSpec(dir, "observabilidad", ["# x", "", "## Purpose", "", "Salud y métricas.", "", "## Requirements", "", "### Requirement: Salud de la app", "Texto.", ""]);
+    const r = capacidadesRelacionadas("Quiero ver la última lectura de cada sensor en el histórico", dir);
+    assert.deepEqual(r.map((c) => c.capacidad), ["dashboard-de-lecturas"]);
+    assert.match(r[0].bloques, /#### Scenario: Con lecturas/, "los escenarios van completos para copiarlos en un MODIFIED");
+    assert.deepEqual(capacidadesRelacionadas("Quiero ver la salud", dir), [], "una sola palabra en común no basta");
+    assert.deepEqual(capacidadesRelacionadas("Usar GET /api/lecturas", dir).length, 0, "una ruta que ninguna spec cita no relaciona");
+    escribirSpec(dir, "salud", ["## Purpose", "", "x", "", "## Requirements", "", "### Requirement: Ruta", "Responde en /api/health.", ""]);
+    assert.deepEqual(capacidadesRelacionadas("Agregar un dato a /api/health", dir).map((c) => c.capacidad), ["salud"]);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("CA-8: generarContexto agrega la sección de capacidades relacionadas solo si se le da el issue", () => {
+  const sin = generarContexto(RAIZ);
+  const con = generarContexto(RAIZ, "Consultar el histórico de lecturas de cada sensor en el dashboard de lecturas");
+  assert.doesNotMatch(sin, /## Capacidades relacionadas con la historia/);
+  assert.match(con, /## Capacidades relacionadas con la historia/);
+  assert.match(con, /### dashboard-de-lecturas/);
+});
+
+test("CA-8: trazabilidad-grep.mjs lee las operaciones de un delta, también RENAMED", () => {
+  const ops = operacionesDeDelta([
+    "## ADDED Requirements", "### Requirement: Nuevo", "x",
+    "## MODIFIED Requirements", "### Requirement: Existente", "x",
+    "## RENAMED Requirements", "- FROM: `### Requirement: Viejo`", "- TO: `### Requirement: Otro`",
+    "## REMOVED Requirements", "### Requirement: Obsoleto", "**Reason**: x",
+  ].join("\n"));
+  assert.deepEqual(ops, [
+    { operacion: "ADDED", nombre: "Nuevo" },
+    { operacion: "MODIFIED", nombre: "Existente" },
+    { operacion: "RENAMED", nombre: "Viejo" },
+    { operacion: "REMOVED", nombre: "Obsoleto" },
+  ]);
+});
+
+test("CA-8: trazabilidad-grep.mjs rechaza los deltas que el archivado rechazaría", () => {
+  const base = temporal();
+  const change = temporal();
+  try {
+    escribirSpec(base, "acerca", ["## Purpose", "", "x", "", "## Requirements", "", "### Requirement: Página acerca", "x", ""]);
+    escribirSpec(join(change, "specs"), "acerca", [
+      "## MODIFIED Requirements", "### Requirement: Página  Acerca", "x",
+      "### Requirement: Inventado", "x",
+      "## ADDED Requirements", "### Requirement: Página acerca", "x",
+      "### Requirement: Nuevo", "x", "### Requirement: Nuevo", "x",
+    ]);
+    escribirSpec(join(change, "specs"), "capacidad-nueva", ["## ADDED Requirements", "### Requirement: A", "x", "## MODIFIED Requirements", "### Requirement: B", "x"]);
+    const r = deltasContraBase(change, base);
+    assert.deepEqual(r, [
+      'acerca: MODIFIED "Inventado" no existe en la spec base',
+      'acerca: ADDED "Página acerca" ya existe en la spec base (usa MODIFIED)',
+      'acerca: ADDED "Nuevo" aparece dos veces en el delta',
+      'capacidad-nueva: MODIFIED "B" no existe en una capacidad sin spec base (solo admite ADDED)',
+    ], "«Página  Acerca» (espacios y mayúsculas distintos) sí coincide con la base");
+    const rep = analizar("## Criterios numerados\n\n- CA-1: a\n", change, null, null, base);
+    assert.equal(rep.deltasInvalidos.length, 4);
+    assert.match(aMarkdown(rep), /Delta que el archivado rechazaría: acerca: MODIFIED "Inventado"/);
+    assert.match(aMarkdown(rep), /Veredicto: incompleta/);
+    assert.equal("deltasInvalidos" in analizar("## Criterios numerados\n\n- CA-1: a\n", change), false, "sin dirSpecsBase no se comprueba");
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+    rmSync(change, { recursive: true, force: true });
+  }
+});
+
+test("CA-6: commitear.mjs solo acepta archivos explícitos, una rama de historia y un commit sin atribuciones", async () => {
+  const { argumentosCommit, motivoRutaInvalida, ramaValida } = await import("../skills/orquestador/scripts/commitear.mjs");
+  assert.equal(motivoRutaInvalida(["src/a.ts", "openspec/changes/x/tasks.md"]), null);
+  assert.match(motivoRutaInvalida([]), /No hay rutas/);
+  for (const r of [".", "-A", ".flujo/issue-1/estado.md", ".claude/settings.json", "node_modules/x/index.js", ".env", "src/.env"]) {
+    assert.ok(motivoRutaInvalida([r]), `debe rechazar ${r}`);
+  }
+  assert.match(motivoRutaInvalida(["src/modulos"], (r) => r === "src/modulos"), /carpeta/);
+  assert.equal(ramaValida("feature/issue-24-consultar-notificaciones"), true);
+  for (const r of ["main", "refactor/x", "feature/issue-x-y", undefined]) assert.equal(ramaValida(r), false);
+  assert.deepEqual(argumentosCommit({ mensaje: "feat: x (#24)", porque: "porque", change: "c" }), ["commit", "-m", "feat: x (#24)", "-m", "porque", "-m", "Change: c"]);
+  assert.deepEqual(argumentosCommit({ mensaje: "docs: e (#24)", change: "c" }), ["commit", "-m", "docs: e (#24)", "-m", "Change: c"]);
+});
+
+test("CA-6: abrir-pr.mjs crea siempre en borrador, etiqueta las migraciones y reconoce un PR existente", async () => {
+  const { argumentosCrear, etiquetaInexistente, hayMigraciones, urlDeSalida, yaExiste } = await import("../skills/orquestador/scripts/abrir-pr.mjs");
+  const base = { n: "24", rama: "feature/issue-24-x", base: "main", titulo: "feat: x", cuerpo: ".flujo/issue-24/pr-body.md" };
+  const sin = argumentosCrear({ ...base, conEtiqueta: false });
+  assert.ok(sin.includes("--draft") && !sin.includes("--label"));
+  assert.equal(sin[sin.indexOf("--title") + 1], "feat: x (#24)");
+  const con = argumentosCrear({ ...base, conEtiqueta: true });
+  assert.equal(con[con.indexOf("--label") + 1], "migracion");
+  assert.equal(hayMigraciones(["src/a.ts", "db/migration/V1__x.sql"]), true);
+  assert.equal(hayMigraciones(["src/a.ts", "db/seed/x.sql"]), false);
+  assert.equal(urlDeSalida("https://github.com/o/r/pull/68\nhint"), "https://github.com/o/r/pull/68");
+  assert.equal(yaExiste('a pull request for branch "x" into branch "main" already exists:\nhttps://github.com/o/r/pull/9'), true);
+  assert.equal(yaExiste("GraphQL: error"), false);
+  assert.equal(etiquetaInexistente("could not add label: 'migracion' not found"), true);
 });

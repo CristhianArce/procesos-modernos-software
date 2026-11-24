@@ -116,10 +116,63 @@ test("CA-6: escritor-pruebas solo crea pruebas, sin Bash ni lanzar agentes, y el
   assert.match(texto, /"5 Escribir pruebas \(<tipo>\)" escritor-pruebas "sonnet \/ medium" <id> <OK o PARCIAL> "" --paralelo/);
 });
 
-test("CA-6: escritor-pruebas reparte el trabajo por tipo, un archivo de supuestos por tipo y e2e sin totales de la semilla", () => {
+test("CA-6: el paso 5 deja migración, semilla y textos visibles antes de lanzar a los agentes y cierra sin reprocesos", () => {
+  const paso5 = leer(".claude/skills/orquestador/SKILL.md").split("\n").find((l) => l.startsWith("| 5 |")) ?? "";
+  assert.ok(paso5, "existe la fila del paso 5");
+  assert.match(paso5, /escribe la migración y la semilla/);
+  assert.match(paso5, /`## Textos visibles`/);
+  assert.match(paso5, /un solo `npx vitest list src\/modulos\/<modulo>`/);
+  assert.match(paso5, /solo si `sinPrueba` viene vacío/);
+  assert.match(paso5, /no edites ningún archivo a commitear después del `build-test`/);
+  assert.match(paso5, /`build-test` corre \*\*una sola vez\*\*/);
+  // El Grep de tareas pendientes es el último control: va después de recoger a los agentes y de marcar el grupo final.
+  const grep = paso5.indexOf("(d) último control");
+  assert.ok(grep > paso5.indexOf("recoge a los tres agentes"), "el Grep de casillas pendientes va después de recoger a los agentes");
+  assert.ok(grep > paso5.indexOf("marca `[x]` el grupo final"), "el Grep de casillas pendientes va después de marcar el grupo final");
+});
+
+test("CA-6: escritor-pruebas reparte el trabajo por tipo, lee la semilla, un archivo de supuestos por tipo y solo escribe .test.ts", () => {
   const texto = leer(".claude/agents/escritor-pruebas.md");
   for (const tipo of ["unitarias", "integracion", "e2e"]) assert.match(texto, new RegExp(`\| \`${tipo}\` \|`));
   assert.match(texto, /pruebas-supuestos-<tipo>\.md/);
-  assert.match(texto, /ni siquiera sobre la semilla/);
+  assert.match(texto, /ni siquiera sobre la semilla: afirma el orden y el contenido de filas concretas leídas de `db\/seed\/<modulo>\.sql`/);
+  assert.match(texto, /`design\.md` \(secciones `## Firmas` y `## Textos visibles`\)/);
+  assert.match(texto, /siempre `\.ts`, nunca `\.tsx`/);
   assert.match(texto, /## Errores frecuentes/);
+});
+
+test("CA-6: el paso 8 usa un script por skill, no lee plantillas y deja el PR abierto", () => {
+  const paso8 = leer(".claude/skills/orquestador/SKILL.md").split("\n").find((l) => l.startsWith("| 8 |")) ?? "";
+  assert.ok(paso8, "existe la fila del paso 8");
+  assert.match(paso8, /Sin leer plantillas y con cada skill en \*\*una sola llamada\*\*/);
+  assert.match(paso8, /`commitear\.mjs`/);
+  assert.match(paso8, /`abrir-pr\.mjs`/);
+  assert.match(paso8, /\*\*queda abierto\*\*/);
+  assert.match(paso8, /nunca cierra, fusiona ni marca el PR como listo/);
+  const commit = leer(".claude/skills/commit/SKILL.md");
+  assert.match(commit, /scripts\/commitear\.mjs/);
+  assert.match(commit, /Commitear `\.flujo\/`, `\.env` o `\.claude\/`/);
+  const pr = leer(".claude/skills/abrir-pr/SKILL.md");
+  assert.match(pr, /scripts\/abrir-pr\.mjs/);
+  assert.match(pr, /El PR debe quedar abierto/);
+  assert.match(pr, /`gh pr close`/);
+});
+
+test("CA-6: el archivado con openspec es un skill de la persona que se corre después del merge y está escrito en el proyecto", () => {
+  const skill = leer(".claude/skills/archivar-change-openspec/SKILL.md");
+  const fm = frontmatter(skill);
+  assert.equal(fm.name, "archivar-change-openspec");
+  assert.equal(fm["disable-model-invocation"], true, "solo lo invoca la persona");
+  assert.doesNotMatch(String(fm["allowed-tools"]), /Bash(?!\()/, "allowed-tools acotado: nunca Bash a secas");
+  assert.match(skill, /DESPUÉS del merge|después de que ese PR se mezcla/);
+  assert.match(skill, /openspec archive <change> --yes/);
+  assert.match(skill, /`openspec\/specs\/`/);
+  assert.match(skill, /Si el PR aún no se ha mezclado|aún no se ha mezclado/);
+  assert.match(skill, /chore\/archivar-<change>/);
+  assert.match(leer("CLAUDE.md"), /\/archivar-change-openspec <n>` DESPUÉS de mezclar el PR/);
+  assert.match(leer("docs/flujo-orquestador.md"), /\*\*Después de mezclar\*\*, una persona corre `\/archivar-change-openspec <n>`/);
+  assert.match(leer(".claude/skills/orquestador/plantillas/pr-body.md"), /## Después del merge[\s\S]*\/archivar-change-openspec <n>/);
+  const orq = leer(".claude/skills/orquestador/SKILL.md");
+  assert.match(orq, /## Después del merge/);
+  assert.match(orq, /\*\*Pendiente tras el merge:\*\* correr `\/archivar-change-openspec <n>`/);
 });

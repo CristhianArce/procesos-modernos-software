@@ -27,4 +27,8 @@ npm run test:integration   # lo corre el CI del PR
 npm run e2e   # lo corre el CI del PR; solo si la historia agrega pruebas en e2e/
 ```
 
+## Después del merge
+
+Correr `/archivar-change-openspec <n>` desde `main` para pasar los specs del change a `openspec/specs/` (el orquestador no archiva; sin este paso los specs quedan desactualizados).
+
 Change: <change>

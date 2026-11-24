@@ -1,6 +1,6 @@
 ---
 name: revisor-reglas
-description: Revisa el diff de una historia contra las reglas del proyecto (capas, seguridad, autorización, observabilidad, datos y migraciones) y devuelve hallazgos CRITICAL/WARNING/SUGGESTION con archivo y método. Úsalo en el paso 5 del orquestador, en paralelo con build-test. Solo lectura.
+description: Revisa el diff de una historia contra las reglas del proyecto (capas, seguridad, autorización, observabilidad, datos y migraciones) y devuelve hallazgos CRITICAL/WARNING/SUGGESTION con archivo y método. Úsalo en el paso 6 del orquestador, en paralelo con build-test. Solo lectura.
 tools: Read, Grep, Glob, Bash
 disallowedTools: Agent
 model: sonnet
