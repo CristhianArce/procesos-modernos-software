@@ -293,3 +293,33 @@ test("CA-8: trazabilidad-grep.mjs rechaza los deltas que el archivado rechazarí
     rmSync(change, { recursive: true, force: true });
   }
 });
+
+test("CA-6: commitear.mjs solo acepta archivos explícitos, una rama de historia y un commit sin atribuciones", async () => {
+  const { argumentosCommit, motivoRutaInvalida, ramaValida } = await import("../skills/orquestador/scripts/commitear.mjs");
+  assert.equal(motivoRutaInvalida(["src/a.ts", "openspec/changes/x/tasks.md"]), null);
+  assert.match(motivoRutaInvalida([]), /No hay rutas/);
+  for (const r of [".", "-A", ".flujo/issue-1/estado.md", ".claude/settings.json", "node_modules/x/index.js", ".env", "src/.env"]) {
+    assert.ok(motivoRutaInvalida([r]), `debe rechazar ${r}`);
+  }
+  assert.match(motivoRutaInvalida(["src/modulos"], (r) => r === "src/modulos"), /carpeta/);
+  assert.equal(ramaValida("feature/issue-24-consultar-notificaciones"), true);
+  for (const r of ["main", "refactor/x", "feature/issue-x-y", undefined]) assert.equal(ramaValida(r), false);
+  assert.deepEqual(argumentosCommit({ mensaje: "feat: x (#24)", porque: "porque", change: "c" }), ["commit", "-m", "feat: x (#24)", "-m", "porque", "-m", "Change: c"]);
+  assert.deepEqual(argumentosCommit({ mensaje: "docs: e (#24)", change: "c" }), ["commit", "-m", "docs: e (#24)", "-m", "Change: c"]);
+});
+
+test("CA-6: abrir-pr.mjs crea siempre en borrador, etiqueta las migraciones y reconoce un PR existente", async () => {
+  const { argumentosCrear, etiquetaInexistente, hayMigraciones, urlDeSalida, yaExiste } = await import("../skills/orquestador/scripts/abrir-pr.mjs");
+  const base = { n: "24", rama: "feature/issue-24-x", base: "main", titulo: "feat: x", cuerpo: ".flujo/issue-24/pr-body.md" };
+  const sin = argumentosCrear({ ...base, conEtiqueta: false });
+  assert.ok(sin.includes("--draft") && !sin.includes("--label"));
+  assert.equal(sin[sin.indexOf("--title") + 1], "feat: x (#24)");
+  const con = argumentosCrear({ ...base, conEtiqueta: true });
+  assert.equal(con[con.indexOf("--label") + 1], "migracion");
+  assert.equal(hayMigraciones(["src/a.ts", "db/migration/V1__x.sql"]), true);
+  assert.equal(hayMigraciones(["src/a.ts", "db/seed/x.sql"]), false);
+  assert.equal(urlDeSalida("https://github.com/o/r/pull/68\nhint"), "https://github.com/o/r/pull/68");
+  assert.equal(yaExiste('a pull request for branch "x" into branch "main" already exists:\nhttps://github.com/o/r/pull/9'), true);
+  assert.equal(yaExiste("GraphQL: error"), false);
+  assert.equal(etiquetaInexistente("could not add label: 'migracion' not found"), true);
+});

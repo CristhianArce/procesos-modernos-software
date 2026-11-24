@@ -134,7 +134,7 @@ flowchart LR
 | 5 | **Implementar**: la sesión escribe primero la migración y la semilla y fija firmas y textos visibles en `design.md`; luego ejecuta `tasks.md` (código y contrato) mientras tres agentes escriben en paralelo las pruebas, uno por tipo; al final la sesión las une, alinea las firmas, comprueba con un solo `vitest list` que ve cada archivo, corre la trazabilidad y marca todas las casillas antes del build | skill `openspec-apply-change` y tres agentes `escritor-pruebas` | código y pruebas en la rama, tareas `[x]`, `pruebas-supuestos-<tipo>.md` si hubo firmas supuestas |
 | 6 | **Verificar**: `typecheck` y `test:unit`, en paralelo con la revisión del diff contra las reglas del proyecto | skill `build-test` y agente `revisor-reglas` | `verificacion.md`, último build en `estado.md` |
 | 7 | **Corregir** (solo si hace falta): una pasada para los hallazgos CRITICAL o un build rojo, y se repite el paso 6 | la sesión | build en verde |
-| 8 | **Commit, PR y evidencias**: commit con `#<n>` y `Change: <change>`, PR en borrador y copia a `evidencias/issue-<n>/` | skills `commit` y `abrir-pr`, script `copiar-evidencias.mjs` | PR en borrador |
+| 8 | **Commit, PR y evidencias**: commit con `#<n>` y `Change: <change>` (un solo comando: verifica el build, agrega, commitea y sube), PR en borrador que **queda abierto** (un solo comando, que verifica el estado `OPEN`) y copia a `evidencias/issue-<n>/` | skills `commit` y `abrir-pr`, scripts `commitear.mjs`, `abrir-pr.mjs` y `copiar-evidencias.mjs` | PR en borrador abierto |
 
 Sin build verde no hay commit.
 

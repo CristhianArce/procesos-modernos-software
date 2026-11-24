@@ -140,3 +140,20 @@ test("CA-6: escritor-pruebas reparte el trabajo por tipo, lee la semilla, un arc
   assert.match(texto, /siempre `\.ts`, nunca `\.tsx`/);
   assert.match(texto, /## Errores frecuentes/);
 });
+
+test("CA-6: el paso 8 usa un script por skill, no lee plantillas y deja el PR abierto", () => {
+  const paso8 = leer(".claude/skills/orquestador/SKILL.md").split("\n").find((l) => l.startsWith("| 8 |")) ?? "";
+  assert.ok(paso8, "existe la fila del paso 8");
+  assert.match(paso8, /Sin leer plantillas y con cada skill en \*\*una sola llamada\*\*/);
+  assert.match(paso8, /`commitear\.mjs`/);
+  assert.match(paso8, /`abrir-pr\.mjs`/);
+  assert.match(paso8, /\*\*queda abierto\*\*/);
+  assert.match(paso8, /nunca cierra, fusiona ni marca el PR como listo/);
+  const commit = leer(".claude/skills/commit/SKILL.md");
+  assert.match(commit, /scripts\/commitear\.mjs/);
+  assert.match(commit, /Commitear `\.flujo\/`, `\.env` o `\.claude\/`/);
+  const pr = leer(".claude/skills/abrir-pr/SKILL.md");
+  assert.match(pr, /scripts\/abrir-pr\.mjs/);
+  assert.match(pr, /El PR debe quedar abierto/);
+  assert.match(pr, /`gh pr close`/);
+});
