@@ -5,7 +5,7 @@ import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { frontmatter, leer, RAIZ } from "./util.mjs";
 
-const AGENTES_IMPRESCINDIBLES = ["preparador", "revisor-salida", "revisor-reglas"];
+const AGENTES_IMPRESCINDIBLES = ["preparador", "revisor-salida", "revisor-reglas", "escritor-pruebas"];
 const SKILLS_IMPRESCINDIBLES = ["orquestador", "build-test", "commit", "abrir-pr"];
 const SKILLS_OPENSPEC = ["openspec-apply-change", "openspec-archive-change", "openspec-explore", "openspec-propose", "openspec-sync-specs", "openspec-update-change"];
 const MODELOS = ["haiku", "sonnet", "opus"];
@@ -27,7 +27,7 @@ test("CA-2: cada agente define name, description, model, effort y tools, y no pu
   }
 });
 
-test("CA-2: existen los tres agentes que usa el flujo", () => {
+test("CA-2: existen los cuatro agentes que usa el flujo", () => {
   const hay = agentes().map((a) => a.replace(/\.md$/, ""));
   assert.deepEqual(AGENTES_IMPRESCINDIBLES.filter((a) => !hay.includes(a)), []);
 });
@@ -38,7 +38,7 @@ test("CA-2: modelos (opus genera, sonnet revisa)", () => {
   assert.equal(agente("preparador").effort, "medium");
   assert.equal(agente("revisor-salida").model, "sonnet");
   assert.equal(agente("revisor-reglas").model, "sonnet");
-  assert.equal(agente("revisor-reglas").effort, "high");
+  assert.equal(agente("revisor-reglas").effort, "medium");
 });
 
 test("CA-2: la sesión del orquestador (propuesta, implementación y corrección) corre con opus", () => {
@@ -47,7 +47,7 @@ test("CA-2: la sesión del orquestador (propuesta, implementación y corrección
   assert.doesNotMatch(texto, /Todo con sonnet/);
   // El effort que se pasa al lanzar un agente tiene prioridad sobre su frontmatter: deben coincidir.
   assert.match(texto, /`preparador` \(`subagent_type: preparador`, `model: sonnet`, `effort: medium`\)/);
-  assert.match(texto, /agente `revisor-reglas` \(`model: sonnet`, `effort: high`\)/);
+  assert.match(texto, /agente `revisor-reglas` \(`model: sonnet`, `effort: medium`\)/);
 });
 
 test("CA-2: la revisión de la propuesta recibe preguntas.md y preguntas.md llega a las evidencias", () => {
@@ -100,4 +100,26 @@ test("CA-2: el orquestador solo lo invoca la persona", () => {
   const ruta = join(RAIZ, ".claude", "skills", "orquestador", "SKILL.md");
   if (!existsSync(ruta)) return; // se escribe en la tarea 7.1
   assert.equal(frontmatter(leer(".claude/skills/orquestador/SKILL.md"))["disable-model-invocation"], true);
+});
+
+test("CA-6: escritor-pruebas solo crea pruebas, sin Bash ni lanzar agentes, y el orquestador lo lanza una vez por tipo en segundo plano", () => {
+  const agente = frontmatter(leer(".claude/agents/escritor-pruebas.md"));
+  assert.equal(agente.model, "sonnet");
+  assert.equal(agente.effort, "medium");
+  assert.doesNotMatch(agente.tools, /Bash|Edit/, "escribe archivos nuevos y no ejecuta comandos");
+  assert.match(agente.disallowedTools, /Agent/);
+  const texto = leer(".claude/skills/orquestador/SKILL.md");
+  assert.match(texto, /lanza \*\*tres veces\*\* el agente `escritor-pruebas`, una por tipo y las tres en paralelo \(cada una con `subagent_type: escritor-pruebas`, `model: sonnet`, `effort: medium`, `run_in_background: true`\)/);
+  assert.match(texto, /<tipo>: unitarias, integracion o e2e/);
+  assert.match(texto, /las pruebas las escribe `escritor-pruebas`: no las escribas tú/);
+  assert.match(texto, /recoge a los tres agentes `escritor-pruebas`/);
+  assert.match(texto, /"5 Escribir pruebas \(<tipo>\)" escritor-pruebas "sonnet \/ medium" <id> <OK o PARCIAL> "" --paralelo/);
+});
+
+test("CA-6: escritor-pruebas reparte el trabajo por tipo, un archivo de supuestos por tipo y e2e sin totales de la semilla", () => {
+  const texto = leer(".claude/agents/escritor-pruebas.md");
+  for (const tipo of ["unitarias", "integracion", "e2e"]) assert.match(texto, new RegExp(`\| \`${tipo}\` \|`));
+  assert.match(texto, /pruebas-supuestos-<tipo>\.md/);
+  assert.match(texto, /ni siquiera sobre la semilla/);
+  assert.match(texto, /## Errores frecuentes/);
 });

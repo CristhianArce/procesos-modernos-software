@@ -193,3 +193,24 @@ test("CA-6: estado.mjs registra en tiempos.md la hora de cada paso cerrado, sin 
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("CA-6: un agente en segundo plano (--paralelo) deja su fila sin marca de tiempo ni retroceder la fase", () => {
+  const dir = temporal();
+  try {
+    const run = (...a) => spawnSync(process.execPath, a, { encoding: "utf8" });
+    const T = join(SCRIPTS, "tiempos.mjs");
+    const E = join(SCRIPTS, "estado.mjs");
+    const R = join(SCRIPTS, "registrar-agente.mjs");
+    assert.equal(run(E, "escribir", "901", "Última fase cerrada", "0", "--trabajo", dir).status, 0);
+    assert.equal(run(T, "inicio", "901", "--trabajo", dir).status, 0);
+    assert.equal(run(R, "901", "5 Implementar", "sesión", "sonnet", "-", "8 de 8", "--trabajo", dir).status, 0);
+    const antes = readFileSync(join(dir, "tiempos.md"), "utf8");
+    const r = run(R, "901", "5 Escribir pruebas (e2e)", "escritor-pruebas", "sonnet / medium", "abc", "OK", "--trabajo", dir, "--paralelo");
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(readFileSync(join(dir, "tiempos.md"), "utf8"), antes, "sin marca de tiempo nueva");
+    assert.equal(leerCampo(readFileSync(join(dir, "estado.md"), "utf8"), "Última fase cerrada"), "5", "la fase no retrocede");
+    assert.match(readFileSync(join(dir, "agentes-log.md"), "utf8"), /5 Escribir pruebas \(e2e\) \| escritor-pruebas/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

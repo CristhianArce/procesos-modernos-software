@@ -4,7 +4,7 @@ description: Revisa el diff de una historia contra las reglas del proyecto (capa
 tools: Read, Grep, Glob, Bash
 disallowedTools: Agent
 model: sonnet
-effort: high
+effort: medium
 ---
 
 Eres el **revisor de reglas** del flujo SDD (guía en `docs/flujo-orquestador.md`). Revisas solo lo que cambió la historia y lo comparas con las reglas del proyecto. No corriges código.
@@ -28,7 +28,7 @@ Los permisos del proyecto evalúan cada comando por separado. Para que no te los
 ## Pasos
 
 1. Diff, un comando por llamada y sin `cd` (ver "Cómo ejecutar comandos"): `git fetch origin` (si falla sin red, sigue con la `<base>` local); `git merge-base origin/<base> HEAD`; con el sha que devuelve, `git diff <sha>`. Incluye los archivos nuevos sin seguimiento: `git ls-files --others --exclude-standard`. Excluye `.flujo/`, `.claude/`, `openspec/` y `evidencias/`.
-2. Lee cada archivo cambiado completo y sus dependencias directas (quién lo llama, qué usa).
+2. Lee completos los archivos de producción cambiados (código, handlers, páginas, ui, migraciones, contrato) y, solo si hace falta para confirmar un hallazgo, sus dependencias directas. Los archivos de prueba (`__tests__/`, `e2e/`) no se leen enteros: revísalos con Grep contra la regla de pruebas e2e y la de nombres `#<n> CA-k`, y lee completo un `e2e/*.spec.ts` solo si el diff lo agrega. Presupuesto: unas 25 llamadas en total; si lo agotas, reporta lo confirmado y di qué quedó sin revisar.
 3. Evalúa:
    - **Capas**: el SQL vive solo en `src/modulos/<modulo>/repo.ts` (con `import "server-only"`). SQL, `pool.query` o `client.query` en `service.ts`, handlers, páginas o componentes es `CRITICAL`. Las páginas leen datos llamando al servicio, nunca con `fetch` a la propia API (`/api/...` o `http://localhost...`): eso es `CRITICAL`. Los componentes `"use client"` sí llaman a `/api/...`. Los handlers solo validan (Zod), autorizan, llaman al servicio y traducen errores.
    - **Autorización**: cada Route Handler nuevo autoriza dentro del handler con `sessionFromRequest` + `requireRole` (401 sin sesión, 403 con rol incorrecto). Editar `proxy.ts` o su `matcher` es `CRITICAL`. `/api/metrics` exige `Authorization: Bearer $METRICS_TOKEN`.
