@@ -1,6 +1,8 @@
 // Registra en una sola llamada el cierre de un agente o de un paso de la sesión: agrega la fila a
 // <trabajo>/agentes-log.md con la hora real, deja la marca del paso en tiempos.md y actualiza estado.md.
-// Uso: node .claude/skills/orquestador/scripts/registrar-agente.mjs <n> <paso> <agente> <modelo> <id> <veredicto> [rechazos...] [--trabajo <dir>]
+// Uso: node .claude/skills/orquestador/scripts/registrar-agente.mjs <n> <paso> <agente> <modelo> <id> <veredicto> [rechazos...] [--trabajo <dir>] [--paralelo]
+//   --paralelo (siempre al final): el agente corrió en segundo plano durante otro paso (revisor-salida durante el paso 5). Agrega la fila al registro,
+//   pero no deja marca de tiempo ni mueve "Última fase cerrada": su marca llegaría después de la del paso 5 y falsearía las duraciones y el retomar con desde=.
 //   <paso>: número del paso, con etiqueta opcional ("4" o "4 Revisar propuesta (intento 1)"). <id>: id del agente, o - para la sesión.
 //   rechazos: texto plano y corto (sin comillas invertidas ni $); el detalle queda en gates.md y verificacion.md.
 // La hora la pone el script: el modelo no la conoce. Un CORREGIR o BLOQUEAR deja marca de tiempo, pero no cierra la fase.
@@ -28,8 +30,8 @@ export function registrarAgente(n, datos, trabajo = dirTrabajo(n), ahora = new D
   const previo = readFileSync(log, "utf8");
   const fila = filaDeAgente(datos, ahora);
   appendFileSync(log, `${previo.endsWith("\n") ? "" : "\n"}${fila}\n`);
-  const medido = registrarCierre(join(trabajo, "tiempos.md"), numero, ahora);
-  if (cierraFase(datos.veredicto)) {
+  const medido = datos.paralelo ? false : registrarCierre(join(trabajo, "tiempos.md"), numero, ahora);
+  if (!datos.paralelo && cierraFase(datos.veredicto)) {
     const ruta = rutaEstado(n, trabajo);
     writeFileSync(ruta, escribirCampo(readFileSync(ruta, "utf8"), "Última fase cerrada", numero));
   }
@@ -40,11 +42,11 @@ if (esPrincipal(import.meta.url)) {
   const o = opciones(process.argv.slice(2));
   const [n, paso, agente, modelo, id, veredicto, ...rechazos] = o._;
   if (!n || !paso || !agente || !modelo || !id || !veredicto) {
-    fallar("Uso: registrar-agente.mjs <n> <paso> <agente> <modelo> <id|-> <veredicto> [rechazos...] [--trabajo <dir>]", 2);
+    fallar("Uso: registrar-agente.mjs <n> <paso> <agente> <modelo> <id|-> <veredicto> [rechazos...] [--trabajo <dir>] [--paralelo]", 2);
   }
   try {
-    const r = registrarAgente(n, { paso, agente, modelo, id, veredicto, rechazos: rechazos.join(" ") }, typeof o.trabajo === "string" ? o.trabajo : undefined);
-    console.log(`${r.fila}\n${r.medido ? "Marca de tiempo registrada." : "Sin tiempos.md: la corrida no se está midiendo."}`);
+    const r = registrarAgente(n, { paso, agente, modelo, id, veredicto, rechazos: rechazos.join(" "), paralelo: o.paralelo === true }, typeof o.trabajo === "string" ? o.trabajo : undefined);
+    console.log(`${r.fila}\n${r.medido ? "Marca de tiempo registrada." : "Sin marca de tiempo (paralelo, o la corrida no se está midiendo)."}`);
   } catch (e) {
     fallar(e.message, 2);
   }

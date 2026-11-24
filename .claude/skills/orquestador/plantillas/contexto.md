@@ -27,3 +27,27 @@ Comportamiento ya especificado en `openspec/specs/`. Si la historia cambia una d
 
 | Ruta | Métodos |
 |---|---|
+
+## Módulo de referencia
+
+Patrón a seguir (nombres, capas y forma de las pruebas) en lugar de explorar el repo. Son rutas, no contenido.
+
+## Firmas públicas
+
+Lo que exporta cada módulo (`schema.ts`, `repo.ts`, `service.ts`), para citar nombres reales y escribir `## Interfaces` sin abrir el código.
+
+## Compartido: núcleo y componentes
+
+Se reutiliza, no se reescribe ni se edita: `src/lib/`, `src/modulos/ui/` y `src/test/`.
+
+## Convenciones del repo
+
+Nombres, última migración, mensajes de error, `data-testid` y clases del sistema de diseño que el código ya usa.
+
+## Herramientas y modismos
+
+Librerías fijas, scripts de npm, proyectos de Vitest, Playwright, Postgres, Flyway y tokens de diseño.
+
+## Reglas del proyecto (resumen de CLAUDE.md §3 a §7)
+
+Copiadas de `CLAUDE.md`, que es la fuente.
