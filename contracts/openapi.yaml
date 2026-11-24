@@ -133,6 +133,54 @@ components:
         creadaEn:
           type: string
           format: date-time
+    LecturaHistorico:
+      type: object
+      required: [id, nodoId, nodoNombre, sensorId, sensorNombre, voltaje, corriente, potencia, tomadaEn]
+      properties:
+        id:
+          type: string
+          format: uuid
+        nodoId:
+          type: string
+          format: uuid
+        nodoNombre:
+          type: string
+        sensorId:
+          type: string
+          format: uuid
+        sensorNombre:
+          type: string
+        voltaje:
+          type: number
+        corriente:
+          type: number
+        potencia:
+          type: number
+        tomadaEn:
+          type: string
+          format: date-time
+    HistoricoPagina:
+      type: object
+      required: [pagina, porPagina, total, totalPaginas, lecturas]
+      properties:
+        pagina:
+          type: integer
+          minimum: 1
+        porPagina:
+          type: integer
+          enum: [25]
+        total:
+          type: integer
+          minimum: 0
+        totalPaginas:
+          type: integer
+          minimum: 0
+        lecturas:
+          description: De la más reciente a la más antigua; vacía si la página es posterior a la última.
+          type: array
+          maxItems: 25
+          items:
+            $ref: "#/components/schemas/LecturaHistorico"
     Afectado:
       type: object
       required: [id, alias]
@@ -947,6 +995,59 @@ paths:
           $ref: "#/components/responses/NoAutenticado"
         "404":
           $ref: "#/components/responses/NoEncontrado"
+  /api/historico:
+    get:
+      summary: Consultar el histórico de lecturas
+      description: >-
+        Cualquier usuario con sesión. 25 lecturas por página, la más reciente primero. Los filtros se combinan;
+        los días se interpretan en la hora de Bogotá e incluyen ambos extremos. Un parámetro vacío no filtra.
+      security:
+        - sesion: []
+      parameters:
+        - name: nodoId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: sensorId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: desde
+          in: query
+          required: false
+          description: Primer día del rango (AAAA-MM-DD), incluido.
+          schema:
+            type: string
+            format: date
+        - name: hasta
+          in: query
+          required: false
+          description: Último día del rango (AAAA-MM-DD), incluido; no puede ser anterior a desde.
+          schema:
+            type: string
+            format: date
+        - name: pagina
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+      responses:
+        "200":
+          description: Una página del histórico
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HistoricoPagina"
+        "400":
+          $ref: "#/components/responses/DatosInvalidos"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
   /api/lecturas:
     get:
       summary: Listar las lecturas más recientes
