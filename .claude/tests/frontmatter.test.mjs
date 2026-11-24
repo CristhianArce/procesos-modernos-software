@@ -38,7 +38,7 @@ test("CA-2: modelos (opus genera, sonnet revisa)", () => {
   assert.equal(agente("preparador").effort, "medium");
   assert.equal(agente("revisor-salida").model, "sonnet");
   assert.equal(agente("revisor-reglas").model, "sonnet");
-  assert.equal(agente("revisor-reglas").effort, "high");
+  assert.equal(agente("revisor-reglas").effort, "medium");
 });
 
 test("CA-2: la sesión del orquestador (propuesta, implementación y corrección) corre con opus", () => {
@@ -47,7 +47,7 @@ test("CA-2: la sesión del orquestador (propuesta, implementación y corrección
   assert.doesNotMatch(texto, /Todo con sonnet/);
   // El effort que se pasa al lanzar un agente tiene prioridad sobre su frontmatter: deben coincidir.
   assert.match(texto, /`preparador` \(`subagent_type: preparador`, `model: sonnet`, `effort: medium`\)/);
-  assert.match(texto, /agente `revisor-reglas` \(`model: sonnet`, `effort: high`\)/);
+  assert.match(texto, /agente `revisor-reglas` \(`model: sonnet`, `effort: medium`\)/);
 });
 
 test("CA-2: la revisión de la propuesta recibe preguntas.md y preguntas.md llega a las evidencias", () => {

@@ -41,7 +41,7 @@ Como no ejecutas nada, revisa cada prueba contra esta lista antes de entregarla:
 
 ## Firmas
 
-Las pruebas importan lo que la sesión va a crear. Las firmas públicas (funciones del repo y del servicio, forma de la respuesta de la API, `data-testid` de la interfaz) salen de `design.md` y de `tasks.md` (los nombres de archivo y de función que las tareas citan). Si falta alguna, deriva la más simple que cumpla la spec y anótala en `<trabajo>/pruebas-supuestos-<tipo>.md` (una línea por firma supuesta; un archivo por tipo para que las tres instancias no se pisen), para que la sesión la respete o te lo corrija al unir.
+Las pruebas importan lo que la sesión va a crear. Las firmas públicas (funciones del repo y del servicio, forma de la respuesta de la API, componentes y sus props, `data-testid` de la interfaz) salen de la sección `## Firmas` de `design.md`: úsalas tal cual, sin renombrar. Si falta alguna ahí, búscala en `tasks.md` (los nombres de archivo y de función que las tareas citan). Si sigue faltando, deriva la más simple que cumpla la spec y anótala en `<trabajo>/pruebas-supuestos-<tipo>.md` (una línea por firma supuesta; un archivo por tipo para que las tres instancias no se pisen), para que la sesión la respete o te lo corrija al unir.
 
 ## Prohibido
 
