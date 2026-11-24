@@ -133,6 +133,38 @@ components:
         creadaEn:
           type: string
           format: date-time
+    Notificacion:
+      type: object
+      description: Aviso de una alerta dirigido a un técnico. Guarda una copia del nombre del sensor, sin umbral ni nodo.
+      required: [id, sensor, magnitud, valor, fecha, leida]
+      properties:
+        id:
+          type: string
+          format: uuid
+        sensor:
+          type: string
+        magnitud:
+          type: string
+          enum: [voltaje, corriente, potencia]
+        valor:
+          type: number
+        fecha:
+          type: string
+          format: date-time
+          description: Fecha de la alerta que originó la notificación
+        leida:
+          type: boolean
+    RespuestaNotificaciones:
+      type: object
+      required: [notificaciones, noLeidas]
+      properties:
+        notificaciones:
+          type: array
+          items:
+            $ref: "#/components/schemas/Notificacion"
+        noLeidas:
+          type: integer
+          minimum: 0
     Sensor:
       type: object
       required: [id, nodoId, nombre, umbralVoltaje, umbralCorriente, umbralPotencia, creadoEn, ultimaLectura]
@@ -923,6 +955,23 @@ paths:
           $ref: "#/components/responses/DatosInvalidos"
         "401":
           $ref: "#/components/responses/NoAutenticado"
+  /api/notificaciones:
+    get:
+      summary: Consultar las notificaciones propias
+      description: Solo técnicos. El destinatario sale de la sesión; no recibe parámetros. De la más reciente a la más antigua (hasta 100) y el número de no leídas.
+      security:
+        - sesion: []
+      responses:
+        "200":
+          description: Notificaciones del técnico de la sesión
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RespuestaNotificaciones"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+        "403":
+          $ref: "#/components/responses/SinPermiso"
   /api/topologia:
     get:
       summary: Consultar la topología de la red para el mímico
