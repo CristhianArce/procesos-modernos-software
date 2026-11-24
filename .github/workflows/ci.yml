@@ -99,6 +99,16 @@ jobs:
       - name: Log de la app
         if: failure()
         run: tail -n 80 app.log
+      - name: Diagnóstico temporal de la ficha del nodo
+        if: failure()
+        run: |
+          curl -sS -c cj -H 'content-type: application/json' -d '{"usuario":"tecnico","contrasena":"Demo-Tecnico-2026"}' http://localhost:3000/api/auth/login
+          curl -sS -b cj -o ficha.html -w '%{http_code}
+' http://localhost:3000/nodos/00000000-0000-4000-8000-000000000001
+          grep -o '<h2[^>]*>[^<]*</h2>' ficha.html || true
+          grep -io 'digest[^<]{0,200}' ficha.html | head -5 || true
+          head -c 1500 ficha.html
+          psql "$DATABASE_URL" -c "select count(*) from sensores" -c "select id,nodo_id from sensores limit 3" || true
       - name: Informe de Playwright
         if: failure()
         uses: actions/upload-artifact@v4
