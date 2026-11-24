@@ -72,3 +72,15 @@ M3 reutiliza el patrón de revisión en segundo plano y `paquete-diff.mjs`, y M1
 | M5 | Pendiente: medir con una historia de práctica |
 
 Para medir M6, comparar la duración del paso 5 con la de la HU 7 (3 min 44 s, 22 archivos), el número de desajustes de `typecheck` al unir y las firmas de `pruebas-supuestos.md`.
+
+## Segunda ronda (tras la corrida 3 de la HU 7: 6 min 36 s)
+
+| Propuesta | Estado |
+|---|---|
+| Hitos de tiempo dentro del paso 5 (`tiempos.mjs hito <n> "<etiqueta>"`: «5 código listo» y «5 pruebas reconciliadas») | Aplicada: separa lo que cuesta escribir el código de lo que cuesta reconciliar las pruebas |
+| Errores frecuentes en `escritor-pruebas` (regex con `\w` sobre tildes, texto decorado, ausencias que pasan solas, formato de cifras) | Aplicada: en la corrida 3 la sesión corrigió dos errores de pruebas de los agentes, unos 54 s de reconciliación |
+| `test:unit` solo de lo cambiado (`vitest --changed`) | Sin aplicar: ahorra ~25 s pero quita la red de seguridad local |
+| Código de producción en agentes paralelos | Sin aplicar: ~20 a 30 s de ahorro estimado con riesgo alto |
+| M1 `referencia.md` | Reabierta: las corridas 2 y 3 no hicieron lecturas exploratorias porque el código ya se conocía, así que no miden su valor; hay que probarla con una historia distinta |
+
+Con lo aplicado hasta ahora, la meta de 5 minutos no se alcanza en una repetición de la HU 7; para decidir lo que falta hace falta medir una historia distinta, en frío.

@@ -149,3 +149,14 @@ test("CA-6: el paso 6 prepara el paquete del diff y revisor-reglas lo lee de una
   assert.match(texto, /<trabajo>: \.flujo\/issue-<n>\/\.` \(en modo práctica/);
   assert.match(leer(".claude/agents/revisor-reglas.md"), /revision-diff\.md/);
 });
+
+test("CA-6: el paso 5 deja hitos de tiempo y escritor-pruebas trae su lista de errores frecuentes", () => {
+  const texto = leer(".claude/skills/orquestador/SKILL.md");
+  assert.match(texto, /tiempos\.mjs hito <n> "5 código listo"/);
+  assert.match(texto, /tiempos\.mjs hito <n> "5 pruebas reconciliadas"/);
+  const agente = leer(".claude/agents/escritor-pruebas.md");
+  assert.match(agente, /## Errores frecuentes/);
+  assert.match(agente, /no reconoce tildes ni la ñ/);
+  assert.match(agente, /Texto decorado/);
+  assert.match(agente, /Ausencias que pasan por una razón equivocada/);
+});

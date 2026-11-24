@@ -29,6 +29,16 @@ Eres el **escritor de pruebas** del flujo SDD (guía en `docs/flujo-orquestador.
 - Antes de escribir, abre un archivo parecido de tu tipo (con Glob y Read) y copia su estilo: helpers (`src/test/api.ts`), prefijos únicos, limpieza en `afterAll` o `afterEach`, selectores de e2e. No inventes helpers.
 - e2e: cumple las reglas de `CLAUDE.md` §7: datos propios y únicos con `Date.now()`, limpieza en `afterEach`, **sin afirmar totales ni estados globales sobre datos que la prueba no creó** (ni siquiera sobre la semilla: afirma el orden y el contenido de filas concretas, no el número de filas), selectores a un solo elemento con `exact: true` o `data-testid`.
 
+## Errores frecuentes (la sesión los tuvo que corregir en la HU 7)
+
+Como no ejecutas nada, revisa cada prueba contra esta lista antes de entregarla:
+
+- **Regex sobre texto en español:** `\w` no reconoce tildes ni la ñ (`Sensor de tensión` no casa con `Sensor de \w+`). Usa `[\p{L}]` con la bandera `u`, o `.+?`, o compara el texto literal.
+- **Texto decorado:** un componente puede pintar símbolos junto al texto (la insignia «● No leída»). No uses `getByText("No leída", { exact: true })` ni `toHaveText` exacto sobre ese elemento: usa `toContainText` o `hasText`. Lee el componente antes de elegir el selector.
+- **Ausencias que pasan por una razón equivocada:** `toHaveCount(0)` o `not.toContain` sobre un texto o selector que nunca existiría pasan siempre. Afirma primero lo positivo (la fila existe y trae su texto) y recién después la ausencia, sobre el mismo contenedor.
+- **Formato de cifras:** `src/modulos/ui/formato.ts` usa coma decimal y unidades (`128,9 V`, `2,15 kW` y no `2150 W`). Léelo antes de escribir un valor esperado.
+- **Nombres exactos:** usa los `data-testid`, textos y firmas de `## Interfaces` tal cual; no los reformules.
+
 ## Firmas
 
 Las pruebas importan lo que la sesión va a crear. Las firmas públicas (funciones del repo y del servicio, forma de la respuesta de la API, `data-testid` de la interfaz) salen de la sección `## Interfaces` de `design.md`. Si falta alguna, deriva la más simple que cumpla la spec y anótala en `<trabajo>/pruebas-supuestos-<tipo>.md` (una línea por firma supuesta; un archivo por tipo para que las tres instancias no se pisen), para que la sesión la respete o te lo corrija al unir.

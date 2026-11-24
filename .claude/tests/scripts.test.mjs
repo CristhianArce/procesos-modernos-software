@@ -254,3 +254,24 @@ test("CA-6: paquete-diff.mjs excluye .flujo, .claude, openspec y evidencias, y a
   assert.match(md, /```diff\n\+linea\n```/);
   assert.match(md, /## Archivo nuevo: src\/b\.ts[\s\S]*export const b = 1;/);
 });
+
+test("CA-6: tiempos.mjs guarda hitos con nombre sin mover los pasos y los conserva al cerrar un paso", async () => {
+  const { duracionesHitos, registrarCierre, registrarHito, leerMarcas: leer2, lineaDeInicio, componer: componer2 } = await import("../skills/orquestador/scripts/tiempos.mjs");
+  const dir = temporal();
+  try {
+    const ruta = join(dir, "tiempos.md");
+    writeFileSync(ruta, componer2(lineaDeInicio(new Date("2026-11-24T10:00:00Z")), []));
+    assert.equal(registrarCierre(ruta, 3, new Date("2026-11-24T10:01:00Z")), true);
+    assert.equal(registrarHito(ruta, "5 código listo", new Date("2026-11-24T10:02:30Z")), true);
+    assert.equal(registrarHito(ruta, "5 pruebas reconciliadas", new Date("2026-11-24T10:03:10Z")), true);
+    assert.equal(registrarCierre(ruta, 5, new Date("2026-11-24T10:03:20Z")), true, "cerrar un paso conserva los hitos");
+    const { inicio, marcas, hitos } = leer2(readFileSync(ruta, "utf8"));
+    assert.deepEqual(marcas.map((m) => m.paso), [3, 5], "los hitos no son marcas de paso");
+    assert.deepEqual(hitos.map((h) => h.etiqueta), ["5 código listo", "5 pruebas reconciliadas"]);
+    assert.deepEqual(duracionesHitos(inicio, marcas, hitos).map((h) => h.segundos), [90, 40], "el primero se mide desde el cierre del paso 3; el segundo, desde el primer hito");
+    assert.equal(registrarHito(ruta, "mal | nombre"), false, "una barra vertical rompería la tabla");
+    assert.equal(registrarHito(join(dir, "no-existe.md"), "5 código listo"), false, "sin tiempos.md la corrida no se mide");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
