@@ -1,44 +1,29 @@
-import Link from "next/link";
 import { sesionActual } from "@/lib/dal";
-import { listarNodos } from "@/modulos/nodos/service";
+import { instantanea } from "@/modulos/estado/service";
 import { FormularioNodo } from "@/modulos/nodos/ui/FormularioNodo";
+import { TablaNodos } from "@/modulos/nodos/ui/TablaNodos";
+import { Tarjeta } from "@/modulos/ui/Tarjeta";
 
 export const dynamic = "force-dynamic";
 
 export default async function PaginaNodos() {
-  const [sesion, nodos] = await Promise.all([sesionActual(), listarNodos()]);
+  const [sesion, { nodos }] = await Promise.all([sesionActual(), instantanea()]);
 
   return (
-    <section>
-      <h1 className="text-2xl font-semibold">Nodos</h1>
-      {nodos.length === 0 ? (
-        <p className="mt-4 text-gray-600">Aún no hay nodos.</p>
-      ) : (
-        <table className="mt-4 w-full text-left text-sm">
-          <thead>
-            <tr className="border-b border-gray-200">
-              <th className="py-2">Nombre</th>
-              <th className="py-2">Ubicación</th>
-              <th className="py-2">Estado</th>
-            </tr>
-          </thead>
-          <tbody>
-            {nodos.map((nodo) => (
-              <tr key={nodo.id} className="border-b border-gray-100">
-                <td className="py-2">
-                  <Link href={`/nodos/${nodo.id}`} className="hover:underline">
-                    {nodo.nombre}
-                  </Link>
-                </td>
-                <td className="py-2">{nodo.ubicacion ?? "—"}</td>
-                <td className="py-2">{nodo.estado}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-      {/* Ocultar el formulario es cosmético: la API verifica el rol. */}
-      {sesion?.rol === "administrador" && <FormularioNodo />}
-    </section>
+    <div className="space-y-6">
+      <header>
+        <h1 className="titulo-pagina">Nodos</h1>
+        <p className="subtitulo-pagina">Subestaciones, transformadores y alimentadores de la red, con su estado actual.</p>
+      </header>
+      <div className="grid items-start gap-6 2xl:grid-cols-[minmax(0,1fr)_22rem]">
+        <Tarjeta>{nodos.length === 0 ? <p className="text-tenue">Aún no hay nodos.</p> : <TablaNodos nodos={nodos} />}</Tarjeta>
+        {/* Ocultar el formulario es cosmético: la API verifica el rol. */}
+        {sesion?.rol === "administrador" && (
+          <Tarjeta titulo="Nuevo nodo">
+            <FormularioNodo />
+          </Tarjeta>
+        )}
+      </div>
+    </div>
   );
 }

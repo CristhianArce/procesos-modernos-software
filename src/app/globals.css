@@ -1,5 +1,436 @@
 @import "tailwindcss";
 
-body {
-  font-family: system-ui, sans-serif;
+/*
+ * Sistema de diseño de la sala de control (docs/ui-scada/plan.md, decisiones 1 a 7).
+ * Los valores crudos viven en :root (--sc-*); @theme inline los expone a Tailwind,
+ * así que cambiar de tema solo cambia variables.
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* Superficies */
+  --sc-fondo: #0a0f1a;
+  --sc-fondo-2: #0e1524;
+  --sc-panel: #121b2d;
+  --sc-panel-2: #18233a;
+  --sc-borde: #24324d;
+  --sc-borde-fuerte: #34476b;
+
+  /* Texto (sobre --sc-panel: texto 14,6:1, tenue 7,8:1, apagado 5,2:1; todo AA) */
+  --sc-texto: #e6edf7;
+  --sc-texto-tenue: #9fb0c8;
+  --sc-texto-apagado: #7d8ea8;
+
+  /* Acento y foco */
+  --sc-acento: #38bdf8;
+  --sc-acento-fuerte: #7dd3fc;
+  --sc-foco: #facc15;
+
+  /* Estados: ≥ 5,2:1 sobre --sc-panel y --sc-panel-2, válidos también como texto (AA) */
+  --sc-normal: #34d399;
+  --sc-advertencia: #fbbf24;
+  --sc-critico: #f87171;
+  --sc-desconectado: #94a3b8;
+  --sc-sin-datos: #818cf8;
+
+  /* Flujo de energía en el mímico */
+  --sc-flujo: #38bdf8;
+
+  /* Forma */
+  --sc-radio: 6px;
+  --sc-radio-lg: 10px;
+  --sc-sombra: 0 1px 0 rgb(255 255 255 / 0.03) inset, 0 8px 24px rgb(0 0 0 / 0.35);
+  --sc-esp: 4px;
+
+  /* Tipografía: pila del sistema, cifras monoespaciadas */
+  --sc-fuente: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --sc-fuente-mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo, Consolas, monospace;
+}
+
+/* Tema claro preparado (decisión #1): aún sin selector en la interfaz. */
+[data-tema="claro"] {
+  color-scheme: light;
+  --sc-fondo: #eef2f7;
+  --sc-fondo-2: #e4eaf2;
+  --sc-panel: #ffffff;
+  --sc-panel-2: #f5f7fb;
+  --sc-borde: #d3dbe7;
+  --sc-borde-fuerte: #b4c0d3;
+  --sc-texto: #0f172a;
+  --sc-texto-tenue: #3c4a60;
+  --sc-texto-apagado: #56657c;
+  --sc-acento: #0369a1;
+  --sc-acento-fuerte: #075985;
+  --sc-foco: #b45309;
+  --sc-normal: #047857;
+  --sc-advertencia: #92400e;
+  --sc-critico: #b91c1c;
+  --sc-desconectado: #475569;
+  --sc-sin-datos: #4f46e5;
+  --sc-flujo: #0284c7;
+  --sc-sombra: 0 1px 2px rgb(15 23 42 / 0.06), 0 4px 16px rgb(15 23 42 / 0.06);
+}
+
+@theme inline {
+  --color-fondo: var(--sc-fondo);
+  --color-fondo-2: var(--sc-fondo-2);
+  --color-panel: var(--sc-panel);
+  --color-panel-2: var(--sc-panel-2);
+  --color-borde: var(--sc-borde);
+  --color-borde-fuerte: var(--sc-borde-fuerte);
+  --color-texto: var(--sc-texto);
+  --color-tenue: var(--sc-texto-tenue);
+  --color-apagado: var(--sc-texto-apagado);
+  --color-acento: var(--sc-acento);
+  --color-acento-fuerte: var(--sc-acento-fuerte);
+  --color-foco: var(--sc-foco);
+  --color-normal: var(--sc-normal);
+  --color-advertencia: var(--sc-advertencia);
+  --color-critico: var(--sc-critico);
+  --color-desconectado: var(--sc-desconectado);
+  --color-sin-datos: var(--sc-sin-datos);
+  --color-flujo: var(--sc-flujo);
+  --radius-sc: var(--sc-radio);
+  --radius-sc-lg: var(--sc-radio-lg);
+  --shadow-sc: var(--sc-sombra);
+  --font-sans: var(--sc-fuente);
+  --font-mono: var(--sc-fuente-mono);
+}
+
+@layer base {
+  html {
+    background: var(--sc-fondo);
+    color: var(--sc-texto);
+    font-family: var(--sc-fuente);
+  }
+
+  body {
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgb(56 189 248 / 0.06), transparent 60%),
+      var(--sc-fondo);
+  }
+
+  /* Foco visible y consistente en toda la app (AA). */
+  :focus-visible {
+    outline: 2px solid var(--sc-foco);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  ::selection {
+    background: rgb(56 189 248 / 0.35);
+  }
+}
+
+@layer components {
+  /* Color del estado en `currentColor`: lo heredan iconos, bordes e insignias. */
+  [data-estado="normal"],
+  [data-tono="normal"] {
+    --sc-estado: var(--sc-normal);
+  }
+  [data-estado="advertencia"],
+  [data-tono="advertencia"] {
+    --sc-estado: var(--sc-advertencia);
+  }
+  [data-estado="critico"],
+  [data-tono="critico"] {
+    --sc-estado: var(--sc-critico);
+  }
+  [data-estado="desconectado"],
+  [data-tono="desconectado"] {
+    --sc-estado: var(--sc-desconectado);
+  }
+  [data-estado="sin-datos"],
+  [data-tono="sin-datos"] {
+    --sc-estado: var(--sc-sin-datos);
+  }
+  [data-tono="acento"] {
+    --sc-estado: var(--sc-acento);
+  }
+  [data-tono="neutro"] {
+    --sc-estado: var(--sc-texto-tenue);
+  }
+
+  .cifra {
+    font-family: var(--sc-fuente-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Controles y tablas compartidos por todas las pantallas. */
+  .boton-primario {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: var(--sc-radio);
+    background: var(--sc-acento);
+    color: var(--sc-fondo);
+    font-weight: 600;
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+    transition: background-color 0.15s;
+  }
+  .boton-primario:hover {
+    background: var(--sc-acento-fuerte);
+  }
+  .boton-primario:disabled {
+    opacity: 0.6;
+    cursor: progress;
+  }
+
+  .boton-fantasma {
+    display: inline-grid;
+    place-items: center;
+    min-width: 2.25rem;
+    height: 2.25rem;
+    border-radius: var(--sc-radio);
+    color: var(--sc-texto-tenue);
+    transition:
+      background-color 0.15s,
+      color 0.15s;
+  }
+  .boton-fantasma:hover {
+    background: var(--sc-panel);
+    color: var(--sc-texto);
+  }
+
+  .campo {
+    width: 100%;
+    border-radius: var(--sc-radio);
+    border: 1px solid var(--sc-borde-fuerte);
+    background: var(--sc-fondo-2);
+    color: var(--sc-texto);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+  }
+  .campo::placeholder {
+    color: var(--sc-texto-apagado);
+  }
+  .campo:focus-visible {
+    outline-offset: 0;
+    border-color: var(--sc-acento);
+  }
+
+  .etiqueta-campo {
+    display: block;
+    font-size: 0.8125rem;
+    color: var(--sc-texto-tenue);
+    margin-bottom: 0.25rem;
+  }
+
+  .tabla {
+    width: 100%;
+    text-align: left;
+    font-size: 0.875rem;
+    border-collapse: collapse;
+  }
+  .tabla th {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--sc-texto-tenue);
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--sc-borde);
+    white-space: nowrap;
+  }
+  .tabla td {
+    padding: 0.625rem 0.75rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--sc-borde) 60%, transparent);
+    vertical-align: middle;
+  }
+  .tabla tbody tr:hover {
+    background: color-mix(in srgb, var(--sc-panel-2) 70%, transparent);
+  }
+
+  .titulo-pagina {
+    font-size: 1.375rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--sc-texto);
+  }
+  .subtitulo-pagina {
+    margin-top: 0.125rem;
+    font-size: 0.875rem;
+    color: var(--sc-texto-tenue);
+  }
+
+  /* Retícula de plano técnico para fondos amplios (login). */
+  .fondo-reticula {
+    background-image:
+      linear-gradient(color-mix(in srgb, var(--sc-borde) 35%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in srgb, var(--sc-borde) 35%, transparent) 1px, transparent 1px);
+    background-size: 32px 32px;
+    background-position: center;
+  }
+
+  .enlace {
+    color: var(--sc-acento);
+    text-underline-offset: 3px;
+  }
+  .enlace:hover {
+    text-decoration: underline;
+  }
+}
+
+/* Mímico de la red (src/modulos/topologia/ui/Mimico.tsx). */
+@layer components {
+  .mimico-reticula {
+    stroke: color-mix(in srgb, var(--sc-borde) 45%, transparent);
+    stroke-width: 1;
+  }
+  .mimico-enlace {
+    stroke: var(--sc-borde-fuerte);
+    stroke-linecap: round;
+  }
+  .mimico-enlace[data-activo="false"] {
+    stroke: var(--sc-desconectado);
+    stroke-dasharray: 8 8;
+    opacity: 0.55;
+  }
+  /* Flujo de energía: guiones que avanzan de origen a destino; la duración depende de la potencia. */
+  .mimico-flujo {
+    stroke: var(--sc-flujo);
+    stroke-linecap: round;
+    stroke-dasharray: 2 14;
+    animation: sc-flujo var(--duracion, 2s) linear infinite;
+    filter: drop-shadow(0 0 3px rgb(56 189 248 / 0.55));
+  }
+  .mimico-nodo {
+    cursor: pointer;
+    outline: none;
+    color: var(--sc-estado);
+  }
+  .mimico-simbolo > * {
+    fill: var(--sc-panel);
+    stroke: currentColor;
+    stroke-width: 2.5;
+  }
+  .mimico-simbolo > .mimico-detalle {
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+  }
+  .mimico-nodo[data-estado="desconectado"] .mimico-simbolo > * {
+    stroke-dasharray: 5 4;
+  }
+  .mimico-nodo .anillo-foco {
+    fill: color-mix(in srgb, var(--sc-estado) 10%, transparent);
+    stroke: var(--sc-foco);
+    stroke-width: 2;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .mimico-nodo:hover .anillo-foco {
+    opacity: 0.6;
+    stroke: currentColor;
+  }
+  .mimico-nodo:focus-visible .anillo-foco {
+    opacity: 1;
+  }
+  .mimico-nombre {
+    fill: var(--sc-texto);
+    font-size: 12px;
+    font-weight: 600;
+    paint-order: stroke;
+    stroke: var(--sc-fondo-2);
+    stroke-width: 4px;
+    stroke-linejoin: round;
+  }
+  .mimico-valor {
+    fill: var(--sc-texto-tenue);
+    font-family: var(--sc-fuente-mono);
+    font-size: 11px;
+    paint-order: stroke;
+    stroke: var(--sc-fondo-2);
+    stroke-width: 4px;
+    stroke-linejoin: round;
+  }
+}
+
+/* Nodo con alerta nueva: parpadeo suave unos segundos; nodo abierto en el panel lateral: anillo fijo. */
+@layer components {
+  .mimico-nodo[data-parpadeo] .mimico-simbolo {
+    animation: sc-parpadeo 1.2s ease-in-out 5;
+  }
+  .mimico-nodo[data-seleccionado] .anillo-foco {
+    opacity: 1;
+    stroke: var(--sc-acento);
+  }
+  .panel-nodo,
+  .aviso {
+    animation: sc-entrar 0.2s ease-out;
+  }
+  .esqueleto {
+    animation: sc-pulso 1.4s ease-in-out infinite;
+  }
+  /* Editor de la topología. */
+  .mimico-nodo[data-editando] {
+    cursor: move;
+  }
+  .mimico-nodo[data-origen] .anillo-foco {
+    opacity: 1;
+    stroke: var(--sc-advertencia);
+    stroke-dasharray: 4 3;
+  }
+  .mimico-enlace-golpe {
+    stroke: transparent;
+    cursor: pointer;
+    outline: none;
+  }
+  .mimico-enlace-golpe:hover,
+  .mimico-enlace-golpe:focus-visible {
+    stroke: color-mix(in srgb, var(--sc-foco) 35%, transparent);
+  }
+  .mimico-grupo-enlace[data-seleccionado] .mimico-enlace {
+    stroke: var(--sc-advertencia);
+    opacity: 1;
+  }
+}
+
+@keyframes sc-parpadeo {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@keyframes sc-pulso {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@keyframes sc-entrar {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+}
+
+@keyframes sc-flujo {
+  to {
+    stroke-dashoffset: -16;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mimico-flujo,
+  .mimico-nodo[data-parpadeo] .mimico-simbolo,
+  .panel-nodo,
+  .aviso,
+  .esqueleto {
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

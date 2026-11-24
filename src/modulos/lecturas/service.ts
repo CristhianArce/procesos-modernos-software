@@ -24,3 +24,6 @@ export async function lecturasRecientesPorSensor(sensorIds: string[], limite: nu
   for (const l of lecturas) porSensor.set(l.sensorId, [...(porSensor.get(l.sensorId) ?? []), l]);
   return porSensor;
 }
+
+/** Poda de lecturas antiguas del simulador continuo (rediseño SCADA): conserva la última de cada sensor. */
+export const podarLecturas = (minutos: number): Promise<number> => repo.podar(minutos);

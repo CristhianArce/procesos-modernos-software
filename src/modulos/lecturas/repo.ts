@@ -59,3 +59,13 @@ export async function recientesPorSensor(sensorIds: string[], limite: number): P
   );
   return rows.map(aLectura);
 }
+
+/** Borra las lecturas de hace más de `minutos`, salvo la más reciente de cada sensor. Devuelve cuántas borró. */
+export async function podar(minutos: number): Promise<number> {
+  const { rowCount } = await db().query(
+    `DELETE FROM lecturas l WHERE l.tomada_en < now() - make_interval(mins => $1)
+     AND EXISTS (SELECT 1 FROM lecturas m WHERE m.sensor_id = l.sensor_id AND (m.tomada_en, m.id) > (l.tomada_en, l.id))`,
+    [minutos],
+  );
+  return rowCount ?? 0;
+}

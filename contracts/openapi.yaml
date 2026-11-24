@@ -180,6 +180,226 @@ components:
         umbralPotencia:
           type: [number, "null"]
           exclusiveMinimum: 0
+    TipoNodo:
+      type: string
+      description: Símbolo del nodo en el mímico, del origen de la energía al consumo.
+      enum: [generacion, subestacion, transformador, alimentador, carga]
+    Posicion:
+      type: object
+      required: [tipo, x, y]
+      properties:
+        tipo:
+          $ref: "#/components/schemas/TipoNodo"
+        x:
+          type: number
+          minimum: 0
+          maximum: 2000
+        "y":
+          type: number
+          minimum: 0
+          maximum: 2000
+    PosicionGuardada:
+      allOf:
+        - $ref: "#/components/schemas/Posicion"
+        - type: object
+          required: [nodoId]
+          properties:
+            nodoId:
+              type: string
+              format: uuid
+    NodoTopologia:
+      type: object
+      required: [id, nombre, estado, tipo, x, "y"]
+      description: Un nodo aún sin ubicar trae tipo, x e y nulos.
+      properties:
+        id:
+          type: string
+          format: uuid
+        nombre:
+          type: string
+        estado:
+          type: string
+          enum: [conectado, desconectado]
+        tipo:
+          oneOf:
+            - $ref: "#/components/schemas/TipoNodo"
+            - type: "null"
+        x:
+          type: [number, "null"]
+        "y":
+          type: [number, "null"]
+    EnlaceCrear:
+      type: object
+      required: [origenId, destinoId]
+      description: El sentido (origen → destino) es el del flujo de energía en el mímico. Los dos nodos deben ser distintos.
+      properties:
+        origenId:
+          type: string
+          format: uuid
+        destinoId:
+          type: string
+          format: uuid
+    Enlace:
+      allOf:
+        - $ref: "#/components/schemas/EnlaceCrear"
+        - type: object
+          required: [id]
+          properties:
+            id:
+              type: string
+              format: uuid
+    Estado:
+      type: string
+      description: Estado visual del nodo frente a sus umbrales (advertencia desde el 98 %, crítico por encima).
+      enum: [sin-datos, normal, advertencia, critico, desconectado]
+    NodoVivo:
+      type: object
+      required: [id, conexion, nivel, voltaje, corriente, potencia, tomadaEn, alertasActivas]
+      description: Última lectura agregada del nodo (tensión media, corriente y potencia sumadas), cifras con dos decimales.
+      properties:
+        id:
+          type: string
+          format: uuid
+        conexion:
+          type: string
+          enum: [conectado, desconectado]
+        nivel:
+          $ref: "#/components/schemas/Estado"
+        voltaje:
+          type: [number, "null"]
+        corriente:
+          type: [number, "null"]
+        potencia:
+          type: [number, "null"]
+        tomadaEn:
+          type: [string, "null"]
+          format: date-time
+        alertasActivas:
+          type: integer
+          description: Alertas de los últimos 15 minutos.
+    Indicadores:
+      type: object
+      required: [potenciaTotal, tensionMedia, nodosConectados, nodosDesconectados, nodosTotales, alertasActivas, tendencia]
+      properties:
+        potenciaTotal:
+          type: [number, "null"]
+        tensionMedia:
+          type: [number, "null"]
+        nodosConectados:
+          type: integer
+        nodosDesconectados:
+          type: integer
+        nodosTotales:
+          type: integer
+        alertasActivas:
+          type: integer
+        tendencia:
+          type: object
+          description: Últimos 15 minutos en puntos de 30 s, del más antiguo al más reciente.
+          properties:
+            potencia:
+              type: array
+              items:
+                type: number
+            tension:
+              type: array
+              items:
+                type: number
+            nodos:
+              type: array
+              items:
+                type: integer
+            alertas:
+              type: array
+              items:
+                type: integer
+    AlertaReciente:
+      type: object
+      required: [id, nodoId, nodoNombre, sensorNombre, magnitud, valor, umbral, creadaEn]
+      properties:
+        id:
+          type: string
+          format: uuid
+        nodoId:
+          type: string
+          format: uuid
+        nodoNombre:
+          type: string
+        sensorNombre:
+          type: string
+        magnitud:
+          type: string
+          enum: [voltaje, corriente, potencia]
+        valor:
+          type: number
+        umbral:
+          type: number
+        creadaEn:
+          type: string
+          format: date-time
+    InstantaneaViva:
+      type: object
+      required: [generadaEn, indicadores, nodos, alertas]
+      properties:
+        generadaEn:
+          type: string
+          format: date-time
+        indicadores:
+          $ref: "#/components/schemas/Indicadores"
+        nodos:
+          type: array
+          items:
+            $ref: "#/components/schemas/NodoVivo"
+        alertas:
+          type: array
+          description: Las 30 alertas más recientes, la más nueva primero.
+          items:
+            $ref: "#/components/schemas/AlertaReciente"
+    DetalleNodo:
+      type: object
+      required: [id, sensores, alertas]
+      properties:
+        id:
+          type: string
+          format: uuid
+        sensores:
+          type: array
+          items:
+            type: object
+            required: [id, nombre, umbralVoltaje, umbralCorriente, umbralPotencia, lecturas]
+            properties:
+              id:
+                type: string
+                format: uuid
+              nombre:
+                type: string
+              umbralVoltaje:
+                type: [number, "null"]
+              umbralCorriente:
+                type: [number, "null"]
+              umbralPotencia:
+                type: [number, "null"]
+              lecturas:
+                type: array
+                description: Las 30 más recientes, de la más antigua a la más reciente.
+                items:
+                  type: object
+                  required: [voltaje, corriente, potencia, tomadaEn]
+                  properties:
+                    voltaje:
+                      type: number
+                    corriente:
+                      type: number
+                    potencia:
+                      type: number
+                    tomadaEn:
+                      type: string
+                      format: date-time
+        alertas:
+          type: array
+          description: Las 10 alertas más recientes del nodo.
+          items:
+            $ref: "#/components/schemas/AlertaReciente"
   parameters:
     Id:
       name: id
@@ -654,3 +874,143 @@ paths:
           $ref: "#/components/responses/DatosInvalidos"
         "401":
           $ref: "#/components/responses/NoAutenticado"
+  /api/topologia:
+    get:
+      summary: Consultar la topología de la red para el mímico
+      description: Administradores y técnicos. Todos los nodos, con su posición si la tienen, y los enlaces.
+      security:
+        - sesion: []
+      responses:
+        "200":
+          description: Nodos y enlaces
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [nodos, enlaces]
+                properties:
+                  nodos:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/NodoTopologia"
+                  enlaces:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Enlace"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+  /api/topologia/nodos/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    put:
+      summary: Ubicar un nodo en el mímico
+      description: Solo administradores. Crea o reemplaza el tipo y la posición del nodo.
+      security:
+        - sesion: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Posicion"
+      responses:
+        "200":
+          description: Posición guardada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PosicionGuardada"
+        "400":
+          $ref: "#/components/responses/DatosInvalidos"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+        "403":
+          $ref: "#/components/responses/SinPermiso"
+        "404":
+          $ref: "#/components/responses/NoEncontrado"
+  /api/topologia/enlaces:
+    post:
+      summary: Crear un enlace entre dos nodos
+      description: Solo administradores. Hay como máximo un enlace por par de nodos, sin importar el sentido.
+      security:
+        - sesion: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EnlaceCrear"
+      responses:
+        "201":
+          description: Enlace creado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Enlace"
+        "400":
+          $ref: "#/components/responses/DatosInvalidos"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+        "403":
+          $ref: "#/components/responses/SinPermiso"
+        "404":
+          $ref: "#/components/responses/NoEncontrado"
+        "409":
+          description: Ya existe un enlace entre esos nodos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/topologia/enlaces/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    delete:
+      summary: Borrar un enlace
+      description: Solo administradores.
+      security:
+        - sesion: []
+      responses:
+        "204":
+          description: Enlace borrado
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+        "403":
+          $ref: "#/components/responses/SinPermiso"
+        "404":
+          $ref: "#/components/responses/NoEncontrado"
+  /api/estado:
+    get:
+      summary: Instantánea compacta del estado de la red
+      description: >-
+        Administradores y técnicos. La consulta el cliente cada 2,5 s (Cache-Control no-store): por nodo, su
+        conexión, su última lectura agregada y su nivel frente a los umbrales; los indicadores y las alertas recientes.
+      security:
+        - sesion: []
+      responses:
+        "200":
+          description: Instantánea
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InstantaneaViva"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+  /api/estado/nodos/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      summary: Detalle en vivo de un nodo para el panel lateral del mímico
+      description: Administradores y técnicos. Sensores con umbrales y últimas lecturas, y alertas recientes del nodo.
+      security:
+        - sesion: []
+      responses:
+        "200":
+          description: Detalle del nodo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DetalleNodo"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+        "404":
+          $ref: "#/components/responses/NoEncontrado"

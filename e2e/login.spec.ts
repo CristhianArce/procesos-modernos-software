@@ -21,7 +21,8 @@ test("#20 CA-2: unas credenciales incorrectas muestran el mensaje de error y no 
   await page.getByLabel("Usuario").fill("usuario-inexistente-e2e");
   await page.getByLabel("Contraseña").fill("cualquiera");
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
-  await expect(page.getByRole("alert")).toHaveText("Credenciales inválidas");
+  // Acotado al formulario: el anunciador de rutas de Next también tiene role="alert".
+  await expect(page.locator("form").getByRole("alert")).toHaveText("Credenciales inválidas");
   await expect(page).toHaveURL(/\/login$/);
 });
 
