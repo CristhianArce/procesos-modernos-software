@@ -76,6 +76,23 @@ components:
         ubicacion:
           type: [string, "null"]
           maxLength: 120
+    EstadoNodoCambiar:
+      type: object
+      required: [estado]
+      properties:
+        estado:
+          type: string
+          enum: [conectado, desconectado]
+    EstadoNodoActual:
+      type: object
+      required: [id, estado]
+      properties:
+        id:
+          type: string
+          format: uuid
+        estado:
+          type: string
+          enum: [conectado, desconectado]
     Lectura:
       type: object
       required: [id, sensorId, voltaje, corriente, potencia, tomadaEn]
@@ -657,6 +674,38 @@ paths:
       responses:
         "204":
           description: Nodo eliminado
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+        "403":
+          $ref: "#/components/responses/SinPermiso"
+        "404":
+          $ref: "#/components/responses/NoEncontrado"
+  /api/aislamiento/nodos/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    patch:
+      summary: Aislar o reconectar un nodo
+      description: >-
+        Solo administradores. Cambia el estado del nodo a `desconectado` (aislar) o `conectado` (reconectar);
+        la operación es simulada y solo modifica el estado guardado. Pedir el estado que el nodo ya tiene
+        responde 200 sin cambiar nada.
+      security:
+        - sesion: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EstadoNodoCambiar"
+      responses:
+        "200":
+          description: Estado resultante del nodo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EstadoNodoActual"
+        "400":
+          $ref: "#/components/responses/DatosInvalidos"
         "401":
           $ref: "#/components/responses/NoAutenticado"
         "403":
