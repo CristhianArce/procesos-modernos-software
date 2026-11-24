@@ -243,3 +243,14 @@ test("CA-6: preparar.mjs sale de origin/<base> y, si la base solo existe en loca
   assert.equal(puntoDePartida({ remota: false, local: true, base: "refactor-orquestador" }), "refactor-orquestador");
   assert.equal(puntoDePartida({ remota: false, local: false, base: "nada" }), undefined);
 });
+
+test("CA-6: paquete-diff.mjs excluye .flujo, .claude, openspec y evidencias, y arma una sola lectura", async () => {
+  const { armarPaquete, esExcluido } = await import("../skills/orquestador/scripts/paquete-diff.mjs");
+  for (const r of [".flujo/issue-1/x.md", ".claude/agents/a.md", "openspec/changes/c/tasks.md", "evidencias/issue-1/a.md"]) assert.equal(esExcluido(r), true, r);
+  for (const r of ["src/a.ts", "e2e/a.spec.ts", "docs/a.md"]) assert.equal(esExcluido(r), false, r);
+  const md = armarPaquete({ base: "main", sha: "abc123", modificados: ["src/a.ts"], nuevos: ["src/b.ts"], diff: "+linea", contenidos: [{ ruta: "src/b.ts", texto: "export const b = 1;" }] });
+  assert.match(md, /Base: main \(merge-base abc123\)/);
+  assert.match(md, /## Archivos modificados \(1\)\n\n- src\/a\.ts/);
+  assert.match(md, /```diff\n\+linea\n```/);
+  assert.match(md, /## Archivo nuevo: src\/b\.ts[\s\S]*export const b = 1;/);
+});

@@ -65,7 +65,8 @@ M3 reutiliza el patrón de revisión en segundo plano y `paquete-diff.mjs`, y M1
 |---|---|
 | Pasos 1 y 2 juntos con `preparar.mjs` (paso 1: 49 s → 21 s) | Aplicada |
 | Revisión de la propuesta en segundo plano (`--paralelo`) | Aplicada |
-| M6 `escritor-pruebas` en paralelo con la implementación | Aplicada; el efecto en el paso 5 está por medir |
+| `paquete-diff.mjs` y `revisor-reglas` en `medium` | Aplicada: sin ellos el paso 6 pasó de 1 min 14 s a 2 min 36 s (32 llamadas del agente, 86 s) |
+| M6 `escritor-pruebas` en paralelo con la implementación | Aplicada: paso 5 bajó 3 min 44 s → 2 min 43 s (−27%); ahora se lanza tres veces, una por tipo, por medir |
 | M1 `referencia.md` | Descartada por ahora: el ahorro estimado (6 a 12% del total) no llega al 20% y la selección automática de archivos falla |
 | M2, M3, M4 | Sin aplicar: no hay medición que las respalde |
 | M5 | Pendiente: medir con una historia de práctica |
