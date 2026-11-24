@@ -32,15 +32,14 @@ flowchart LR
     OP --> OV
     VER -->|CORREGIR, una vez| FIX["Sesión: corrige solo los hallazgos<br/>(no regenera la propuesta)"]
     FIX --> OV
-    VER -->|APROBADO| INI{{"Sesión: lanza en paralelo<br/>el código y 3 agentes de pruebas"}}
 
     subgraph S5["5 Implementar el código (sesión)"]
         OA["skill openspec-apply-change<br/>ejecuta tasks.md"]
     end
-    INI --> OA
-    INI ==>|"segundo plano"| TU[["escritor-pruebas<br/>unitarias"]]
-    INI ==>|"segundo plano"| TI[["escritor-pruebas<br/>integración"]]
-    INI ==>|"segundo plano"| TE[["escritor-pruebas<br/>e2e"]]
+    VER -->|APROBADO| OA
+    VER ==>|"APROBADO, en segundo plano"| TU[["escritor-pruebas<br/>unitarias"]]
+    VER ==>|"APROBADO, en segundo plano"| TI[["escritor-pruebas<br/>integración"]]
+    VER ==>|"APROBADO, en segundo plano"| TE[["escritor-pruebas<br/>e2e"]]
 
     OA --> UNI["5 Unir<br/>Sesión: espera a los 3 agentes y ajusta<br/>los nombres que las pruebas supusieron"]
     TU --> UNI
@@ -64,7 +63,7 @@ flowchart LR
     classDef gha fill:#dbeafe,stroke:#1d4ed8,color:#1e3a8a
     classDef bloq fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d
     class OP,OA,OV,ARC openspec
-    class PRE,S2,FIX,INI,UNI,S7 sesion
+    class PRE,S2,FIX,UNI,S7 sesion
     class S1,VER,TU,TI,TE,V6 agente
     class S8,CI gha
     class BLOQ bloq
@@ -74,7 +73,6 @@ flowchart LR
     style PRE stroke-dasharray: 5 4
     style S2 stroke-dasharray: 5 4
     style FIX stroke-dasharray: 5 4
-    style INI stroke-dasharray: 5 4
     style UNI stroke-dasharray: 5 4
     style S7 stroke-dasharray: 5 4
 ```
@@ -97,7 +95,6 @@ flowchart LR
 |---|---|
 | Rectángulo | Un paso del flujo |
 | Rombo | Una decisión con veredicto (`APROBADO`, `CORREGIR` o `BLOQUEAR`) |
-| Hexágono | El punto donde la sesión lanza varias cosas a la vez |
 | Rectángulo con barras dobles a los lados | Un agente que corre en segundo plano, en paralelo con la sesión |
 | Estadio (extremos redondeados) | Estado final del flujo |
 
