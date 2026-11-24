@@ -1,0 +1,6 @@
+| # | Fecha | Fase | Decisión | Decidió | Votos | Evidencia | Alternativas descartadas | Revisar |
+|---|-------|------|----------|---------|-------|-----------|--------------------------|---------|
+| 1 | 2026-11-24 | 3 Propuesta | CA-1: se listan las 50 notificaciones más recientes del técnico; el número de no leídas se calcula sobre el total de sus notificaciones, no solo sobre las listadas | Persona | - | preguntas.md #1 | Lista completa sin límite | no |
+| 2 | 2026-11-24 | 3 Propuesta | CA-1: orden por fecha de la alerta descendente y, en empate, por id descendente | Persona | - | preguntas.md #2 | Sin garantía de orden | no |
+| 3 | 2026-11-24 | 3 Propuesta | RN-4: un administrador que llama a GET /api/notificaciones recibe 403 en JSON; si abre la página, ve un mensaje de solo técnicos y no se consulta la tabla | Orquestador | - | issue.md RN-4 | Lista vacía para el administrador | sí |
+| 4 | 2026-11-24 | 3 Propuesta | La notificación guarda usuario_id con FK a usuarios (ON DELETE CASCADE), sensor_nombre como copia, magnitud, valor, alerta_creada_en y leida; la semilla da al técnico 4 notificaciones (2 no leídas) con ids fijos e idempotente | Orquestador | - | issue.md RN-2, RN-5, notas técnicas | Sin FK al usuario | sí |
