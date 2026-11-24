@@ -15,18 +15,27 @@ test("#24 CA-1: el técnico ve las notificaciones de la semilla, la más recient
   await entrar(page, "tecnico", "Demo-Tecnico-2026");
   await page.goto("/notificaciones");
 
+  // Se afirma el orden y el contenido de las filas de la semilla, no cuántas filas hay en total: otra historia
+  // o prueba puede agregar notificaciones al técnico. Cada fila de la semilla se identifica por su sensor y su valor.
   const filas = page.getByTestId("notificacion");
-  await expect(filas).toHaveCount(4);
-  await expect(filas.nth(0)).toContainText("Sensor de tensión S1");
-  await expect(filas.nth(0)).toContainText("128,9 V");
-  await expect(filas.nth(1)).toContainText("Sensor de potencia S3");
-  await expect(filas.nth(1)).toContainText("2,15 kW");
-  await expect(filas.nth(2)).toContainText("Sensor de corriente S2");
-  await expect(filas.nth(2)).toContainText("17,2 A");
-  await expect(filas.nth(3)).toContainText("131,4 V");
-  await expect(filas.nth(3)).toHaveAttribute("data-leida", "true");
-  await expect(page.locator('[data-testid="notificacion"][data-leida="false"]')).toHaveCount(3);
-  await expect(page.getByTestId("no-leidas")).toHaveText("No leídas: 3");
+  const deLaSemilla = [
+    { sensor: "Sensor de tensión S1", valor: "128,9 V" },
+    { sensor: "Sensor de potencia S3", valor: "2,15 kW" },
+    { sensor: "Sensor de corriente S2", valor: "17,2 A" },
+    { sensor: "Sensor de tensión S1", valor: "131,4 V" },
+  ];
+  await expect(filas.first()).toBeVisible();
+  const textos = await filas.allInnerTexts();
+  const posiciones = deLaSemilla.map(({ sensor, valor }) => textos.findIndex((t) => t.includes(sensor) && t.includes(valor)));
+  expect(posiciones.every((p) => p >= 0)).toBe(true);
+  expect(posiciones).toEqual([...posiciones].sort((a, b) => a - b));
+
+  // La más antigua de la semilla está leída (sin insignia) y las demás no.
+  const antigua = filas.filter({ hasText: "131,4 V" });
+  await expect(antigua).toHaveAttribute("data-leida", "true");
+  await expect(antigua).not.toContainText("No leída");
+  await expect(filas.filter({ hasText: "128,9 V" })).toContainText("No leída");
+  await expect(page.getByTestId("no-leidas")).toHaveText(/^No leídas: \d+$/);
 });
 
 test("#24 CA-3: el administrador no ve Notificaciones en el menú y la API le responde 403", async ({ page }) => {

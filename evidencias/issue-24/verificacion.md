@@ -8,7 +8,7 @@
 
 | # | Severidad | Hallazgo | Estado |
 |---|---|---|---|
-| 1 | WARNING | `e2e/notificaciones.spec.ts` (CA-1) afirma totales (`toHaveCount(4)`, 3 sin leer, `No leídas: 3`) sobre filas de la semilla; CLAUDE.md §7 pide no afirmar totales sobre datos que la prueba no creó | Abierto: no es CRITICAL, no dispara el paso 7. Queda en el PR para corregir antes de fusionar |
+| 1 | WARNING | `e2e/notificaciones.spec.ts` (CA-1) afirma totales (`toHaveCount(4)`, 3 sin leer, `No leídas: 3`) sobre filas de la semilla; CLAUDE.md §7 pide no afirmar totales sobre datos que la prueba no creó | Corregido después de la corrida: el e2e ya no afirma totales, solo el orden y el contenido de las filas de la semilla |
 
 ## Pruebas
 
