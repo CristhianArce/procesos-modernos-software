@@ -1,0 +1,6 @@
+| # | Fecha | Fase | Decisión | Decidió | Votos | Evidencia | Alternativas descartadas | Revisar |
+|---|-------|------|----------|---------|-------|-----------|--------------------------|---------|
+| 1 | 2026-11-24 | 3 Propuesta | La lista devuelve como máximo las 50 notificaciones más recientes del técnico; el número de no leídas cuenta todas las suyas, no solo las listadas | Orquestador | - | issue #24 CA-1 no fija un límite | Sin límite; paginación | sí |
+| 2 | 2026-11-24 | 3 Propuesta | Respuesta de `GET /api/notificaciones`: `{ noLeidas, notificaciones: [{ id, sensor, magnitud, valor, creadaEn, leida }] }`, sin parámetros de consulta | Orquestador | - | issue #24 notas técnicas (lista propia y número de no leídas) | Dos endpoints (lista y contador) | sí |
+| 3 | 2026-11-24 | 3 Propuesta | Un administrador que consulta la API recibe 403 en JSON y la página lo redirige al inicio; la entrada del menú solo aparece al técnico | Orquestador | - | issue #24 RN-4 y CLAUDE.md §6 (401/403 en JSON) | Responder 200 con lista vacía | sí |
+| 4 | 2026-11-24 | 3 Propuesta | La semilla usa identificadores fijos con `ON CONFLICT (id) DO NOTHING` y fechas relativas a `now()` para ser idempotente | Orquestador | - | issue #24 notas técnicas (semilla) y db/seed/auth.sql | Insertar sin clave fija | sí |
