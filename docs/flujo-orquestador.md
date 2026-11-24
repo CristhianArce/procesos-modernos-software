@@ -18,11 +18,17 @@ SDD (desarrollo guiado por especificaciones) significa que primero se escribe qu
 ```mermaid
 flowchart LR
     S12["1 Preparar<br/>2 Contexto"] --> S3["3 Propuesta<br/>skill openspec-propose"]
-    S3 --> REV{"4 Revisar propuesta<br/>openspec validate --strict"}
-    REV -->|CORREGIR, una vez| S3
-    REV -->|APROBADO| INI{{"Inicio del paso 5<br/>un solo mensaje"}}
+    subgraph REV["4 Revisar la propuesta (agente revisor-salida)"]
+        OV["openspec validate --strict"] --> VER{"Veredicto"}
+    end
+    S3 --> OV
+    VER -->|CORREGIR, una vez| S3
+    VER -->|APROBADO| INI{{"Inicio del paso 5<br/>un solo mensaje"}}
 
-    INI --> S5["5 Implementar el código<br/>skill openspec-apply-change"]
+    subgraph S5["5 Implementar el código (sesión)"]
+        OA["skill openspec-apply-change<br/>ejecuta tasks.md"]
+    end
+    INI --> S5
     INI ==>|"segundo plano"| TU[["escritor-pruebas<br/>unitarias"]]
     INI ==>|"segundo plano"| TI[["escritor-pruebas<br/>integración"]]
     INI ==>|"segundo plano"| TE[["escritor-pruebas<br/>e2e"]]
@@ -38,7 +44,7 @@ flowchart LR
     S8 --> CI["CI del PR<br/>openspec validate --all<br/>y revisión humana"]
     CI --> ARC["Tras el merge, PR aparte<br/>openspec archive"]
 
-    REV -.->|BLOQUEAR| BLOQ(["Bloqueado"])
+    VER -.->|BLOQUEAR| BLOQ(["Bloqueado"])
     V6 -.->|entorno o reintentos agotados| BLOQ
 
     classDef openspec fill:#fef3c7,stroke:#b45309,color:#78350f
@@ -46,9 +52,11 @@ flowchart LR
     classDef agente fill:#dcfce7,stroke:#15803d,color:#14532d
     classDef gha fill:#dbeafe,stroke:#1d4ed8,color:#1e3a8a
     classDef bloq fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d
-    class S3,ARC openspec
-    class S5,UNI,INI sesion
-    class S12,REV,TU,TI,TE,V6 agente
+    class S3,OA,OV,ARC openspec
+    class UNI,INI sesion
+    style S5 fill:#ede9fe,stroke:#6d28d9,color:#4c1d95
+    class S12,VER,TU,TI,TE,V6 agente
+    style REV fill:#dcfce7,stroke:#15803d,color:#14532d
     class S8,CI gha
     class BLOQ bloq
 ```
@@ -59,9 +67,9 @@ flowchart LR
 
 | Color | Actor | Qué hace |
 |---|---|---|
-| Violeta | La **sesión del orquestador** (opus) | Escribe el código de producción, lanza y recoge a los agentes de pruebas, y corrige |
+| Violeta | La **sesión del orquestador** (opus) | Escribe el código de producción, lanza y recoge a los agentes de pruebas, y corrige. Un cuadro violeta o verde con otro amarillo adentro es la sesión o el agente usando una herramienta de OpenSpec |
 | Verde | **Agentes** de `.claude/agents/` (sonnet) | `preparador` (1), `revisor-salida` (4), tres `escritor-pruebas` (5) y `revisor-reglas` (6). El paso 2 es un script y `build-test` del paso 6 es un skill, pero van dentro de un paso con agente |
-| Amarillo | **OpenSpec** (skills `openspec-*` y su CLI) | Genera la propuesta (3) y archiva el change tras el merge |
+| Amarillo | **OpenSpec** (skills `openspec-*` y su CLI) | Genera la propuesta (3), valida la propuesta (4, dentro del agente), guía la implementación (5, dentro de la sesión) y archiva el change tras el merge |
 | Azul | **Commit y PR, CI de GitHub y la persona** | Skills `commit` y `abrir-pr` (8), CI del PR y revisión humana, que es quien fusiona |
 | Rojo | Estado de **bloqueo** | El flujo se detiene y se avisa a la persona |
 
