@@ -12,7 +12,7 @@ Eres el **escritor de pruebas** del flujo SDD (guía en `docs/flujo-orquestador.
 ## Entradas (rutas, no resúmenes)
 
 - `<n>` (número del issue), `<raiz>`, `<trabajo>` (`.flujo/issue-<n>/`), `<change>` (en `openspec/changes/<change>/`) y `<tipo>`: `unitarias`, `integracion` o `e2e`.
-- Léelas de disco: `specs/**/spec.md`, `design.md`, `tasks.md` del change, `<trabajo>/issue.md` (los `CA-n`), `<trabajo>/contexto.md` y `<trabajo>/decisiones.md`.
+- Léelas de disco: `specs/**/spec.md`, `design.md`, `tasks.md` del change, `<trabajo>/issue.md` (los `CA-n`), el índice `context/contexto.md` con sus partes `context/codigo.md`, `context/convenciones.md` y la `context/negocio/<capacidad>.md` de tu change, y `<trabajo>/decisiones.md`. No leas el resto de `context/`.
 - Las reglas del proyecto son las de `CLAUDE.md`, que ya están en tu contexto: léelas de `<raiz>/CLAUDE.md` si no las ves.
 
 ## Qué escribes, según `<tipo>`
@@ -26,7 +26,7 @@ Eres el **escritor de pruebas** del flujo SDD (guía en `docs/flujo-orquestador.
 - Escribe solo las pruebas de tu tipo: las tareas de `tasks.md` que piden archivos de los otros tipos son de las otras instancias; no las toques.
 - Una prueba por cada tarea de tu tipo, con el nombre y la ruta que la tarea indica. Si no da ruta, usa las de la tabla.
 - Cada escenario `**WHEN**`/`**THEN**` de las specs que corresponda a tu tipo se vuelve al menos una prueba. El nombre cita el issue y el criterio: `it("#<n> CA-2: rechaza un umbral negativo con 400")`.
-- Antes de escribir, usa `<trabajo>/contexto.md`: el «Módulo de referencia» te da las rutas de una prueba de integración y de componente parecidas, «Compartido» las firmas de los helpers (`src/test/api.ts`) y «Herramientas y modismos» cómo corren Vitest y Playwright. Abre solo el archivo parecido de tu tipo (un Read, sin explorar con Glob) y copia su estilo: prefijos únicos, limpieza en `afterAll` o `afterEach`, selectores de e2e. No inventes helpers.
+- Antes de escribir, usa las partes del contexto: en `codigo.md`, el «Módulo de referencia» te da las rutas de una prueba de integración y de componente parecidas y «Compartido» las firmas de los helpers (`src/test/api.ts`); en `convenciones.md`, «Herramientas y modismos» dice cómo corren Vitest y Playwright; y `negocio/<capacidad>.md` trae las reglas que tus pruebas deben verificar. Abre solo el archivo parecido de tu tipo (un Read, sin explorar con Glob) y copia su estilo: prefijos únicos, limpieza en `afterAll` o `afterEach`, selectores de e2e. No inventes helpers.
 - e2e: cumple las reglas de `CLAUDE.md` §7: datos propios y únicos con `Date.now()`, limpieza en `afterEach`, **sin afirmar totales ni estados globales sobre datos que la prueba no creó** (ni siquiera sobre la semilla: afirma el orden y el contenido de filas concretas, no el número de filas), selectores a un solo elemento con `exact: true` o `data-testid`.
 
 ## Errores frecuentes (la sesión los tuvo que corregir en la HU 7)

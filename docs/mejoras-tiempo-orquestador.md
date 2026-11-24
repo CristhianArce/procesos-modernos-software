@@ -85,24 +85,27 @@ Para medir M6, comparar la duración del paso 5 con la de la HU 7 (3 min 44 s, 2
 
 Con lo aplicado hasta ahora, la meta de 5 minutos no se alcanza en una repetición de la HU 7; para decidir lo que falta hace falta medir una historia distinta, en frío.
 
-## Tercera ronda: más contexto, menos lecturas de código
+## Tercera ronda: contexto de negocio y técnico, acumulado y fuera del flujo
 
-Objetivo: que el flujo use mejor `contexto.md` y evite leer código. Las lecturas exploratorias antes de la primera escritura (M1) se atacan dejando en el contexto lo que la sesión y los agentes buscaban en el repo, y `contexto.md` pasa de inventario técnico a **contexto de negocio** que además fija las reglas técnicas.
+Objetivo: que el flujo pregunte menos y lea menos código. Las lecturas exploratorias antes de la primera escritura (M1) y las preguntas que la persona ya respondió en otra historia se atacan con un contexto que ya existe cuando empieza la corrida.
 
 | Propuesta | Estado |
 |---|---|
-| «Producto»: resumen y backlog de historias con su fase, de qué depende y qué entrega (`docs/propuesta.md` §1 y §5) | Aplicada. Una historia que depende de otra no fusionada no puede suponer su tabla ni su módulo (el caso de la HU 14 con la HU 8) |
-| «Reglas de negocio de las historias construidas»: `RN-n`, fuera de alcance y decisiones de la persona de cada `evidencias/issue-<n>/` | Aplicada. Evita volver a preguntar lo ya decidido |
-| «Reglas de negocio vigentes»: cada requisito, con su texto completo y los nombres de sus escenarios, de `openspec/specs/` y de los changes en curso; la plataforma y el proceso (`plataforma` en `.claude/orquestador.json`) van solo por nombre | Aplicada. Una capacidad nueva cuenta como negocio mientras no se liste como plataforma |
+| Carpeta `context/`, versionada, que **solo crece**: cada parte es una lista de entradas con clave; el script agrega la que no existe, reemplaza la que cambió y nunca borra. Sin novedades, no escribe | Aplicada |
+| Skill `actualizar-contexto`, **fuera del flujo** y solo para la persona (`disable-model-invocation`, sin commit). El orquestador solo lee `context/`: el paso 2 ya no corre ningún script y se bloquea si falta la carpeta | Aplicada |
+| Partes por paso: índice (`contexto.md`), `producto`, `historias`, `inventario`, `codigo`, `convenciones` y una `negocio/<capacidad>`. Cada paso lee solo las suyas | Aplicada |
+| Negocio: backlog con dependencias (`docs/propuesta.md`), `RN-n`, fuera de alcance y decisiones de la persona de cada `evidencias/issue-<n>/`, y cada requisito vigente con su texto y sus escenarios (`openspec/specs/` y changes en curso). La plataforma va solo por nombre (`plataforma` en `.claude/orquestador.json`) | Aplicada |
+| Técnica: módulo de referencia, firmas públicas, lo compartido, convenciones (nombres, última migración, errores, `data-testid`, clases) y herramientas (librerías, Vitest, Playwright, Postgres, Flyway, tokens) | Aplicada |
+| Las reglas de `CLAUDE.md` **no** se copian: ya están cargadas en la sesión y en cada agente | Decidido |
 | `revisor-salida` marca `CRITICAL` un change que contradice una regla vigente, una `RN-n`, un fuera de alcance o una decisión sin `MODIFIED` | Aplicada |
-| M1 «Módulo de referencia» en `contexto.md`: el módulo completo (repo, service y schema) con más archivos, con las rutas de su handler, de una prueba de integración, de una prueba de componente, de un componente de `ui/` y de `src/test/api.ts` | Aplicada. La selección es determinista (más archivos; a igualdad, el primero por nombre) y solo lista rutas que existen, porque la selección «inteligente» fallaba |
-| «Firmas públicas»: primera línea de cada `export` de `schema.ts`, `repo.ts` y `service.ts` de cada módulo; las constantes que no son funciones quedan con su nombre | Aplicada. Sirve para citar nombres reales y escribir `## Interfaces` sin abrir el código |
-| «Compartido»: firmas de `src/lib/`, `src/modulos/ui/` y `src/test/` | Aplicada. Es lo que se reutiliza y no se reescribe |
-| «Convenciones del repo»: nombres de módulos, componentes (PascalCase) y pruebas (kebab-case) con cuántos archivos los cumplen, última migración, mensajes de error, `data-testid` y clases de diseño | Aplicada. Leído del código, no escrito a mano |
-| «Herramientas y modismos»: librerías fijas, scripts de npm, proyectos de Vitest, Playwright, Postgres, Flyway y modismos de las migraciones (`uuid` con `gen_random_uuid()`, `timestamptz`, `ON DELETE CASCADE`, `CHECK`, índices `_idx`) y tokens `--sc-*` | Aplicada. Leído de `package.json`, las configuraciones, `docker-compose.yml`, `db/migration/` y `globals.css` |
-| «Reglas del proyecto»: las viñetas de `CLAUDE.md` §3 a §7, copiadas tal cual | Aplicada. Cuesta unos 7 KB más en `contexto.md`; `CLAUDE.md` sigue siendo la fuente |
-| `SKILL.md`, `escritor-pruebas` y las reglas de `design` de OpenSpec mandan usar `contexto.md` antes de abrir código | Aplicada |
+| `openspec-explore` como reemplazo del contexto | Descartada: es una conversación abierta («una postura, no un flujo»), sin salida fija ni archivos, y vuelve a leer el código en cada corrida. No sirve de insumo verificable para `revisor-salida` ni para los agentes, y es lo contrario de evitar lecturas. Sí sirve a mano, antes de `/orquestador`, con un issue ambiguo |
 
-Riesgo: `contexto.md` pasa de unos 3 KB a unos 58 KB (~15 mil tokens) sobre `main`, y lo leen la sesión y los agentes con Read. Medido sobre `main`: las reglas vigentes pesan ~20 KB, las reglas de las historias construidas ~8 KB, las reglas de `CLAUDE.md` ~8 KB, las firmas públicas ~7 KB y lo compartido ~4 KB; el resto es poco. Si el paso 3 se alarga, recortar las firmas a los módulos que cita el issue. Las capacidades de plataforma ya van solo por nombre.
+Medido sobre `main`: `context/` pesa ~58 KB en total, pero cada paso lee solo su parte: el paso 3 unos 33 KB (índice, producto, historias, inventario y dos capacidades) y el paso 5 unos 24 KB (índice, código y convenciones), contra los ~58 KB de leerlo todo.
 
-Validación pendiente: en una historia distinta, contar las llamadas `Read` y `Glob` antes de la primera escritura y compararlas con las de la HU 7 (unas 6 rondas de lectura).
+Riesgos:
+
+- **Se desfasa si nadie lo corre.** El orquestador solo comprueba que `context/` exista, no que esté al día. Conviene correr `/actualizar-contexto` tras fusionar cada historia.
+- **Solo agrega.** Lo que desaparece del repo (un change archivado) queda en `context/` hasta que alguien lo quite a mano.
+- **Selección de capacidades.** La sesión elige qué `negocio/<capacidad>` leer; el índice dice que ante la duda lea de más.
+
+Validación pendiente: en una historia distinta, en frío, contar los `Read` y `Glob` antes de la primera escritura y las preguntas repetidas a la persona, y compararlos con la HU 7 (unas 6 rondas de lectura).

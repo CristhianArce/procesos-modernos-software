@@ -13,7 +13,7 @@ context: |
   - Alerta: se registra cuando una lectura supera el umbral de su sensor; otros módulos se suscriben con on-alerta.ts.
   - Roles: administrador y técnico. Lo que puede hacer cada rol lo fijan los CA de cada historia; no lo supongas.
   Detalle del producto y del backlog: docs/propuesta.md (las historias son issues de GitHub).
-  Lo que ya existe (tablas, módulos, rutas, capacidades) lo lista <trabajo>/contexto.md en cada historia.
+  Lo que ya existe y lo que el producto ya promete (reglas de negocio, decisiones, tablas, módulos, rutas, capacidades) está en context/ (índice: context/contexto.md); lo mantiene el skill actualizar-contexto, fuera del flujo.
   Las reglas del proyecto (stack, estructura, capas, datos, seguridad) están en CLAUDE.md: respétalas.
 
 # Ajuste mínimo (docs/flujo-orquestador.md): solo las reglas sin las cuales
@@ -27,7 +27,7 @@ rules:
   design:
     - design.md es obligatorio si el change modifica contracts/openapi.yaml o agrega una migración en db/migration/.
     - "design.md incluye una sección ## Interfaces con las firmas públicas que usarán las pruebas: funciones de repo y service (nombre, parámetros y retorno), forma de la respuesta de la API y data-testid de la interfaz. El agente escritor-pruebas escribe las pruebas en paralelo con el código y solo conoce lo que está ahí."
-    - "design.md cita nombres reales de .flujo/issue-<n>/contexto.md (firmas públicas, módulo de referencia, convenciones y herramientas) y sigue su módulo de referencia en nombres, capas y forma de las pruebas; no inventa helpers, clases ni librerías que contexto.md no liste."
+    - "design.md cita nombres reales de context/ (firmas públicas, módulo de referencia, convenciones y herramientas) y sigue su módulo de referencia en nombres, capas y forma de las pruebas; no inventa helpers, clases ni librerías que context/ no liste."
     - "Si el change agrega o modifica .tsx o CSS, design.md lista los componentes de src/modulos/ui/ que reutiliza y los nuevos que agrega, con su estado de carga, error y vacío (regla Interfaz de CLAUDE.md §4)."
   tasks:
     - 'Cada tarea cita su CA-n o "Derivado: decisión #k".'
@@ -40,7 +40,7 @@ operations:
   apply:
     guidance:
       - "Marca [x] solo lo hecho; deja [ ] con su motivo en <trabajo>/decisiones.md (citando el número X.Y de la tarea) y no reformatees líneas no tocadas."
-      - "Usa los nombres reales de <trabajo>/contexto.md; si algo no existe y el change no lo crea, pregúntalo."
+      - "Usa los nombres reales de context/ (firmas, módulo de referencia, convenciones); si algo no existe y el change no lo crea, pregúntalo."
       - "Interfaz: sigue la regla Interfaz de CLAUDE.md §4 (tokens --sc-*, componentes de src/modulos/ui/, estados con color, forma y texto, teclado y prefers-reduced-motion); no edites src/shell/ ni los tokens existentes."
       - "TDD: en cada tarea escribe primero la prueba que la verifica y luego el código que la hace pasar."
       - "El nombre de cada it/test/describe nuevo cita el issue y el CA que verifica: it(\"#<n> CA-2: rechaza un umbral negativo con 400\"). Varios: \"#<n> CA-1, CA-3: ...\". Las páginas que son Server Components asíncronos o leen datos solo se prueban con Playwright (Vitest no las renderiza): su CA se cita en un test(\"#<n> CA-k: ...\") de e2e/. Los componentes síncronos sin datos se renderizan a HTML con react-dom/server en Vitest."

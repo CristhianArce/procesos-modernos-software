@@ -17,41 +17,28 @@ SDD (desarrollo guiado por especificaciones) significa que primero se escribe qu
 
 ```mermaid
 flowchart LR
-    S1["1 Preparar<br/>preparar.mjs + preparador"] --> S3
-    S2["2 Contexto<br/>contexto.mjs: negocio y técnica"] --> S3["3 Propuesta<br/>skill openspec-propose"]
-    S3 --> REV{{"4 Revisar propuesta<br/>revisor-salida, en segundo plano<br/>openspec validate --strict"}}
-    S3 --> ESC{{"escritor-pruebas ×3<br/>unitarias, integración y e2e<br/>en segundo plano"}}
-    S3 --> S5["5 Implementar<br/>skill openspec-apply-change<br/>(la sesión escribe el código)"]
-    ESC -->|"se recogen y se reconcilian"| S5
-    REV -.->|"CORREGIR, una vez:<br/>ajusta artefactos y código"| S5
-    S5 --> PD["paquete-diff.mjs"]
-    REV -->|"APROBADO, recogido antes del 6"| V6
-    PD --> V6["6 Verificar<br/>build-test ‖ trazabilidad ‖ revisor-reglas"]
-    V6 -->|"7 Corregir<br/>(CRITICAL o build rojo)"| V6
-    V6 --> S8["8 PR borrador<br/>y evidencias"]
-    S8 --> CI["CI del PR<br/>openspec validate --all<br/>y revisión humana"]
-    CI --> ARC["Tras el merge, PR aparte<br/>openspec archive"]
+    CTX[("context/<br/>negocio y técnica")]
+    P1["1 Preparar"] --> P3["3 Propuesta"]
+    P3 --> P5["5 Implementar<br/>y pruebas en paralelo"]
+    P5 --> P6["6 Verificar"]
+    P6 --> P8["8 PR en borrador"]
+    P8 --> CI["CI y revisión humana"]
+    P3 -.->|"4 Revisar propuesta<br/>en segundo plano"| P6
+    CTX -.->|lee| P3
+    CTX -.->|lee| P5
 
-    S2 -.->|"reglas de negocio vigentes y decisiones:<br/>no se pregunta lo ya decidido"| S3
-    S2 -.->|"módulo de referencia, firmas,<br/>convenciones y reglas"| S5
-    S2 -.-> ESC
-    REV -.->|BLOQUEAR| BLOQ(["Bloqueado"])
-    V6 -.->|entorno o reintentos agotados| BLOQ
-
-    classDef openspec fill:#fef3c7,stroke:#b45309,color:#78350f
-    classDef gha fill:#dbeafe,stroke:#1d4ed8,color:#1e3a8a
-    classDef segundo fill:#dcfce7,stroke:#15803d,color:#14532d
-    class S3,S5,ARC openspec
-    class CI gha
-    class REV,ESC segundo
+    classDef nucleo fill:#fef3c7,stroke:#b45309,color:#78350f
+    classDef externo fill:#dbeafe,stroke:#1d4ed8,color:#1e3a8a
+    class P3,P5 nucleo
+    class CTX,CI externo
 ```
 
-Amarillo: lo que ejecuta OpenSpec. Azul: el CI y la revisión humana. Verde: agentes que corren en segundo plano mientras la sesión sigue. Los pasos 1 y 2 salen en un mismo mensaje. Las líneas punteadas desde el paso 2 muestran que `contexto.md` evita que la sesión y los agentes exploren el código.
+Línea continua: el orden del flujo. Punteada: lo que corre aparte o solo se lee. La revisión de la propuesta (paso 4) corre en segundo plano mientras se implementa y se recoge antes del 6. El paso 7 (corregir) solo corre si el 6 encuentra un `CRITICAL` o un build rojo. `context/` no se genera en el flujo: lo mantiene el skill `/actualizar-contexto` y el orquestador solo lo lee. Amarillo: lo que ejecuta OpenSpec. Azul: lo que vive fuera de la sesión (el contexto, el CI y la revisión humana).
 
 | # | Paso | Quién | Qué deja |
 |---|---|---|---|
 | 1 | **Preparar**: crea la rama `feature/issue-<n>-<slug>` desde `main`, copia el issue y extrae los `CA-n`; bloquea si el issue está cerrado o ya tiene PR | script `preparar.mjs` (lo mecánico) y agente `preparador` (decide las preguntas de negocio) | `issue.md`, `preguntas.md`, `decisiones.md` |
-| 2 | **Contexto**: lista lo que ya existe (capacidades de `openspec/specs/`, tablas de `db/migration/`, módulos, semillas, rutas del contrato) para que la propuesta no suponga nada. `contexto.md` **abre con el negocio**: el producto y el backlog de historias con sus dependencias (`docs/propuesta.md`), las reglas de negocio `RN-n`, lo fuera de alcance y las decisiones de la persona de cada historia construida (`evidencias/issue-<n>/`), y todos los requisitos vigentes con sus escenarios (`openspec/specs/` y los changes en curso; la plataforma y el proceso, listados en `plataforma` de `.claude/orquestador.json`, van solo por nombre). Con eso la sesión no vuelve a preguntar lo ya decidido ni contradice una regla vigente, y `revisor-salida` lo comprueba. Después deja lo que evita explorar el código: el módulo de referencia (rutas de un módulo completo y de sus pruebas), las firmas públicas de cada módulo, lo compartido (`src/lib/`, `src/modulos/ui/`, `src/test/`), las convenciones (nombres, mensajes de error, `data-testid`, clases de diseño, última migración), las herramientas (librerías, Vitest, Playwright, Postgres, Flyway, tokens) y las reglas de `CLAUDE.md` §3 a §7 | script `contexto.mjs`, lanzado junto al paso 1 | `contexto.md` |
+| 2 | **Contexto**: no se genera en el flujo. Se lee el índice `context/contexto.md` y, de las partes de `context/`, solo las que indica «Qué leer en cada paso». Trae el negocio (producto y backlog con dependencias, `RN-n`, fuera de alcance y decisiones de la persona de cada historia, y todos los requisitos vigentes por capacidad) y lo técnico (inventario, módulo de referencia, firmas, convenciones y herramientas). Con eso la sesión no vuelve a preguntar lo ya decidido ni contradice una regla vigente, y no explora el código. Si falta `context/`, el orquestador se bloquea | lectura de `context/`, mantenido por el skill `actualizar-contexto` | nada: es insumo de los pasos 3 a 5 |
 | 3 | **Propuesta**: pregunta a la persona las dudas de negocio y genera proposal, specs, design y tasks | skill `openspec-propose` | `openspec/changes/<change>/` |
 | 4 | **Revisar la propuesta**: `openspec validate --strict`, trazabilidad CA → requisito → tarea, formato y alcance; con CORREGIR se arregla y se repite una sola vez. El agente corre en segundo plano mientras se implementa y se recoge antes del paso 6 | script `trazabilidad-grep.mjs` y agente `revisor-salida` | veredicto en `gates.md` |
 | 5 | **Implementar**: ejecuta `tasks.md`. La sesión escribe el código, la migración, la semilla y el contrato; tres instancias del agente `escritor-pruebas` (unitarias, de integración y e2e), en paralelo y en segundo plano, escriben las pruebas unitarias, de integración y e2e a partir de las specs y de `
@@ -86,16 +73,17 @@ Así el orquestador no necesita Docker ni base de datos y se mantiene liviano. E
 | Skills `openspec-*` | `.claude/skills/` | Los comandos de OpenSpec: `explore`, `propose`, `apply`, `archive`, `sync-specs` y `update-change`. El orquestador usa `propose` y `apply` |
 | Skills `build-test`, `commit`, `abrir-pr` | `.claude/skills/` | Compilar y probar, commitear, abrir el PR |
 | Skill `crear-hu` | `.claude/skills/` | Redactar una historia con `CA-n` y publicarla como issue |
-| Scripts `.mjs` | `.claude/skills/orquestador/scripts/` | `estado`, `preparar`, `contexto`, `trazabilidad-grep`, `paquete-diff`, `registrar-agente`, `tiempos`, `puede-commitear`, `copiar-evidencias` |
+| Skill `actualizar-contexto` | `.claude/skills/actualizar-contexto/` | Fuera del flujo: amplía `context/` con lo nuevo del repo (agrega entradas y reemplaza la que cambió, sin borrar). Lo corre la persona, por ejemplo tras fusionar una historia |
+| Scripts `.mjs` | `.claude/skills/orquestador/scripts/` | `estado`, `preparar`, `trazabilidad-grep`, `paquete-diff`, `registrar-agente`, `tiempos`, `puede-commitear`, `copiar-evidencias` |
 | Plantillas | `.claude/skills/orquestador/plantillas/` | Formato de cada archivo de `<trabajo>` |
 | Reglas | `CLAUDE.md`, `openspec/config.yaml` | Capas, seguridad, datos, interfaz (sistema de diseño de la sala de control: tokens `--sc-*`, componentes de `src/modulos/ui/`) y formato de las specs. Todos los agentes las cargan solos; `revisor-reglas` y G2 las comprueban |
 | Permisos | `.claude/settings.json` | Qué comandos corre sin pedir permiso y cuáles tiene prohibidos |
 
-`openspec-explore` existe, pero el orquestador no lo usa: `contexto.mjs` cubre lo esencial en 2 segundos, sin agentes. Además del inventario del repo, `contexto.md` lleva el módulo de referencia, las firmas públicas, las convenciones, las herramientas y las reglas, de modo que la sesión y los agentes lean un archivo en lugar de recorrer el código.
+`openspec-explore` existe, pero el orquestador no lo usa: `context/` cubre lo esencial sin agentes. Lo mantiene el skill `actualizar-contexto`, fuera del flujo, con `.claude/skills/actualizar-contexto/scripts/contexto.mjs`: lee `docs/propuesta.md`, `evidencias/`, `openspec/`, `db/migration/`, `src/`, `contracts/` y las configuraciones, y **solo amplía**: agrega la entrada que no existe, reemplaza la que cambió y nunca borra. Si no hay novedades, no escribe nada, así que no hace falta correrlo antes de cada historia.
 
 ## 5. Dónde queda cada cosa
 
-- **`<trabajo>` = `.flujo/issue-<n>/`:** carpeta de trabajo de la corrida. Está fuera de git. Cada paso lee sus entradas de ahí y escribe su salida antes de cerrar. Contiene `estado.md`, `issue.md`, `preguntas.md`, `decisiones.md`, `contexto.md`, `gates.md`, `trazabilidad.md`, `verificacion.md`, `agentes-log.md`, `tiempos.md` y `pr-body.md`.
+- **`<trabajo>` = `.flujo/issue-<n>/`:** carpeta de trabajo de la corrida. Está fuera de git. Cada paso lee sus entradas de ahí y escribe su salida antes de cerrar. Contiene `estado.md`, `issue.md`, `preguntas.md`, `decisiones.md`, `gates.md`, `trazabilidad.md`, `verificacion.md`, `agentes-log.md`, `tiempos.md` y `pr-body.md`.
 - **`evidencias/issue-<n>/`:** copia de lo anterior que sí se commitea, para que el PR muestre qué decidió y qué revisó cada agente.
 - **`openspec/changes/<change>/`:** la especificación de la historia.
 

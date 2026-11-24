@@ -3,8 +3,8 @@
 //      node .claude/skills/orquestador/scripts/tiempos.mjs cerrar <n> <paso> [--trabajo <dir>]
 //      node .claude/skills/orquestador/scripts/tiempos.mjs hito <n> "<etiqueta>" [--trabajo <dir>]
 //      node .claude/skills/orquestador/scripts/tiempos.mjs resumen <n> [--meta <segundos>] [--trabajo <dir>]
-// Las marcas las dejan registrar-agente.mjs (al registrar cada agente y cada paso de la sesión) y contexto.mjs (paso 2),
-// así que el orquestador solo invoca inicio y resumen. estado.mjs también marca al escribir "Última fase cerrada".
+// Las marcas las deja registrar-agente.mjs (al registrar cada agente y cada paso de la sesión), así que el orquestador solo invoca
+// inicio y resumen. El paso 2 (contexto) no se mide: se lee de context/ y no corre ningún script. estado.mjs también marca al escribir "Última fase cerrada".
 // La duración de un paso va del cierre del paso anterior (o del inicio de la corrida) a su propio cierre.
 // Un hito es una marca con nombre dentro de un paso (por ejemplo "5 código listo"): no cierra ni mueve ningún paso,
 // solo permite ver en qué parte de un paso largo se fue el tiempo.

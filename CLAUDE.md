@@ -9,6 +9,7 @@ Tablero de sensores eléctricos: nodos, sensores, lecturas simuladas, alertas po
 - `npm run lint | typecheck | test:unit | test:integration | build | seed | e2e` (existen desde la HU 1b).
 - El orquestador solo ejecuta `typecheck` y `test:unit`. `test:integration`, `e2e`, `lint` y `build` los corre el CI del PR; el orquestador sí escribe las pruebas de integración y e2e.
 - `node --test ".claude/tests/*.test.mjs"`: pruebas de la configuración de IA.
+- `/actualizar-contexto`: amplía `context/` con lo nuevo del repo (agrega entradas y reemplaza la que cambió, sin borrar). Va fuera del flujo del orquestador, que solo lo lee: córrelo tras fusionar una historia o cuando cambie un spec, y en un clon sin `context/`.
 - **Primera vez en un clon:** abre Claude Code en modo interactivo en la raíz y acepta el diálogo de confianza. Si no lo aceptas, Claude Code ignora las reglas `allow` de `.claude/settings.json` y el orquestador pide permiso en cada paso.
 - `docker compose run --rm flyway migrate info` (HU 2).
 - `openspec validate <change> --strict --type change --no-interactive` y `openspec validate --all --strict --no-interactive`.
@@ -19,7 +20,7 @@ TypeScript, una sola app Next.js 16 (App Router) para interfaz y API, Route Hand
 
 ## 4. Estructura y capas
 
-- Carpetas: `src/app` (páginas y `api/`), `src/modulos/<modulo>`, `src/lib`, `src/nav`, `contracts/`, `db/migration/`, `db/seed/`, `e2e/` y `openspec/`.
+- Carpetas: `src/app` (páginas y `api/`), `src/modulos/<modulo>`, `src/lib`, `src/nav`, `contracts/`, `db/migration/`, `db/seed/`, `e2e/`, `openspec/` y `context/` (el contexto de negocio y técnico que lee el orquestador; solo lo escribe `/actualizar-contexto`, a mano, no se edita).
 - Por módulo: `src/app/(tablero)/<modulo>/page.tsx`, `src/app/api/<modulo>/route.ts` y `src/modulos/<modulo>/{schema,service,repo,menu}.ts` con `ui/` y `__tests__/`.
 - Capas:
   - las páginas leen datos llamando al servicio, nunca a `fetch` de la propia API;

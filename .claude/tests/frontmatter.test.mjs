@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { cargarYaml, frontmatter, leer, RAIZ } from "./util.mjs";
 
 const AGENTES_IMPRESCINDIBLES = ["preparador", "revisor-salida", "revisor-reglas"];
-const SKILLS_IMPRESCINDIBLES = ["orquestador", "build-test", "commit", "abrir-pr"];
+const SKILLS_IMPRESCINDIBLES = ["orquestador", "build-test", "commit", "abrir-pr", "actualizar-contexto"];
 const SKILLS_OPENSPEC = ["openspec-apply-change", "openspec-archive-change", "openspec-explore", "openspec-propose", "openspec-sync-specs", "openspec-update-change"];
 const MODELOS = ["haiku", "sonnet", "opus"];
 
@@ -102,9 +102,10 @@ test("CA-2: el orquestador solo lo invoca la persona", () => {
   assert.equal(frontmatter(leer(".claude/skills/orquestador/SKILL.md"))["disable-model-invocation"], true);
 });
 
-test("CA-6: pasos 1 y 2 juntos, con la parte mecánica del paso 1 en preparar.mjs", () => {
+test("CA-6: la parte mecánica del paso 1 va en preparar.mjs y el paso 2 solo lee context/", () => {
   const texto = leer(".claude/skills/orquestador/SKILL.md");
-  assert.match(texto, /Los pasos 1 y 2 van en un mismo mensaje/);
+  assert.doesNotMatch(texto, /Los pasos 1 y 2 van en un mismo mensaje/, "el contexto ya no se genera en el flujo");
+  assert.match(texto, /\| 2 \| \*\*Contexto\*\* \| No se genera en el flujo: lee el índice `context\/contexto\.md`/);
   assert.match(texto, /El agente corre `preparar\.mjs`/);
   assert.match(leer(".claude/agents/preparador.md"), /scripts\/preparar\.mjs <n> <base>/);
 });

@@ -1,11 +1,13 @@
-// Escribe <trabajo>/contexto.md con lo que ya existe en el repo, para que la propuesta no suponga tablas ni módulos.
-// Uso: node .claude/skills/orquestador/scripts/contexto.mjs <n> [--raiz <raiz>] [--trabajo <dir>]
-// Sin agentes ni BD: lee openspec/specs/, openspec/changes/, db/migration/, src/modulos/, db/seed/ y contracts/openapi.yaml,
+// Amplía `context/` (el contexto acumulado del producto, versionado) con lo nuevo que tienen las fuentes. Solo agrega y reemplaza la
+// entrada que cambió: nunca borra ni regenera todo, y no escribe si no hay novedades. Lo corre el skill `actualizar-contexto`, fuera del
+// flujo del orquestador, que solo lo lee. Negocio (producto, historias, reglas por capacidad) y técnica (inventario, código,
+// convenciones) van en partes, para que cada paso lea solo lo que necesita.
+// Uso: node .claude/skills/actualizar-contexto/scripts/contexto.mjs [--raiz <raiz>] [--destino <dir>]
+// Sin agentes ni BD: lee docs/propuesta.md, evidencias/, openspec/specs/, openspec/changes/, db/migration/, src/ y contracts/openapi.yaml,
 // y deja el módulo de referencia (las rutas del módulo completo más grande) como patrón de código y de pruebas.
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
-import { dirTrabajo, esPrincipal, fallar, opciones, raizRepo } from "./comun.mjs";
-import { registrarCierre } from "./tiempos.mjs";
+import { dirname, join } from "node:path";
+import { esPrincipal, opciones, raizRepo } from "../../orquestador/scripts/comun.mjs";
 
 export const PUNTOS_EXTENSION = ["menu.ts", "paneles.ts", "on-alerta.ts", "metrics.ts"];
 const listar = (d) => (existsSync(d) ? readdirSync(d).sort() : []);
@@ -328,186 +330,245 @@ export function entorno(raiz) {
   };
 }
 
-// Reglas de CLAUDE.md §3 a §7 (stack, estructura y capas, datos, seguridad, SDD), copiadas tal cual del propio archivo para que el
-// contexto no se desfase de las reglas.
-export function reglasDelProyecto(rutaClaude) {
-  if (!existsSync(rutaClaude)) return [];
-  const secciones = [];
-  let actual = null;
-  for (const linea of readFileSync(rutaClaude, "utf8").split(/\r?\n/)) {
-    const h = linea.match(/^## (\d+)\.\s*(.+)$/);
-    if (h) {
-      actual = Number(h[1]) >= 3 && Number(h[1]) <= 7 ? { titulo: `${h[1]}. ${h[2]}`, lineas: [], texto: null } : null;
-      if (actual) secciones.push(actual);
-      continue;
+const lista = (xs, vacio = "(ninguno)") => (xs.length ? xs.map((x) => `\`${x}\``).join(", ") : vacio);
+const kb = (texto) => `${(Buffer.byteLength(texto) / 1024).toFixed(1)} KB`;
+const lf = (texto) => texto.replace(/\r\n/g, "\n");
+
+// ── Entradas ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+// El contexto vive en `context/` (versionado) y solo crece: cada parte es una lista de entradas con una clave. Al correr el script se
+// agrega la entrada que no existe y se reemplaza la que cambió; nunca se borra ninguna.
+
+const ENTRADA = /<!-- entrada: (.+?) -->\n([\s\S]*?)\n<!-- fin -->/g;
+
+export const entradasDe = (texto) => [...lf(texto).matchAll(ENTRADA)].map((m) => ({ id: m[1], texto: m[2] }));
+
+const dibujar = ({ titulo, intro }, entradas) =>
+  `${[titulo, "", intro, "", ...entradas.flatMap((e) => [`<!-- entrada: ${e.id} -->`, e.texto, "<!-- fin -->", ""])].join("\n")}`;
+
+// Funde las entradas nuevas en el texto que ya existe: agrega, reemplaza lo que cambió y conserva el resto.
+export function fusionar(existente, parte) {
+  const entradas = entradasDe(existente);
+  let agregadas = 0;
+  let reemplazadas = 0;
+  for (const entrada of parte.entradas) {
+    // Las fuentes pueden venir con CRLF y dejar un `\r` suelto al final de una línea: sin quitarlo, cada corrida «cambiaría» la entrada.
+    const nueva = { ...entrada, texto: entrada.texto.replace(/\r/g, "") };
+    const i = entradas.findIndex((e) => e.id === nueva.id);
+    if (i < 0) {
+      entradas.push(nueva);
+      agregadas += 1;
+    } else if (entradas[i].texto !== nueva.texto) {
+      entradas[i] = nueva;
+      reemplazadas += 1;
     }
-    if (!actual) continue;
-    if (/^\s*- /.test(linea)) actual.lineas.push(linea.replace(/\s+$/, ""));
-    else if (!actual.texto && linea.trim() && !/^\s/.test(linea)) actual.texto = linea.trim();
   }
-  return secciones.map((s) => ({ titulo: s.titulo, lineas: s.lineas.length ? s.lineas : s.texto ? [s.texto] : [] }));
+  const texto = dibujar(parte, entradas);
+  return { texto, agregadas, reemplazadas, cambiado: texto !== lf(existente) };
 }
 
-export function generarContexto(raiz) {
-  const referencia = moduloDeReferencia(raiz);
-  const firmas = firmasPublicas(join(raiz, "src", "modulos"));
-  const compartido = firmasCompartidas(raiz);
-  const conv = convenciones(raiz);
-  const reglas = reglasDelProyecto(join(raiz, "CLAUDE.md"));
-  const env = entorno(raiz);
+const unir = (lineas) => lineas.join("\n");
+
+// ── Partes: qué entradas salen de cada fuente ──────────────────────────────────────────────────────────────────────────────────
+const partesDeNegocio = (negocio) => {
+  const porCapacidad = new Map();
+  for (const c of negocio.filter((x) => !x.plataforma)) {
+    const entradas = porCapacidad.get(c.capacidad) ?? new Map();
+    entradas.set("proposito", { id: "proposito", texto: c.proposito || "(sin Purpose)" });
+    for (const r of c.requisitos) {
+      entradas.set(`requisito: ${r.nombre}`, {
+        id: `requisito: ${r.nombre}`,
+        texto: unir([`- **${r.nombre}** (${c.origen}): ${r.texto}`, ...(r.escenarios.length ? [`  - Escenarios: ${r.escenarios.join("; ")}`] : [])]),
+      });
+    }
+    porCapacidad.set(c.capacidad, entradas);
+  }
+  return [...porCapacidad].map(([capacidad, entradas]) => ({
+    ruta: `negocio/${capacidad}.md`,
+    titulo: `# ${capacidad}`,
+    intro: "Comportamiento ya especificado: `vigente` (en `openspec/specs/`) o `en curso` (en un change sin archivar). Cada requisito va con su texto completo y los nombres de sus escenarios; si una versión en curso reemplaza a la vigente, queda la más reciente. Si la historia cambia uno, su delta usa `## MODIFIED Requirements` con el nombre exacto.",
+    entradas: [...entradas.values()],
+  }));
+};
+
+export function partesDelContexto(raiz) {
   const producto = productoYBacklog(join(raiz, "docs", "propuesta.md"));
   const historias = historiasConstruidas(join(raiz, "evidencias"));
-  const negocio = reglasDeNegocio(raiz, plataformaConfigurada(raiz));
-  const lista = (xs, vacio = "(ninguno)") => (xs.length ? xs.map((x) => `\`${x}\``).join(", ") : vacio);
+  const capacidades = capacidadesEspecificadas(join(raiz, "openspec", "specs"));
+  const changes = changesActivos(join(raiz, "openspec", "changes"));
   const tablas = tablasDeMigraciones(join(raiz, "db", "migration"));
   const modulos = modulosConExtension(join(raiz, "src", "modulos"));
   const semillas = listar(join(raiz, "db", "seed")).filter((a) => a.endsWith(".sql"));
   const rutas = rutasDelContrato(join(raiz, "contracts", "openapi.yaml"));
-  const capacidades = capacidadesEspecificadas(join(raiz, "openspec", "specs"));
-  const changes = changesActivos(join(raiz, "openspec", "changes"));
-  const l = [
-    "# Contexto del repositorio",
-    "",
-    "Generado por `contexto.mjs`. Empieza por el **negocio** (qué promete ya el producto, qué reglas rigen y qué decidió la persona) y sigue con lo **técnico** (qué existe y cómo se escribe). Toda tabla, columna o módulo que use la propuesta debe aparecer aquí; si no aparece, es una pregunta, no un supuesto. Una regla nueva no contradice una vigente: si la historia cambia una, su delta es `## MODIFIED Requirements` y se le pregunta a la persona.",
-    "",
-    "## Producto",
-    "",
-    producto.resumen ?? "(sin resumen en docs/propuesta.md)",
-    "",
-    "Backlog de historias (`docs/propuesta.md` §5): lo que cada una entrega y de cuál depende. Una historia que depende de otra no fusionada no puede suponer su tabla ni su módulo: es una pregunta.",
-    "",
-    "| # | Historia | Fase | Depende de | Entrega |",
-    "|---|---|---|---|---|",
-    ...producto.historias.map((h) => `| ${h.n} | ${h.historia} | ${h.fase} | ${h.dependeDe} | ${h.entrega} |`),
-    ...(producto.historias.length ? [] : ["| (sin backlog) | | | | |"]),
-    "",
-    "## Reglas de negocio de las historias construidas",
-    "",
-    "Copiadas del issue de cada historia (`evidencias/issue-<n>/issue.md`). Las reglas `RN-n` y lo que cada historia dejó fuera de alcance siguen vigentes; los números de decisión son los de ese issue.",
-    "",
-    ...(historias.length
-      ? historias.flatMap((h) => [
-          `### #${h.issue} ${h.titulo}`,
+  const referencia = moduloDeReferencia(raiz);
+  const conv = convenciones(raiz);
+  const env = entorno(raiz);
+  const negocio = reglasDeNegocio(raiz, plataformaConfigurada(raiz));
+  return [
+    {
+      ruta: "producto.md",
+      titulo: "# Producto",
+      intro: "Qué hace la aplicación y el backlog de historias (`docs/propuesta.md` §1 y §5): lo que cada una entrega y de cuál depende. Una historia que depende de otra no fusionada no puede suponer su tabla ni su módulo: es una pregunta.",
+      entradas: [
+        ...(producto.resumen ? [{ id: "resumen", texto: producto.resumen }] : []),
+        ...producto.historias.map((h) => ({
+          id: `historia ${h.n}`,
+          texto: `- **#${h.n}** ${h.historia} — fase: ${h.fase}; depende de: ${h.dependeDe}; entrega: ${h.entrega}`,
+        })),
+      ],
+    },
+    {
+      ruta: "historias.md",
+      titulo: "# Reglas de negocio de las historias construidas",
+      intro: "Copiadas del issue de cada historia (`evidencias/issue-<n>/issue.md`). Las reglas `RN-n`, lo que cada historia dejó fuera de alcance y las decisiones de la persona siguen vigentes; los números de decisión son los de ese issue.",
+      entradas: historias.map((h) => ({
+        id: `issue ${h.issue}`,
+        texto: unir([
+          `## #${h.issue} ${h.titulo}`,
           "",
           ...(h.reglas.length ? ["Reglas de negocio:", ...h.reglas] : []),
           ...(h.fueraDeAlcance.length ? ["Fuera de alcance:", ...h.fueraDeAlcance] : []),
           ...(h.decisiones.length ? ["Decisiones de la persona:", ...h.decisiones.map((d) => `- #${h.issue} decisión ${d.numero}: ${d.texto}`)] : []),
-          "",
-        ])
-      : ["- (ninguna)", ""]),
-    "## Reglas de negocio vigentes (specs)",
-    "",
-    "Comportamiento ya especificado: `vigente` (en `openspec/specs/`) o `en curso` (en un change sin archivar, ya en el repo). Cada requisito va con su texto completo y los nombres de sus escenarios. Si la historia cambia uno, su delta usa `## MODIFIED Requirements` con el nombre exacto; no se crea otra capacidad para lo mismo.",
-    "",
-    ...negocio.filter((c) => !c.plataforma).flatMap((c) => [
-      `### ${c.capacidad} — ${c.origen}`,
-      "",
-      c.proposito || "(sin Purpose)",
-      "",
-      ...c.requisitos.flatMap((r) => [`- **${r.nombre}:** ${r.texto}`, ...(r.escenarios.length ? [`  - Escenarios: ${r.escenarios.join("; ")}`] : [])]),
-      "",
-    ]),
-    "### Plataforma y proceso (solo nombres)",
-    "",
-    ...(negocio.some((c) => c.plataforma)
-      ? negocio.filter((c) => c.plataforma).map((c) => `- \`${c.capacidad}\` — ${c.origen}: ${c.requisitos.map((r) => r.nombre).join("; ") || "(ninguno)"}`)
-      : ["- (ninguna)"]),
-    "",
-    "## Capacidades especificadas",
-    "",
-    "Comportamiento ya especificado en `openspec/specs/`. Si la historia cambia una de estas capacidades, su delta usa `## MODIFIED Requirements` con el nombre exacto del requisito; no se crea otra capacidad para lo mismo.",
-    "",
-    "| Capacidad | Propósito | Requisitos |",
-    "|---|---|---|",
-    ...capacidades.map((c) => `| ${c.capacidad} | ${c.proposito || "(sin Purpose)"} | ${c.requisitos.join("; ") || "(ninguno)"} |`),
-    ...(capacidades.length ? [] : ["| (ninguna) | | |"]),
-    "",
-    "## Changes activos",
-    "",
-    ...(changes.length ? changes.map((c) => `- openspec/changes/${c}/`) : ["- (ninguno)"]),
-    "",
-    "## Tablas y columnas",
-    "",
-    "| Tabla | Columnas | Migraciones |",
-    "|---|---|---|",
-    ...[...tablas].map(([t, v]) => `| ${t} | ${[...new Set(v.columnas)].join(", ")} | ${v.migraciones.join(", ")} |`),
-    ...(tablas.size ? [] : ["| (ninguna) | | |"]),
-    "",
-    "## Módulos y puntos de extensión",
-    "",
-    "| Módulo | Puntos de extensión |",
-    "|---|---|",
-    ...modulos.map((m) => `| ${m.modulo} | ${m.puntos.join(", ") || "(ninguno)"} |`),
-    ...(modulos.length ? [] : ["| (ninguno) | |"]),
-    "",
-    "## Semillas",
-    "",
-    ...(semillas.length ? semillas.map((s) => `- db/seed/${s}`) : ["- (ninguna)"]),
-    "",
-    "## Rutas del contrato",
-    "",
-    "| Ruta | Métodos |",
-    "|---|---|",
-    ...rutas.map((r) => `| ${r.ruta} | ${r.metodos.join(", ")} |`),
-    ...(rutas.length ? [] : ["| (ninguna) | |"]),
-    "",
-    "## Módulo de referencia",
-    "",
-    "Patrón a seguir (nombres, capas y forma de las pruebas) en lugar de explorar el repo. Son rutas, no contenido: léelas antes de escribir y no copies lo que no aplique a la historia.",
-    "",
-    ...(referencia ? [`Módulo: \`${referencia.modulo}\``, "", ...referencia.archivos.map(([rol, ruta]) => `- ${rol}: \`${ruta}\``)] : ["- (ninguno)"]),
-    "",
-    "## Firmas públicas",
-    "",
-    "Lo que exporta cada módulo (`schema.ts`, `repo.ts`, `service.ts`). Úsalo para citar nombres reales y para escribir `## Interfaces` sin abrir el código; abre un archivo solo si la firma no alcanza.",
-    "",
-    ...(firmas.length ? firmas.flatMap((f) => [`### ${f.modulo}/${f.archivo}`, "", ...f.firmas.map((s) => `- \`${s}\``), ""]) : ["- (ninguna)", ""]),
-    "## Compartido: núcleo y componentes",
-    "",
-    "Se reutiliza, no se reescribe ni se edita (el núcleo es intocable; un componente reutilizable nuevo va en `src/modulos/ui/`).",
-    "",
-    ...(compartido.length ? compartido.flatMap((f) => [`### ${f.ruta}`, "", ...f.firmas.map((s) => `- \`${s}\``), ""]) : ["- (ninguno)", ""]),
-    "## Convenciones del repo",
-    "",
-    "Lo que el código ya hace: repítelo con los mismos nombres. Los nombres de archivos, componentes y pruebas siguen los del módulo de referencia.",
-    "",
-    `- Nombres en español, sin tildes en archivos y carpetas. Módulos existentes: ${lista(conv.modulos)}. Componentes de \`ui/\` en PascalCase (${conv.componentes.siguen} de ${conv.componentes.total}); pruebas en kebab-case (${conv.pruebasKebab.siguen} de ${conv.pruebasKebab.total}); migraciones \`V<AAAAMMDDHHmm>__descripcion.sql\`.`,
-    `- Última migración:${conv.ultimaMigracion ? `\`${conv.ultimaMigracion}\` (la nueva usa una versión \`V<AAAAMMDDHHmm>\` posterior)` : "(ninguna)"}`,
-    `- Mensajes de error de servicio (estado y texto): ${conv.mensajesDeError.length ? conv.mensajesDeError.map((m) => `\`${m}\``).join("; ") : "(ninguno)"}`,
-    `- \`data-testid\` en uso: ${conv.testIds.length ? conv.testIds.map((t) => `\`${t}\``).join(", ") : "(ninguno)"}`,
-    `- Clases del sistema de diseño (\`globals.css\`): ${conv.clases.length ? conv.clases.map((c) => `\`.${c}\``).join(", ") : "(ninguna)"}`,
-    "",
-    "## Herramientas y modismos",
-    "",
-    "Leído de `package.json`, `vitest.config.mts`, `playwright.config.ts`, `docker-compose.yml`, `db/migration/` y `globals.css`. Las librerías son las fijas del proyecto: no se agrega ninguna sin aprobación.",
-    "",
-    `- Librerías: ${lista(env.dependencias)}`,
-    `- Desarrollo: ${lista(env.dependenciasDev)}`,
-    `- Scripts: ${lista(env.scripts)}`,
-    `- Pruebas unitarias e integración (Vitest, proyectos): ${lista(env.proyectosVitest)}. Una prueba de integración va en \`*.int.test.ts\`; \`server-only\` se simula con \`src/test/vacio.ts\`.`,
-    `- Pruebas e2e (Playwright): carpeta \`${env.e2e.directorio ?? "(ninguna)"}\`, contra una app ya levantada en \`BASE_URL\` (por defecto \`${env.e2e.baseUrl ?? "(ninguna)"}\`).`,
-    `- Postgres: \`${env.postgres ?? "(ninguno)"}\`, acceso con \`pg\` y SQL a mano solo en \`repo.ts\`. Tipos usados en las migraciones: ${lista(env.tiposSql)}.`,
-    `- Flyway: \`${env.flyway.imagen ?? "(ninguno)"}\`, lee \`${env.flyway.carpeta ?? "(ninguna)"}\` (\`docker compose run --rm flyway migrate info\`). Modismos de las migraciones: ${env.modismosSql.length ? env.modismosSql.join("; ") : "(ninguno)"}.`,
-    `- Tokens de diseño (\`globals.css\`): ${lista(env.tokens)}`,
-    "",
-    "## Reglas del proyecto (resumen de CLAUDE.md §3 a §7)",
-    "",
-    "Copiadas de `CLAUDE.md`, que es la fuente: ante una duda, manda `CLAUDE.md`.",
-    "",
-    ...(reglas.length ? reglas.flatMap((s) => [`### ${s.titulo}`, "", ...s.lineas, ""]) : ["- (CLAUDE.md no encontrado)", ""]),
+        ]),
+      })),
+    },
+    {
+      ruta: "inventario.md",
+      titulo: "# Inventario del repositorio",
+      intro: "Toda tabla, columna o módulo que use la propuesta debe aparecer aquí; si no aparece, es una pregunta, no un supuesto. Si la historia cambia una capacidad, su delta usa `## MODIFIED Requirements` con el nombre exacto del requisito.",
+      entradas: [
+        ...capacidades.map((c) => ({ id: `capacidad ${c.capacidad}`, texto: `- Capacidad \`${c.capacidad}\`: ${c.proposito || "(sin Purpose)"} Requisitos: ${c.requisitos.join("; ") || "(ninguno)"}.` })),
+        ...changes.map((c) => ({ id: `change ${c}`, texto: `- Change en curso \`openspec/changes/${c}/\`.` })),
+        ...[...tablas].map(([t, v]) => ({ id: `tabla ${t}`, texto: `- Tabla \`${t}\`: ${[...new Set(v.columnas)].join(", ")} (${v.migraciones.join(", ")}).` })),
+        ...modulos.map((m) => ({ id: `modulo ${m.modulo}`, texto: `- Módulo \`${m.modulo}\`: puntos de extensión ${m.puntos.join(", ") || "(ninguno)"}.` })),
+        ...semillas.map((s) => ({ id: `semilla ${s}`, texto: `- Semilla \`db/seed/${s}\`.` })),
+        ...rutas.map((r) => ({ id: `ruta ${r.ruta}`, texto: `- Ruta \`${r.ruta}\`: ${r.metodos.join(", ")}.` })),
+      ],
+    },
+    {
+      ruta: "codigo.md",
+      titulo: "# Código existente",
+      intro: "Patrón a seguir y nombres reales para no explorar el repo. El módulo de referencia son rutas, no contenido: léelas antes de escribir y no copies lo que no aplique. Las firmas son la primera línea de cada `export`; abre el archivo solo si la firma no alcanza. Lo compartido se reutiliza y no se edita (un componente reutilizable nuevo va en `src/modulos/ui/`).",
+      entradas: [
+        ...(referencia
+          ? [{ id: "modulo de referencia", texto: unir([`- Módulo de referencia: \`${referencia.modulo}\``, ...referencia.archivos.map(([rol, ruta]) => `  - ${rol}: \`${ruta}\``)]) }]
+          : []),
+        ...firmasPublicas(join(raiz, "src", "modulos")).map((f) => ({ id: `firmas ${f.modulo}/${f.archivo}`, texto: unir([`- \`${f.modulo}/${f.archivo}\``, ...f.firmas.map((s) => `  - \`${s}\``)]) })),
+        ...firmasCompartidas(raiz).map((f) => ({ id: `compartido ${f.ruta}`, texto: unir([`- Compartido \`${f.ruta}\``, ...f.firmas.map((s) => `  - \`${s}\``)]) })),
+      ],
+    },
+    {
+      ruta: "convenciones.md",
+      titulo: "# Convenciones y herramientas",
+      intro: "Lo que el código ya hace: repítelo con los mismos nombres (los de archivos, componentes y pruebas siguen los del módulo de referencia de `codigo.md`). Las librerías son las fijas del proyecto: no se agrega ninguna sin aprobación.",
+      entradas: [
+        { id: "nombres", texto: `- Nombres en español, sin tildes en archivos y carpetas. Módulos: ${lista(conv.modulos)}. Componentes de \`ui/\` en PascalCase (${conv.componentes.siguen} de ${conv.componentes.total}); pruebas en kebab-case (${conv.pruebasKebab.siguen} de ${conv.pruebasKebab.total}); migraciones \`V<AAAAMMDDHHmm>__descripcion.sql\`.` },
+        { id: "ultima migracion", texto: `- Última migración: ${conv.ultimaMigracion ? `\`${conv.ultimaMigracion}\` (la nueva usa una versión \`V<AAAAMMDDHHmm>\` posterior)` : "(ninguna)"}` },
+        { id: "errores", texto: `- Mensajes de error de servicio (estado y texto): ${conv.mensajesDeError.length ? conv.mensajesDeError.map((m) => `\`${m}\``).join("; ") : "(ninguno)"}` },
+        { id: "data-testid", texto: `- \`data-testid\` en uso: ${lista(conv.testIds)}` },
+        { id: "clases", texto: `- Clases del sistema de diseño (\`globals.css\`): ${conv.clases.length ? conv.clases.map((c) => `\`.${c}\``).join(", ") : "(ninguna)"}` },
+        { id: "tokens", texto: `- Tokens de diseño (\`globals.css\`): ${lista(env.tokens)}` },
+        { id: "librerias", texto: `- Librerías: ${lista(env.dependencias)}` },
+        { id: "desarrollo", texto: `- Desarrollo: ${lista(env.dependenciasDev)}` },
+        { id: "scripts", texto: `- Scripts: ${lista(env.scripts)}` },
+        { id: "vitest", texto: `- Pruebas unitarias e integración (Vitest, proyectos): ${lista(env.proyectosVitest)}. Una prueba de integración va en \`*.int.test.ts\`; \`server-only\` se simula con \`src/test/vacio.ts\`.` },
+        { id: "playwright", texto: `- Pruebas e2e (Playwright): carpeta \`${env.e2e.directorio ?? "(ninguna)"}\`, contra una app ya levantada en \`BASE_URL\` (por defecto \`${env.e2e.baseUrl ?? "(ninguna)"}\`).` },
+        { id: "postgres", texto: `- Postgres: \`${env.postgres ?? "(ninguno)"}\`, acceso con \`pg\` y SQL a mano solo en \`repo.ts\`. Tipos usados en las migraciones: ${lista(env.tiposSql)}.` },
+        { id: "flyway", texto: `- Flyway: \`${env.flyway.imagen ?? "(ninguno)"}\`, lee \`${env.flyway.carpeta ?? "(ninguna)"}\` (\`docker compose run --rm flyway migrate info\`). Modismos de las migraciones: ${env.modismosSql.length ? env.modismosSql.join("; ") : "(ninguno)"}.` },
+      ],
+    },
+    ...partesDeNegocio(negocio),
   ];
-  return l.join("\n");
+}
+
+// ── Índice ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+const RESUMEN_DE_PARTES = [
+  ["producto.md", "resumen y backlog de historias con sus dependencias"],
+  ["historias.md", "RN, fuera de alcance y decisiones de la persona de cada historia construida"],
+  ["inventario.md", "capacidades, changes activos, tablas, módulos, semillas y rutas"],
+  ["codigo.md", "módulo de referencia, firmas públicas y lo compartido"],
+  ["convenciones.md", "convenciones del repo, librerías, Vitest, Playwright, Postgres, Flyway y diseño"],
+];
+
+const PASOS_DEL_INDICE = [
+  ["3 Propuesta (la sesión)", "`producto.md`, `historias.md`, `inventario.md` y `negocio/<capacidad>.md` de las capacidades del issue"],
+  ["4 Revisar la propuesta (`revisor-salida`)", "`inventario.md`, `historias.md` y `negocio/<capacidad>.md` de las capacidades del change"],
+  ["5 Implementar (la sesión)", "`codigo.md`, `convenciones.md` y, si hay duda, `negocio/<capacidad>.md`"],
+  ["5 Escribir pruebas (`escritor-pruebas`)", "`codigo.md`, `convenciones.md` y `negocio/<capacidad>.md` de la capacidad del change"],
+];
+
+// El índice se arma con lo que hay en disco después de fundir, para que incluya también lo acumulado.
+export function indiceDelContexto(destino, plataforma = []) {
+  const leer = (ruta) => lf(leerSi(join(destino, ruta)));
+  const capacidades = listar(join(destino, "negocio")).filter((f) => f.endsWith(".md"));
+  return `${unir([
+    "# Contexto del repositorio",
+    "",
+    "Contexto acumulado del producto, versionado en `context/`. `contexto.mjs` lo **amplía**: agrega lo nuevo y reemplaza solo la entrada que cambió, sin borrar nada ni regenerarlo entero. Lee este índice y, de las partes, solo las que tu paso indica. Empieza por el **negocio** (qué promete ya el producto, qué reglas rigen y qué decidió la persona) y sigue con lo **técnico**. Toda tabla, columna o módulo que use la propuesta debe aparecer en las partes; si no aparece, es una pregunta, no un supuesto. Una regla nueva no contradice una vigente: si la historia cambia una, su delta es `## MODIFIED Requirements` y se le pregunta a la persona. Las reglas de `CLAUDE.md` ya están cargadas: no se repiten aquí.",
+    "",
+    "## Qué leer en cada paso",
+    "",
+    "| Paso | Lee (en `context/`) |",
+    "|---|---|",
+    ...PASOS_DEL_INDICE.map(([paso, lee]) => `| ${paso} | ${lee} |`),
+    "",
+    "Qué capacidades leer: las que el issue nombra o cuyo módulo toca (un issue sobre sensores lee `nodos-y-sensores`). Ante la duda, lee de más: una regla que falta cuesta más que un archivo de sobra. Varias lecturas van en un mismo mensaje.",
+    "",
+    "## Partes",
+    "",
+    "| Archivo | Contenido | Tamaño |",
+    "|---|---|---|",
+    ...RESUMEN_DE_PARTES.map(([ruta, resumen]) => `| \`context/${ruta}\` | ${resumen} | ${kb(leer(ruta))} |`),
+    "",
+    "## Capacidades de negocio",
+    "",
+    "Cada una tiene su parte con los requisitos completos y los nombres de sus escenarios.",
+    "",
+    "| Capacidad | Propósito | Parte | Tamaño |",
+    "|---|---|---|---|",
+    ...capacidades.map((f) => {
+      const texto = leer(`negocio/${f}`);
+      const proposito = entradasDe(texto).find((e) => e.id === "proposito")?.texto ?? "(sin Purpose)";
+      return `| ${f.replace(/\.md$/, "")} | ${proposito} | \`context/negocio/${f}\` | ${kb(texto)} |`;
+    }),
+    ...(capacidades.length ? [] : ["| (ninguna) | | | |"]),
+    "",
+    "## Plataforma y proceso (solo nombres)",
+    "",
+    "No son reglas del producto: van solo por nombre (sus requisitos están en `inventario.md`). La lista está en `plataforma` de `.claude/orquestador.json`; una capacidad nueva cuenta como negocio hasta que se agregue ahí.",
+    "",
+    plataforma.length ? lista(plataforma) : "(ninguna)",
+  ])}\n`;
+}
+
+// Amplía `destino` con lo que las fuentes tienen de nuevo. No escribe nada si no hay novedades.
+export function ampliarContexto(raiz, destino) {
+  let agregadas = 0;
+  let reemplazadas = 0;
+  const escritos = [];
+  for (const parte of partesDelContexto(raiz)) {
+    const ruta = join(destino, parte.ruta);
+    const r = fusionar(leerSi(ruta), parte);
+    agregadas += r.agregadas;
+    reemplazadas += r.reemplazadas;
+    if (r.cambiado) {
+      mkdirSync(dirname(ruta), { recursive: true });
+      writeFileSync(ruta, r.texto);
+      escritos.push(parte.ruta);
+    }
+  }
+  const indice = indiceDelContexto(destino, plataformaConfigurada(raiz));
+  const rutaIndice = join(destino, "contexto.md");
+  if (lf(leerSi(rutaIndice)) !== indice) {
+    mkdirSync(destino, { recursive: true });
+    writeFileSync(rutaIndice, indice);
+    escritos.push("contexto.md");
+  }
+  return { agregadas, reemplazadas, escritos };
 }
 
 if (esPrincipal(import.meta.url)) {
   const o = opciones(process.argv.slice(2));
-  const n = o._[0];
-  if (!n) fallar("Uso: contexto.mjs <n> [--raiz <raiz>] [--trabajo <dir>]", 2);
   const raiz = o.raiz ?? raizRepo();
-  const trabajo = o.trabajo ?? dirTrabajo(n);
-  mkdirSync(trabajo, { recursive: true });
-  writeFileSync(join(trabajo, "contexto.md"), generarContexto(raiz));
-  // Cierra el paso 2 en tiempos.md (si la corrida se está midiendo): el orquestador no necesita otra llamada.
-  registrarCierre(join(trabajo, "tiempos.md"), 2);
-  console.log(join(trabajo, "contexto.md"));
+  const r = ampliarContexto(raiz, o.destino ?? join(raiz, "context"));
+  console.log(r.escritos.length ? `Contexto ampliado en context/: ${r.agregadas} entradas nuevas, ${r.reemplazadas} reemplazadas (${r.escritos.join(", ")})` : "Contexto al día: sin novedades");
 }

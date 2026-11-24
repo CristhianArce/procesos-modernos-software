@@ -25,7 +25,7 @@
 - [x] 3.3 Implementar `trazabilidad-grep.mjs` y verificar que sobre `change-ok` encuentra cada `CA-n` en requisitos, escenarios y tareas (CA-6)
 - [x] 3.4 Implementar `migracion-timestamp.mjs` y verificar con `node --test` que renombra una migración de fixture con timestamp menor que la última de la base (CA-6)
 - [x] 3.5 Implementar `copiar-evidencias.mjs` y verificar con `node --test` que genera `evidencias/issue-<n>/` con `agentes.md` desde `agentes-log.md` y sin logs (CA-6)
-- [x] 3.6 Implementar `contexto.mjs` (sustituye a explorar) y verificar con `node --test` sobre `repo-ejemplo` que escribe `<trabajo>/contexto.md` con las tablas y columnas de la migración (`CREATE TABLE` y `ALTER TABLE … ADD COLUMN`), los módulos con sus `menu.ts`/`paneles.ts`/`on-alerta.ts`/`metrics.ts`, las semillas y las rutas del contrato (CA-6)
+- [x] 3.6 Implementar `contexto.mjs` (en el skill `actualizar-contexto`, fuera del flujo; sustituye a explorar) y verificar con `node --test` que amplía `context/` sin regenerarlo, que repetirlo no escribe nada y que `context/inventario.md` trae las tablas y columnas de la migración (`CREATE TABLE` y `ALTER TABLE … ADD COLUMN`), los módulos con sus `menu.ts`/`paneles.ts`/`on-alerta.ts`/`metrics.ts`, las semillas y las rutas del contrato (CA-6)
 
 ## 4. Agentes de revisión (B2 a B4)
 

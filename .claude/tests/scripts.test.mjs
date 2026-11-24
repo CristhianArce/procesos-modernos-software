@@ -11,7 +11,6 @@ import { calcular, componer, leerMarcas, resumenMarkdown } from "../skills/orque
 import { aMarkdown, analizar, criteriosDelIssue, decisionesCitadas, decisionesRegistradas, pruebasDeHistoria, pruebasDeTexto } from "../skills/orquestador/scripts/trazabilidad-grep.mjs";
 import { filaDeAgente, registrarAgente } from "../skills/orquestador/scripts/registrar-agente.mjs";
 import { agentesDesdeLog, copiarEvidencias } from "../skills/orquestador/scripts/copiar-evidencias.mjs";
-import { capacidadesEspecificadas, changesActivos, generarContexto, rutasDelContrato, tablasDeMigraciones } from "../skills/orquestador/scripts/contexto.mjs";
 
 const FIX = join(RAIZ, ".claude", "fixtures");
 const SCRIPTS = join(RAIZ, ".claude", "skills", "orquestador", "scripts");
@@ -24,7 +23,7 @@ test("CA-6: orquestador.json tiene las claves que usa el orquestador", () => {
 });
 
 test("CA-6: hay una plantilla por cada archivo de <trabajo>", () => {
-  const esperadas = ["estado.md", "agentes-log.md", "issue.md", "preguntas.md", "decisiones.md", "contexto.md", "gates.md", "verificacion.md", "trazabilidad.md", "pr-body.md", "bloqueo.md", "agentes.md"];
+  const esperadas = ["estado.md", "agentes-log.md", "issue.md", "preguntas.md", "decisiones.md", "gates.md", "verificacion.md", "trazabilidad.md", "pr-body.md", "bloqueo.md", "agentes.md"];
   const hay = readdirSync(join(RAIZ, ".claude", "skills", "orquestador", "plantillas"));
   assert.deepEqual(esperadas.filter((e) => !hay.includes(e)), []);
   assert.match(leer(".claude/skills/orquestador/plantillas/agentes-log.md"), /\| Fecha-hora \| Paso \| Agente \| Modelo \/ effort \| Id del agente \| Veredicto \| Rechazos \|/);

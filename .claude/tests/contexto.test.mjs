@@ -1,33 +1,53 @@
 // CA-6: lo que contexto.mjs deja en contexto.md para que la sesión y los agentes lean menos código.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import {
+  ampliarContexto,
   convenciones,
   entorno,
+  entradasDe,
   firmasCompartidas,
   firmasPublicas,
-  generarContexto,
+  fusionar,
   historiasConstruidas,
   moduloDeReferencia,
+  partesDelContexto,
   plataformaConfigurada,
   productoYBacklog,
   reglasDeNegocio,
-  reglasDelProyecto,
   requisitosDeSpec,
-} from "../skills/orquestador/scripts/contexto.mjs";
+} from "../skills/actualizar-contexto/scripts/contexto.mjs";
 
 const temporal = () => mkdtempSync(join(tmpdir(), "ctx-"));
 const leerRepo = (ruta) => readFileSync(join(import.meta.dirname, "..", "..", ruta), "utf8");
 
-test("CA-6: el orquestador, escritor-pruebas y las reglas de design mandan usar contexto.md antes de abrir código", () => {
-  assert.match(leerRepo(".claude/skills/orquestador/SKILL.md"), /Contexto antes que código[\s\S]*no explores el repo/);
-  assert.match(leerRepo(".claude/skills/orquestador/SKILL.md"), /Contexto de negocio primero[\s\S]*no esté ya decidido[\s\S]*MODIFIED Requirements/);
-  assert.match(leerRepo(".claude/agents/revisor-salida.md"), /Negocio: el change no contradice una regla/);
-  assert.match(leerRepo(".claude/agents/escritor-pruebas.md"), /Módulo de referencia[\s\S]*Herramientas y modismos/);
-  assert.match(leerRepo("openspec/config.yaml"), /design\.md cita nombres reales de \.flujo\/issue-<n>\/contexto\.md/);
+test("CA-6: el orquestador solo lee context/ y los agentes lo usan antes de abrir código", () => {
+  const skill = leerRepo(".claude/skills/orquestador/SKILL.md");
+  assert.match(skill, /Contexto por partes[\s\S]*fuera del flujo[\s\S]*no lo genera ni lo escribe, solo lo lee/);
+  assert.match(skill, /no esté ya decidido[\s\S]*MODIFIED Requirements[\s\S]*No explores el repo/);
+  assert.match(skill, /`context\/contexto\.md` debe existir[\s\S]*bloqueado: falta context\//);
+  assert.doesNotMatch(skill, /contexto\.mjs/, "el flujo no corre el script del contexto");
+  assert.match(leerRepo(".claude/agents/revisor-salida.md"), /Negocio: el change no contradice una regla de `context\/negocio\/<capacidad>\.md`/);
+  assert.match(leerRepo(".claude/agents/escritor-pruebas.md"), /context\/codigo\.md[\s\S]*context\/convenciones\.md/);
+  assert.match(leerRepo("openspec/config.yaml"), /design\.md cita nombres reales de context\//);
+});
+
+test("CA-6: actualizar-contexto es un skill de la persona, fuera del flujo y sin commit", () => {
+  const texto = leerRepo(".claude/skills/actualizar-contexto/SKILL.md");
+  const cabecera = texto.split("---")[1];
+  assert.match(cabecera, /name: actualizar-contexto/);
+  assert.match(cabecera, /disable-model-invocation: true/, "solo lo invoca la persona");
+  assert.match(cabecera, /allowed-tools: Read Bash\(node \.claude\/skills\/actualizar-contexto\/scripts\/\*\)/);
+  assert.doesNotMatch(cabecera, /git (add|commit|push)/);
+  assert.match(texto, /\*\*No forma parte del flujo del orquestador\*\*/);
+  assert.match(texto, /\*\*Nunca borra\.\*\*/);
+  for (const [, ruta] of texto.matchAll(/`node (\.claude\/skills\/[\w./-]+\.mjs)/g)) {
+    assert.ok(existsSync(join(import.meta.dirname, "..", "..", ruta)), `el skill nombra un script que no existe: ${ruta}`);
+  }
 });
 
 // Repo mínimo con dos módulos completos (a, el más grande), uno incompleto (c) y las configuraciones que lee contexto.mjs.
@@ -204,34 +224,21 @@ test(
   }),
 );
 
-test(
-  "CA-6: las reglas se copian completas de CLAUDE.md §3 a §7 y dejan fuera el resto",
-  conRepo((raiz) => {
-    const reglas = reglasDelProyecto(join(raiz, "CLAUDE.md"));
-    assert.deepEqual(reglas.map((s) => s.titulo), ["3. Stack fijo", "4. Capas"]);
-    assert.deepEqual(reglas[0].lineas, ["TypeScript y Next."], "una sección sin viñetas aporta su párrafo");
-    assert.equal(reglas[1].lineas[0], "- Capa uno.");
-    assert.ok(reglas[1].lineas[1].length > 300, "sin recortar");
-    assert.deepEqual(reglasDelProyecto(join(raiz, "no-existe.md")), []);
-  }),
-);
+const parteDe = (partes, ruta) => partes.find((p) => p.ruta === ruta);
+const textoDe = (partes, ruta) => parteDe(partes, ruta)?.entradas.map((e) => e.texto).join("\n") ?? "";
 
 test(
-  "CA-6: contexto.md trae módulo de referencia, firmas, convenciones, herramientas y reglas",
+  "CA-6: el código y las convenciones van en sus partes, sin repetir las reglas de CLAUDE.md",
   conRepo((raiz) => {
-    const texto = generarContexto(raiz);
-    for (const titulo of [
-      "## Módulo de referencia",
-      "## Firmas públicas",
-      "## Compartido: núcleo y componentes",
-      "## Convenciones del repo",
-      "## Herramientas y modismos",
-      "## Reglas del proyecto",
-    ]) {
-      assert.ok(texto.includes(titulo), `falta ${titulo}`);
-    }
-    assert.ok(texto.includes("Módulo: `a`"));
-    assert.ok(texto.includes("Flyway: `flyway/flyway:11`"));
+    const partes = partesDelContexto(raiz);
+    const codigo = textoDe(partes, "codigo.md");
+    assert.ok(codigo.includes("Módulo de referencia: `a`"));
+    assert.ok(codigo.includes("`a/service.ts`") && codigo.includes("export async function buscar"));
+    assert.ok(codigo.includes("Compartido `src/lib/errores.ts`"));
+    const convenciones = textoDe(partes, "convenciones.md");
+    assert.ok(convenciones.includes("Flyway: `flyway/flyway:11`"));
+    assert.ok(convenciones.includes("Última migración: `V202611220002__b.sql`"));
+    assert.ok(!partes.some((p) => p.entradas.some((e) => e.texto.includes("Reglas del proyecto"))), "las reglas ya están cargadas en cada agente");
   }),
 );
 
@@ -287,17 +294,107 @@ test(
   }),
 );
 
+test("CA-6: fusionar agrega lo nuevo, reemplaza lo que cambió y conserva lo demás", () => {
+  const parte = { titulo: "# T", intro: "intro", entradas: [{ id: "a", texto: "uno" }, { id: "b", texto: "dos" }] };
+  const primera = fusionar("", parte);
+  assert.deepEqual([primera.agregadas, primera.reemplazadas, primera.cambiado], [2, 0, true]);
+  assert.deepEqual(entradasDe(primera.texto), [{ id: "a", texto: "uno" }, { id: "b", texto: "dos" }]);
+  const igual = fusionar(primera.texto, parte);
+  assert.deepEqual([igual.agregadas, igual.reemplazadas, igual.cambiado], [0, 0, false], "repetir no cambia nada");
+  const cambio = fusionar(primera.texto, { ...parte, entradas: [{ id: "b", texto: "dos cambiado" }, { id: "c", texto: "tres" }] });
+  assert.deepEqual(
+    entradasDe(cambio.texto),
+    [{ id: "a", texto: "uno" }, { id: "b", texto: "dos cambiado" }, { id: "c", texto: "tres" }],
+    "a se conserva aunque ya no venga, b se reemplaza en su lugar y c se agrega al final",
+  );
+  assert.deepEqual([cambio.agregadas, cambio.reemplazadas], [1, 1]);
+  assert.equal(fusionar(primera.texto.replace(/\n/g, "\r\n"), parte).cambiado, false, "un CRLF no cuenta como cambio");
+  assert.equal(fusionar("", { ...parte, entradas: [{ id: "x", texto: "con cr\r" }] }).texto.includes("\r"), false, "se quita el \\r suelto de las fuentes CRLF");
+});
+
 test(
-  "CA-6: contexto.md abre con el negocio y deja la plataforma solo por nombre",
+  "CA-6: ampliar el contexto la primera vez crea las partes y repetirlo no escribe nada",
   conRepo((raiz) => {
-    const texto = generarContexto(raiz);
-    const orden = ["## Producto", "## Reglas de negocio de las historias construidas", "## Reglas de negocio vigentes (specs)", "## Capacidades especificadas", "## Tablas y columnas", "## Módulo de referencia"].map((t) => texto.indexOf(t));
-    assert.ok(orden.every((i) => i >= 0), "todas las secciones existen");
-    assert.deepEqual([...orden].sort((a, b) => a - b), orden, "el negocio va antes que lo técnico");
-    assert.ok(texto.includes("- **Inicio de sesión:** La API SHALL iniciar sesión con usuario y contraseña (CA-1)."));
-    assert.ok(texto.includes("  - Escenarios: Credenciales correctas (CA-1); Contraseña incorrecta (CA-2)"));
-    assert.ok(texto.includes("- #5 decisión 1: La sesión dura 8 horas"));
-    assert.ok(texto.includes("- `ci` — vigente: Validación de cada PR"), "la plataforma va por nombre");
-    assert.ok(!texto.includes("El CI SHALL correr."), "sin el texto del requisito de plataforma");
+    const destino = join(raiz, "context");
+    const primera = ampliarContexto(raiz, destino);
+    assert.ok(primera.agregadas > 0 && primera.reemplazadas === 0);
+    for (const f of ["contexto.md", "producto.md", "historias.md", "inventario.md", "codigo.md", "convenciones.md", "negocio/inicio.md", "negocio/aislamiento.md"]) {
+      assert.ok(existsSync(join(destino, f)), `falta ${f}`);
+    }
+    assert.ok(!existsSync(join(destino, "negocio", "ci.md")), "la plataforma no tiene parte propia");
+    const segunda = ampliarContexto(raiz, destino);
+    assert.deepEqual({ agregadas: segunda.agregadas, reemplazadas: segunda.reemplazadas, escritos: segunda.escritos }, { agregadas: 0, reemplazadas: 0, escritos: [] });
+  }),
+);
+
+test(
+  "CA-6: ampliar agrega lo nuevo y reemplaza solo lo que cambió, sin borrar lo que ya no está en las fuentes",
+  conRepo((raiz) => {
+    const destino = join(raiz, "context");
+    ampliarContexto(raiz, destino);
+    mkdirSync(join(raiz, "evidencias", "issue-9"), { recursive: true });
+    writeFileSync(join(raiz, "evidencias", "issue-9", "issue.md"), "# Issue #9: HU 9: Histórico\n\n## Reglas de negocio\n\n- **RN-1:** Solo lee lecturas.\n");
+    const spec = join(raiz, "openspec", "specs", "inicio", "spec.md");
+    writeFileSync(spec, readFileSync(spec, "utf8").replace("La API SHALL cerrar la sesión.", "La API SHALL cerrar la sesión y limpiar la cookie."));
+    rmSync(join(raiz, "openspec", "changes", "aislar"), { recursive: true, force: true });
+
+    const r = ampliarContexto(raiz, destino);
+    assert.equal(r.agregadas, 1, "la historia 9");
+    assert.equal(r.reemplazadas, 1, "el requisito de cierre de sesión");
+    const historias = readFileSync(join(destino, "historias.md"), "utf8");
+    assert.ok(historias.includes("## #9 HU 9: Histórico") && historias.includes("## #5 HU 3: Login"), "se agrega sin quitar la anterior");
+    const inicio = readFileSync(join(destino, "negocio", "inicio.md"), "utf8");
+    assert.ok(inicio.includes("La API SHALL cerrar la sesión y limpiar la cookie."));
+    assert.ok(!inicio.includes("(vigente): La API SHALL cerrar la sesión."), "la versión anterior se reemplazó");
+    assert.ok(existsSync(join(destino, "negocio", "aislamiento.md")), "lo que desaparece de las fuentes se conserva");
+    assert.ok(readFileSync(join(destino, "contexto.md"), "utf8").includes("| aislamiento |"), "el índice incluye lo acumulado");
+  }),
+);
+
+test(
+  "CA-6: una capacidad vigente que un change en curso modifica queda en una sola parte con la versión más reciente",
+  conRepo((raiz) => {
+    const destino = join(raiz, "context");
+    ampliarContexto(raiz, destino);
+    mkdirSync(join(raiz, "openspec", "changes", "mod", "specs", "inicio"), { recursive: true });
+    writeFileSync(
+      join(raiz, "openspec", "changes", "mod", "specs", "inicio", "spec.md"),
+      "## Purpose\n\nCambia el inicio.\n\n## MODIFIED Requirements\n\n### Requirement: Cierre de sesión\nLa API SHALL cerrar y avisar.\n",
+    );
+    ampliarContexto(raiz, destino);
+    const entradas = entradasDe(readFileSync(join(destino, "negocio", "inicio.md"), "utf8"));
+    assert.equal(entradas.filter((e) => e.id === "requisito: Cierre de sesión").length, 1);
+    assert.ok(entradas.find((e) => e.id === "requisito: Cierre de sesión").texto.includes("(en curso (mod)): La API SHALL cerrar y avisar."));
+    assert.ok(entradas.some((e) => e.id === "requisito: Inicio de sesión"), "los requisitos que no cambian siguen");
+  }),
+);
+
+test(
+  "CA-6: el índice dice qué lee cada paso y lista las capacidades acumuladas, con la plataforma solo por nombre",
+  conRepo((raiz) => {
+    const destino = join(raiz, "context");
+    ampliarContexto(raiz, destino);
+    const indice = readFileSync(join(destino, "contexto.md"), "utf8");
+    assert.ok(indice.includes("## Qué leer en cada paso"));
+    assert.ok(indice.includes("| 3 Propuesta (la sesión) |") && indice.includes("| 5 Escribir pruebas (`escritor-pruebas`) |"));
+    assert.ok(indice.includes("| inicio | Permite entrar al tablero. | `context/negocio/inicio.md` |"), "una línea por capacidad con su propósito");
+    assert.ok(indice.includes("`ci`"), "la plataforma va por nombre");
+    assert.ok(!indice.includes("El CI SHALL correr."), "sin el texto de sus requisitos");
+    assert.ok(!existsSync(join(raiz, "context", "reglas.md")), "las reglas de CLAUDE.md no se copian");
+  }),
+);
+
+test(
+  "CA-6: contexto.mjs amplía context/ sin pedir un issue, y repetirlo dice que está al día",
+  conRepo((raiz) => {
+    const correr = () =>
+      spawnSync(process.execPath, [join(import.meta.dirname, "..", "skills", "actualizar-contexto", "scripts", "contexto.mjs"), "--raiz", raiz], { encoding: "utf8" });
+    const primera = correr();
+    assert.equal(primera.status, 0);
+    assert.match(primera.stdout, /Contexto ampliado en context\/: \d+ entradas nuevas, 0 reemplazadas/);
+    assert.ok(existsSync(join(raiz, "context", "contexto.md")));
+    const segunda = correr();
+    assert.equal(segunda.status, 0);
+    assert.match(segunda.stdout, /Contexto al día: sin novedades/);
   }),
 );

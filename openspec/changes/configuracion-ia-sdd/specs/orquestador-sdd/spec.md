@@ -60,11 +60,26 @@ El orquestador SHALL guardar el estado de cada item en `.flujo/issue-<n>/` con l
 - **THEN** `evidencias/issue-<n>/` contiene los archivos de evidencia y `agentes.md` generado desde el registro de agentes, y no contiene logs
 
 ### Requirement: Contexto del repositorio antes de proponer
-Antes de proponer el change de una historia, el orquestador SHALL escribir en `<trabajo>/contexto.md` las tablas y columnas de las migraciones, los módulos con sus puntos de extensión, las semillas y las rutas del contrato, y la propuesta SHALL tratar como pregunta cualquier tabla o módulo que no figure ahí (CA-6).
+Antes de proponer el change de una historia, el orquestador SHALL leer `context/contexto.md` y solo las partes que su paso indica, con el negocio y lo técnico del producto. La propuesta SHALL tratar como pregunta cualquier tabla o módulo que no figure ahí y MUST NOT repetir una pregunta que la persona ya decidió (CA-6).
+
+#### Scenario: Decisión ya tomada (CA-6)
+- **WHEN** la historia plantea una duda que la persona ya decidió en una historia construida
+- **THEN** la propuesta cita esa decisión en lugar de preguntarla otra vez
+
+### Requirement: Contexto ampliado fuera del flujo
+El skill `actualizar-contexto` SHALL ampliar `context/` agregando lo nuevo y reemplazando solo la entrada que cambió, sin borrar nada, y MUST NOT escribir cuando no hay novedades; el orquestador MUST NOT generarlo (CA-6).
 
 #### Scenario: Repositorio de ejemplo (CA-6)
-- **WHEN** se genera el contexto de un repositorio con una migración que crea una tabla y agrega una columna, y un módulo con ítem de menú
-- **THEN** `contexto.md` lista la tabla con ambas columnas, el módulo con su ítem de menú, la semilla y las rutas del contrato
+- **WHEN** se amplía el contexto de un repositorio con una migración que crea una tabla y agrega una columna, y un módulo con ítem de menú
+- **THEN** `context/inventario.md` lista la tabla con ambas columnas, el módulo con su ítem de menú, la semilla y las rutas del contrato
+
+#### Scenario: Contexto ya al día (CA-6)
+- **WHEN** se amplía el contexto dos veces sin cambios en las fuentes
+- **THEN** la segunda vez no escribe ningún archivo
+
+#### Scenario: Un cambio reemplaza solo su entrada (CA-6)
+- **WHEN** cambia el texto de un requisito vigente y otra capacidad desaparece de las fuentes
+- **THEN** se reemplaza la entrada de ese requisito y la capacidad que desapareció se conserva
 
 ### Requirement: Cobertura de criterios antes de G2
 Antes de la puerta G2, el orquestador SHALL obtener con un script, sin agentes, los requisitos, escenarios y tareas que citan cada `CA-n` del issue y los criterios sin cobertura, y SHALL pasar ese resultado al `revisor-salida` (CA-6).
