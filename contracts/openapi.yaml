@@ -112,6 +112,48 @@ components:
         tomadaEn:
           type: string
           format: date-time
+    LecturaHistorico:
+      type: object
+      required: [id, sensorId, sensorNombre, nodoId, nodoNombre, voltaje, corriente, potencia, tomadaEn]
+      properties:
+        id:
+          type: string
+          format: uuid
+        sensorId:
+          type: string
+          format: uuid
+        sensorNombre:
+          type: string
+        nodoId:
+          type: string
+          format: uuid
+        nodoNombre:
+          type: string
+        voltaje:
+          type: number
+        corriente:
+          type: number
+        potencia:
+          type: number
+        tomadaEn:
+          type: string
+          format: date-time
+    PaginaHistorico:
+      type: object
+      required: [lecturas, total, pagina, tamano]
+      properties:
+        lecturas:
+          type: array
+          items:
+            $ref: "#/components/schemas/LecturaHistorico"
+        total:
+          type: integer
+          description: Lecturas que cumplen el filtro, en todas las páginas.
+        pagina:
+          type: integer
+        tamano:
+          type: integer
+          description: Fijo en 25.
     Alerta:
       type: object
       description: Una lectura superó el umbral máximo de su sensor en una magnitud. Una sola severidad y sin estado.
@@ -890,6 +932,63 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Lectura"
+        "400":
+          $ref: "#/components/responses/DatosInvalidos"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+  /api/historico:
+    get:
+      summary: Consultar el histórico de lecturas
+      description: >-
+        Administradores y técnicos. Lecturas de 25 en 25, de la más reciente a la más antigua
+        (desempate por identificador descendente). Los filtros se combinan con Y y los extremos
+        del rango de fechas son inclusivos. Una página más allá de la última o un filtro sin
+        coincidencias devuelve la lista vacía con 200; un nodo o sensor que no existe también.
+      security:
+        - sesion: []
+      parameters:
+        - name: nodoId
+          in: query
+          required: false
+          description: Filtra por nodo.
+          schema:
+            type: string
+            format: uuid
+        - name: sensorId
+          in: query
+          required: false
+          description: Filtra por sensor.
+          schema:
+            type: string
+            format: uuid
+        - name: desde
+          in: query
+          required: false
+          description: Fecha inicial inclusiva, ISO 8601 con zona (`2026-11-24T10:00:00Z`). No puede ser posterior a `hasta`.
+          schema:
+            type: string
+            format: date-time
+        - name: hasta
+          in: query
+          required: false
+          description: Fecha final inclusiva, ISO 8601 con zona.
+          schema:
+            type: string
+            format: date-time
+        - name: pagina
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+      responses:
+        "200":
+          description: Una página del histórico
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginaHistorico"
         "400":
           $ref: "#/components/responses/DatosInvalidos"
         "401":
