@@ -235,8 +235,9 @@ La arquitectura de agentes es la del [flujo del orquestador](flujo-orquestador.m
 | `preguntas-tecnicas` | 2–4 | Responde dudas técnicas con evidencia del código y separa las de negocio | — (clasifica, no rechaza) | Pospuesto |
 | `decisor` (3 agentes + consolidador) | 2–5, 7 | Decide las dudas de negocio por votación; por defecto, 3 llamadas `Agent` en paralelo y un consolidador (el workflow guardado es opcional) | La pregunta exige algo prohibido | Pospuesto (las dudas de negocio se le preguntan a la persona) |
 | `revisor-salida` | G1–G4 | Puertas de calidad tras cada comando de OpenSpec | Criterios sin mapear, `openspec validate` inválido, tareas sin hacer o código que no sigue la spec (`CORREGIR` o `BLOQUEAR`) | Solo G2, con `openspec validate --strict` y la salida del script `trazabilidad-grep.mjs` |
+| `escritor-pruebas` (3 instancias, una por tipo) | 5 | Escribe en paralelo con la sesión las pruebas unitarias, de integración y e2e a partir de las specs, el diseño, la migración y la semilla | Una tarea de pruebas sin archivo o con `Resultado: PARCIAL` | Implementado: solo crea archivos de prueba y no ejecuta nada |
 | `generar-planes-prueba` | 3 | Planes E2E y smoke derivados de `specs/` | — | Pospuesto |
-| `revisor-reglas` y revisor cruzado (`Plan`) | 5 | Revisan el diff contra las reglas del proyecto, seguridad y corrección | Hallazgos `CRITICAL` o `WARNING` | Solo `revisor-reglas`, en paralelo con `build-test` |
+| `revisor-reglas` y revisor cruzado (`Plan`) | 6 | Revisan el diff contra las reglas del proyecto, seguridad y corrección | Hallazgos `CRITICAL` o `WARNING` | Solo `revisor-reglas`, en paralelo con `build-test` |
 | `ejecutor-e2e` | 5, 7 | Smoke con Playwright contra Docker | Un caso falla | Pospuesto |
 | `revisor-pr` y `validador-comentarios` | 7, 9 | `revisor-pr` comenta el PR con evento `COMMENT` (nunca aprueba ni pide cambios: es la misma cuenta que lo abrió) y `validador-comentarios` valida los comentarios, también los de la persona en el paso 9 | Comentario confirmado sin resolver | Pospuesto |
 | `trazabilidad` | G2, 8 | CA → requisito → tarea → código → prueba | Criterio sin cobertura | Pospuesto (lo reemplaza el script `trazabilidad-grep.mjs`) |
@@ -247,8 +248,8 @@ La arquitectura de agentes es la del [flujo del orquestador](flujo-orquestador.m
 2. `contexto.mjs` lista tablas, módulos, semillas y rutas existentes, sin agentes.
 3. `/openspec-propose` desde el issue y ese contexto; las dudas de negocio se le preguntan a la persona.
 4. G2 (`revisor-salida`, con `openspec validate --strict` y `trazabilidad-grep.mjs`) puede devolver el trabajo una vez.
-5. `/openspec-apply-change` (pruebas, contrato `contracts/openapi.yaml` y migración Flyway).
-6. `build-test` (typecheck, unitarias e integración) en paralelo con `revisor-reglas`.
+5. `/openspec-apply-change` (código, contrato `contracts/openapi.yaml` y migración Flyway) mientras tres `escritor-pruebas` escriben en paralelo las pruebas, una por tipo.
+6. `build-test` (typecheck y unitarias; la integración y la e2e las corre el CI) en paralelo con `revisor-reglas`.
 7. Si hay `CRITICAL`, una sola pasada de corrección y otro `build-test`.
 8. Commit, push, PR en borrador y commit de `evidencias/issue-<n>/`. La persona marca el PR listo, lo revisa otra cuenta y se fusiona; tras el merge, el CD publica la imagen en `ghcr.io` y el change se archiva a mano en un PR propio (G4).
 
@@ -280,7 +281,7 @@ Ajustes para que quepa en el tiempo (meta: 5 minutos o menos en el ensayo):
 
 - Trabaja en el checkout principal, en la rama `feature/issue-<n>-<slug>`, creada desde `main`: reutiliza `node_modules` y no corre `npm ci`.
 - Docker en marcha y `.env` listo antes de empezar; `build-test` levanta, migra y siembra `db`.
-- `build-test` reducido: `typecheck`, `test:unit` y `test:integration`; el lint y `next build` los corre el CI.
+- `build-test` reducido: `typecheck` y `test:unit`; `test:integration`, `e2e`, el lint y `next build` los corre el CI.
 - `revisor-reglas` (sonnet / medium) corre en paralelo con `build-test`.
 - Solo G2, con máximo un `CORREGIR`; G3 está pospuesto.
 - Una sola pasada de corrección, y solo si hay `CRITICAL`.
@@ -328,7 +329,7 @@ Hoy es el sábado 21 de noviembre de 2026 y la entrega es el martes 24 a las 18:
 - **Imprescindible:**
   - Arranque de la HU 1a: `openspec init`, `openspec/config.yaml`, `CLAUDE.md` y `.claude/settings.json`.
   - HU 1b (herramientas de desarrollo) y HU 2, con el CD que publica en `ghcr.io`.
-  - Orquestador con un solo modo (8 pasos, 5 minutos o menos) con `preparador`, `revisor-salida` (G2), `revisor-reglas`, `build-test`, `commit`, `abrir-pr`, los scripts `estado`, `contexto`, `trazabilidad-grep`, `copiar-evidencias`, y la copia de evidencias.
+  - Orquestador con un solo modo (8 pasos, 5 minutos o menos) con `preparador`, `revisor-salida` (G2), tres `escritor-pruebas`, `revisor-reglas`, `build-test`, `commit`, `abrir-pr`, los scripts `estado`, `contexto`, `trazabilidad-grep`, `commitear`, `abrir-pr`, `copiar-evidencias`, y la copia de evidencias; el archivado del change lo hace la persona después del merge con `/archivar-change-openspec <n>`.
   - Prueba de punta a punta con un solo issue, el #6 "[PRUEBA] Página Acerca de" (etiqueta `prueba`, fuera del backlog; su PR se cierra sin fusionar).
   - HU 3 a 5 construidas con ese mismo flujo, cada una con su `evidencias/issue-<n>/` y un rechazo real.
   - Issues de las historias 6 a 12 con criterios `CA-n`.

@@ -26,7 +26,7 @@ rules:
     - "Si el change crea una capacidad nueva, su delta specs/<cap>/spec.md empieza con ## Purpose y un texto real."
   design:
     - design.md es obligatorio si el change modifica contracts/openapi.yaml o agrega una migración en db/migration/.
-    - "design.md incluye una sección `## Firmas` con las firmas públicas que las pruebas importan: funciones del repo y del servicio (nombre, argumentos y retorno), forma de la respuesta de la API, componentes (nombre y props) y los data-testid y etiquetas de la interfaz. El código y las tres instancias de escritor-pruebas parten de ellas; si cambian al implementar, se actualiza design.md."
+    - "design.md incluye una sección `## Firmas` con las firmas públicas que las pruebas importan: funciones del repo y del servicio (nombre, argumentos y retorno), forma de la respuesta de la API, componentes (nombre y props) y los data-testid y etiquetas de la interfaz. Incluye también una sección `## Textos visibles` con lo que la interfaz muestra (títulos, etiquetas, mensajes, estados vacíos, formato de cifras y fechas), para que las pruebas e2e no lo supongan. El código y las tres instancias de escritor-pruebas parten de ellas; si cambian al implementar, se actualiza design.md."
     - "Si el change agrega o modifica .tsx o CSS, design.md lista los componentes de src/modulos/ui/ que reutiliza y los nuevos que agrega, con su estado de carga, error y vacío (regla Interfaz de CLAUDE.md §4)."
   tasks:
     - 'Cada tarea cita su CA-n o "Derivado: decisión #k".'

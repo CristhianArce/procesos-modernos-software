@@ -19,15 +19,19 @@ export function decidir({ estado, rutas, mtimes }) {
   return { puede: true, motivo: "Build verde y posterior a la última edición" };
 }
 
+/** Lee estado.md y las fechas de las rutas, y decide. Lo usan este script y commitear.mjs. */
+export function evaluar({ n, rutas, raiz = raizRepo(), trabajo }) {
+  const ruta = join(trabajo ?? dirTrabajo(n, raiz), "estado.md");
+  const estado = existsSync(ruta) ? readFileSync(ruta, "utf8") : "";
+  const mtimes = rutas.map((r) => (existsSync(join(raiz, r)) ? statSync(join(raiz, r)).mtimeMs : 0));
+  return decidir({ estado, rutas, mtimes });
+}
+
 if (esPrincipal(import.meta.url)) {
   const o = opciones(process.argv.slice(2));
   const [n, ...rutas] = o._;
   if (!n) fallar("Uso: puede-commitear.mjs <n> <ruta>... [--trabajo <dir>] [--raiz <raiz>]", 2);
-  const raiz = o.raiz ?? raizRepo();
-  const ruta = join(o.trabajo ?? dirTrabajo(n, raiz), "estado.md");
-  const estado = existsSync(ruta) ? readFileSync(ruta, "utf8") : "";
-  const mtimes = rutas.map((r) => (existsSync(join(raiz, r)) ? statSync(join(raiz, r)).mtimeMs : 0));
-  const d = decidir({ estado, rutas, mtimes });
+  const d = evaluar({ n, rutas, raiz: o.raiz, trabajo: o.trabajo });
   console.log(`${d.puede ? "PUEDE COMMITEAR" : "NO COMMITEAR"}: ${d.motivo}`);
   process.exit(d.puede ? 0 : 1);
 }
