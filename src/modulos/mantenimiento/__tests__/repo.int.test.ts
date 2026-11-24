@@ -50,8 +50,9 @@ describe("repo de mantenimiento", () => {
   it("#27 CA-2: listarTecnicos solo trae técnicos, ordenados por nombre de usuario", async () => {
     const [z, a] = [await crearUsuario("lz", "tecnico"), await crearUsuario("la", "tecnico")];
     const admin = await crearUsuario("ladm", "administrador");
+    const propios = new Set([z.id, a.id, admin.id]); // solo los de esta prueba: otras del archivo crean más técnicos
     const lista = await listarTecnicos();
-    expect(lista.filter((t) => t.nombreUsuario.startsWith(prefijo))).toEqual([a, z]);
+    expect(lista.filter((t) => propios.has(t.id))).toEqual([a, z]);
     expect(lista.some((t) => t.id === admin.id)).toBe(false);
   });
 
