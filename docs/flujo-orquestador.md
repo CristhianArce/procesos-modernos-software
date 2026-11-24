@@ -95,9 +95,9 @@ flowchart LR
     UNI -.->|"tareas pendientes sin motivo"| BLOQ
     V6 -.->|entorno o reintentos agotados| BLOQ
 
-    subgraph LEY["Leyenda de colores"]
-        direction LR
-        L1["Sesión del orquestador (opus)"] ~~~ L2["Sesión: coordinación,<br/>sin skill ni agente"] ~~~ L3["Agente de .claude/agents (sonnet)"] ~~~ L4["OpenSpec (skill o CLI)"] ~~~ L5["Commit y PR, CI y persona"] ~~~ L6(["Bloqueo"])
+    subgraph LEY["Colores"]
+        direction TB
+        L1["Sesión (opus)"] ~~~ L2["Sesión: coordinación"] ~~~ L3["Agente (sonnet)"] ~~~ L4["OpenSpec"] ~~~ L5["Commit, PR, CI y persona"] ~~~ L6(["Bloqueo"])
     end
     BLOQ ~~~ LEY
 
