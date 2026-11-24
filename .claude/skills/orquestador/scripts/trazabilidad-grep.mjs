@@ -3,6 +3,8 @@
 // Uso: node .claude/skills/orquestador/scripts/trazabilidad-grep.mjs <issue.md> <dir-del-change> [--pruebas <n>] [--decisiones <trabajo>/decisiones.md] [--salida <trabajo>/trazabilidad.md]
 // Salida: JSON { criterios: { "CA-1": { requisitos, escenarios, tareas, pruebas? } }, sinCobertura, tareasSinCriterio,
 //   bloquesSinCriterio, criteriosInexistentes, tareasSinNumero, decisionesSinFila?, sinPrueba? }. Con --salida, además escribe la tabla en Markdown.
+// deltasInvalidos lista los deltas que el archivado rechazaría y `openspec validate` no ve: MODIFIED/REMOVED/RENAMED de un requisito
+// que no existe en openspec/specs/<capacidad>/spec.md, o ADDED de uno que ya existe.
 // Con --decisiones, decisionesSinFila lista cada "decisión #k" que cita el change y no tiene fila en decisiones.md
 // (lo que la revisión de la propuesta rechazaría): el orquestador lo corrige antes de gastar una vuelta del agente.
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
@@ -118,9 +120,56 @@ export function decisionesRegistradas(textoDecisiones) {
   return new Set([...textoDecisiones.matchAll(/^\|\s*#?(\d+)\s*\|/gm)].map((m) => Number(m[1])));
 }
 
+const normalizar = (nombre) => nombre.replace(/\s+/g, " ").trim().toLowerCase();
+
+// Operaciones de un delta: { operacion: ADDED|MODIFIED|REMOVED|RENAMED, nombre } por cada `### Requirement:` bajo su `## <OP> Requirements`.
+// En RENAMED, el nombre que debe existir es el de `FROM:`.
+export function operacionesDeDelta(texto) {
+  const ops = [];
+  let operacion = null;
+  for (const linea of texto.split(/\r?\n/)) {
+    const seccion = linea.match(/^## (ADDED|MODIFIED|REMOVED|RENAMED) Requirements\s*$/);
+    if (seccion || /^## /.test(linea)) {
+      operacion = seccion ? seccion[1] : null;
+      continue;
+    }
+    const req = linea.match(/^### Requirement:\s*(.+)$/);
+    const desde = linea.match(/^-?\s*FROM:\s*`?### Requirement:\s*(.+?)`?\s*$/);
+    if (operacion && operacion !== "RENAMED" && req) ops.push({ operacion, nombre: req[1].trim() });
+    if (operacion === "RENAMED" && desde) ops.push({ operacion, nombre: desde[1].trim() });
+  }
+  return ops;
+}
+
+// Deltas que el archivado rechazaría (openspec validate no los ve): MODIFIED, REMOVED o RENAMED de un requisito que no existe en
+// openspec/specs/<capacidad>/spec.md, y ADDED de uno que ya existe (o repetido en el mismo delta). Una capacidad sin spec base
+// solo admite ADDED. Devuelve frases listas para el informe.
+export function deltasContraBase(dirChange, dirSpecsBase) {
+  const problemas = [];
+  const raizSpecs = join(dirChange, "specs");
+  for (const spec of specsDe(dirChange)) {
+    const cap = relative(raizSpecs, spec).replace(/\\/g, "/").replace(/\/spec\.md$/, "");
+    const base = join(dirSpecsBase, cap, "spec.md");
+    const existentes = new Set(existsSync(base) ? [...readFileSync(base, "utf8").matchAll(/^### Requirement:\s*(.+)$/gm)].map((m) => normalizar(m[1])) : []);
+    const vistos = new Set();
+    for (const { operacion, nombre } of operacionesDeDelta(readFileSync(spec, "utf8"))) {
+      const clave = normalizar(nombre);
+      if (operacion === "ADDED") {
+        if (existentes.has(clave)) problemas.push(`${cap}: ADDED "${nombre}" ya existe en la spec base (usa MODIFIED)`);
+        else if (vistos.has(clave)) problemas.push(`${cap}: ADDED "${nombre}" aparece dos veces en el delta`);
+        vistos.add(clave);
+      } else if (!existentes.has(clave)) {
+        problemas.push(`${cap}: ${operacion} "${nombre}" no existe en ${existsSync(base) ? "la spec base" : "una capacidad sin spec base (solo admite ADDED)"}`);
+      }
+    }
+  }
+  return problemas;
+}
+
 // pruebas: null (revisión de la propuesta: todavía no hay pruebas) o la lista que devuelve pruebasDeHistoria.
 // textoDecisiones: null (no se comprueba) o el contenido de decisiones.md.
-export function analizar(textoIssue, dirChange, pruebas = null, textoDecisiones = null) {
+// dirSpecsBase: null (no se comprueba) o openspec/specs, contra la que se revisan los deltas (deltasInvalidos).
+export function analizar(textoIssue, dirChange, pruebas = null, textoDecisiones = null, dirSpecsBase = null) {
   const ids = criteriosDelIssue(textoIssue);
   const criterios = Object.fromEntries(ids.map((id) => [id, { requisitos: [], escenarios: [], tareas: [], ...(pruebas ? { pruebas: [] } : {}) }]));
   const inexistentes = new Set();
@@ -172,6 +221,7 @@ export function analizar(textoIssue, dirChange, pruebas = null, textoDecisiones 
     const hay = decisionesRegistradas(textoDecisiones);
     r.decisionesSinFila = decisionesCitadas(dirChange).filter((k) => !hay.has(k)).map((k) => `#${k}`);
   }
+  if (dirSpecsBase !== null) r.deltasInvalidos = deltasContraBase(dirChange, dirSpecsBase);
   if (pruebas) r.sinPrueba = ids.filter((id) => criterios[id].pruebas.length === 0);
   return r;
 }
@@ -193,6 +243,7 @@ export function aMarkdown(r) {
     ...r.tareasSinNumero.map((t) => `- Tarea sin número: ${t}`),
     ...r.criteriosInexistentes.map((c) => `- Cita a un criterio que no está en el issue: ${c}`),
     ...(r.decisionesSinFila ?? []).map((d) => `- Decisión citada sin fila en decisiones.md: ${d}`),
+    ...(r.deltasInvalidos ?? []).map((d) => `- Delta que el archivado rechazaría: ${d}`),
   ];
   const ok = r.sinCobertura.length === 0 && huerfanos.length === 0;
   return [
@@ -227,7 +278,7 @@ if (esPrincipal(import.meta.url)) {
   const pruebas = o.pruebas !== undefined ? pruebasDeHistoria(Number(o.pruebas), raizRepo()) : null;
   // Sin el archivo, ninguna decisión citada tiene fila: se informa igual.
   const decisiones = typeof o.decisiones === "string" ? (existsSync(o.decisiones) ? readFileSync(o.decisiones, "utf8") : "") : null;
-  const r = analizar(readFileSync(issue, "utf8"), change, pruebas, decisiones);
+  const r = analizar(readFileSync(issue, "utf8"), change, pruebas, decisiones, join(raizRepo(), "openspec", "specs"));
   if (typeof o.salida === "string") writeFileSync(o.salida, aMarkdown(r));
   console.log(JSON.stringify(r, null, 2));
 }
