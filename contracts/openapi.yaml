@@ -133,6 +133,30 @@ components:
         creadaEn:
           type: string
           format: date-time
+    Afectado:
+      type: object
+      required: [id, alias, creadoEn]
+      properties:
+        id:
+          type: string
+          format: uuid
+        alias:
+          type: string
+        creadoEn:
+          type: string
+          format: date-time
+    AfectadosDeNodo:
+      type: object
+      required: [total, afectados]
+      properties:
+        total:
+          type: integer
+          minimum: 0
+        afectados:
+          type: array
+          description: En orden de creación, el más antiguo primero.
+          items:
+            $ref: "#/components/schemas/Afectado"
     Sensor:
       type: object
       required: [id, nodoId, nombre, umbralVoltaje, umbralCorriente, umbralPotencia, creadoEn, ultimaLectura]
@@ -923,6 +947,32 @@ paths:
           $ref: "#/components/responses/DatosInvalidos"
         "401":
           $ref: "#/components/responses/NoAutenticado"
+  /api/afectados:
+    get:
+      summary: Listar los afectados de un nodo
+      description: Administradores y técnicos. Devuelve el total y la lista; un nodo sin afectados responde total 0.
+      security:
+        - sesion: []
+      parameters:
+        - name: nodoId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Afectados del nodo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AfectadosDeNodo"
+        "400":
+          $ref: "#/components/responses/DatosInvalidos"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+        "404":
+          $ref: "#/components/responses/NoEncontrado"
   /api/topologia:
     get:
       summary: Consultar la topología de la red para el mímico
