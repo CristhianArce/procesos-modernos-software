@@ -58,20 +58,27 @@ flowchart LR
     UNI -.->|"tareas pendientes sin motivo"| BLOQ
     V6 -.->|entorno o reintentos agotados| BLOQ
 
+    subgraph LEY["Leyenda de colores"]
+        direction LR
+        L1["Sesión del orquestador (opus)"] ~~~ L2["Sesión: coordinación,<br/>sin skill ni agente"] ~~~ L3["Agente de .claude/agents (sonnet)"] ~~~ L4["OpenSpec (skill o CLI)"] ~~~ L5["Commit y PR, CI y persona"] ~~~ L6(["Bloqueo"])
+    end
+    BLOQ ~~~ LEY
+
     classDef openspec fill:#fef3c7,stroke:#b45309,color:#78350f
     classDef sesion fill:#ede9fe,stroke:#6d28d9,color:#4c1d95
     classDef agente fill:#dcfce7,stroke:#15803d,color:#14532d
     classDef gha fill:#dbeafe,stroke:#1d4ed8,color:#1e3a8a
     classDef bloq fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d
-    class OP,OA,OV,ARC openspec
-    class PRE,S2,FIX,INI,UNI,S7 sesion
-    class S1,VER,TU,TI,TE,V6 agente
-    class S8,CI gha
-    class BLOQ bloq
+    class OP,OA,OV,ARC,L4 openspec
+    class PRE,S2,FIX,INI,UNI,S7,L1,L2 sesion
+    class S1,VER,TU,TI,TE,V6,L3 agente
+    class S8,CI,L5 gha
+    class BLOQ,L6 bloq
     style S3G fill:#ede9fe,stroke:#6d28d9,color:#4c1d95
     style S5 fill:#ede9fe,stroke:#6d28d9,color:#4c1d95
     style REV fill:#dcfce7,stroke:#15803d,color:#14532d
     style INI stroke-dasharray: 5 4
+    style L2 stroke-dasharray: 5 4
     style PRE stroke-dasharray: 5 4
     style S2 stroke-dasharray: 5 4
     style FIX stroke-dasharray: 5 4
