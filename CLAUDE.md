@@ -28,7 +28,14 @@ TypeScript, una sola app Next.js 16 (App Router) para interfaz y API, Route Hand
 - Principios: SOLID, KISS (la solución más simple que cumple los CA), YAGNI (nada fuera de los CA ni de una decisión registrada) y Clean Code (nombres claros, funciones cortas, sin duplicación ni código muerto).
 - Todo Route Handler pasa por el envoltorio de `src/lib/http.ts`. Nada de `console.log` suelto. Los logs nunca incluyen contraseñas, tokens ni cuerpos de petición.
 - Caché: nada con datos de un usuario se marca `"use cache"` ni `Cache-Control: public`. Las páginas que leen la BD son dinámicas.
-- Extensión: menú, paneles de la ficha del nodo y suscriptores de alertas solo mediante `menu.ts`, `paneles.ts` y `on-alerta.ts`. El núcleo (`proxy.ts`, `src/lib/`, el layout del tablero) y la página de otra historia no se editan.
+- Extensión: menú, paneles de la ficha del nodo y suscriptores de alertas solo mediante `menu.ts`, `paneles.ts` y `on-alerta.ts`. El núcleo (`proxy.ts`, `src/lib/`, el layout del tablero, `src/shell/` y los tokens `--sc-*` de `src/app/globals.css`) y la página de otra historia no se editan. Los módulos nuevos usan el icono genérico del menú; un icono propio es una decisión registrada y la única edición permitida de `src/shell/iconos-menu.ts`.
+- Interfaz (sistema de diseño de la sala de control, decisiones en `docs/ui-scada/plan.md`):
+  - Colores, radios, sombras y fuentes solo con los tokens `--sc-*` y las clases que los exponen (`bg-panel`, `text-tenue`, `.boton-primario`, `.campo`, `.tabla`, `.cifra`…). Nada de colores hex ni de paleta de Tailwind (`bg-red-500`) en componentes.
+  - Reutiliza `src/modulos/ui/` (`Tarjeta`, `Insignia`, `IndicadorEstado`, `Medidor`, `Sparkline`, `GraficaLinea`, `Cargando`, `EstadoError`, `EstadoVacio`, `formato.ts`) antes de crear otro. Un componente reutilizable nuevo va ahí; uno propio de un módulo, en su `ui/`.
+  - Los cinco estados (normal, advertencia, crítico, desconectado, sin datos) se muestran (donde una vista los muestra) con color, forma y texto a la vez (`IndicadorEstado`, `estado.ts`), nunca solo con color. Todo valor eléctrico usa `formato.ts` y la clase `.cifra`.
+  - Toda vista con datos resuelve cargando, error y vacío con `Cargando`, `EstadoError` y `EstadoVacio`.
+  - Accesibilidad: operable con teclado, foco visible, nombre accesible en cada control sin texto, contraste AA. Toda animación se desactiva con `prefers-reduced-motion`.
+  - Los componentes `"use client"` no importan Zod ni código de servidor (`import type` sí se permite): las constantes compartidas van en archivos sin Zod (`src/modulos/alertas/magnitudes.ts`, `src/modulos/topologia/tipos.ts`). Sin librerías de interfaz nuevas.
 - Único archivo compartido: `contracts/openapi.yaml`. Cada historia agrega sus rutas, conservando las de las demás.
 
 ## 5. Datos y migraciones

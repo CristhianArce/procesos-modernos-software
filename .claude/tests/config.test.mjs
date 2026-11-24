@@ -87,3 +87,13 @@ test("CA-3: .gitignore deja fuera .flujo/, worktrees, secretos y archivos locale
     assert.ok(lineas.includes(l), `falta ${l} en .gitignore`);
   }
 });
+
+test("CA-1: el sistema de diseño está en CLAUDE.md, en las reglas de OpenSpec y en revisor-reglas (decisión 30)", () => {
+  assert.match(leer("CLAUDE.md"), /Interfaz \(sistema de diseño/);
+  assert.match(leer("CLAUDE.md"), /tokens `--sc-\*`/);
+  const { rules, operations } = cargarYaml().parse(leer("openspec/config.yaml"));
+  assert.match(rules.design.join("\n"), /src\/modulos\/ui\//);
+  assert.match(rules.tasks.join("\n"), /--sc-\*/);
+  assert.match(operations.apply.guidance.join("\n"), /Interfaz/);
+  assert.match(leer(".claude/agents/revisor-reglas.md"), /\*\*Interfaz\*\*/);
+});
