@@ -1,7 +1,7 @@
 // Registra en una sola llamada el cierre de un agente o de un paso de la sesión: agrega la fila a
 // <trabajo>/agentes-log.md con la hora real, deja la marca del paso en tiempos.md y actualiza estado.md.
 // Uso: node .claude/skills/orquestador/scripts/registrar-agente.mjs <n> <paso> <agente> <modelo> <id> <veredicto> [rechazos...] [--trabajo <dir>]
-//   <paso>: número del paso, con etiqueta opcional ("4" o "4 G2 (intento 1)"). <id>: id del agente, o - para la sesión.
+//   <paso>: número del paso, con etiqueta opcional ("4" o "4 Revisar propuesta (intento 1)"). <id>: id del agente, o - para la sesión.
 //   rechazos: texto plano y corto (sin comillas invertidas ni $); el detalle queda en gates.md y verificacion.md.
 // La hora la pone el script: el modelo no la conoce. Un CORREGIR o BLOQUEAR deja marca de tiempo, pero no cierra la fase.
 import { appendFileSync, copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";

@@ -1,10 +1,10 @@
-// Busca cada CA-n de issue.md en las specs y tareas de un change (apoyo para G2) y, con --pruebas <n>,
+// Busca cada CA-n de issue.md en las specs y tareas de un change (apoyo para la revisión de la propuesta) y, con --pruebas <n>,
 // en los nombres de las pruebas automatizadas que citan "#<n> CA-k" (pasos 6 y 8 del orquestador).
 // Uso: node .claude/skills/orquestador/scripts/trazabilidad-grep.mjs <issue.md> <dir-del-change> [--pruebas <n>] [--decisiones <trabajo>/decisiones.md] [--salida <trabajo>/trazabilidad.md]
 // Salida: JSON { criterios: { "CA-1": { requisitos, escenarios, tareas, pruebas? } }, sinCobertura, tareasSinCriterio,
 //   bloquesSinCriterio, criteriosInexistentes, tareasSinNumero, decisionesSinFila?, sinPrueba? }. Con --salida, además escribe la tabla en Markdown.
 // Con --decisiones, decisionesSinFila lista cada "decisión #k" que cita el change y no tiene fila en decisiones.md
-// (lo que G2 rechazaría): el orquestador lo corrige antes de gastar una vuelta del agente.
+// (lo que la revisión de la propuesta rechazaría): el orquestador lo corrige antes de gastar una vuelta del agente.
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { esPrincipal, fallar, opciones, raizRepo } from "./comun.mjs";
@@ -118,7 +118,7 @@ export function decisionesRegistradas(textoDecisiones) {
   return new Set([...textoDecisiones.matchAll(/^\|\s*#?(\d+)\s*\|/gm)].map((m) => Number(m[1])));
 }
 
-// pruebas: null (G2: todavía no hay pruebas) o la lista que devuelve pruebasDeHistoria.
+// pruebas: null (revisión de la propuesta: todavía no hay pruebas) o la lista que devuelve pruebasDeHistoria.
 // textoDecisiones: null (no se comprueba) o el contenido de decisiones.md.
 export function analizar(textoIssue, dirChange, pruebas = null, textoDecisiones = null) {
   const ids = criteriosDelIssue(textoIssue);

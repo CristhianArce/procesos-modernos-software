@@ -2,10 +2,10 @@
 
 ## Context
 
-La motivación está en proposal.md, en la sección "Why". El diseño detallado de cada pieza ya existe: `docs/flujo-orquestador.md` tiene las fichas 3.0 a 3.23 y los borradores 7.1 a 7.5. Este documento solo registra las decisiones que condicionan la implementación.
+La motivación está en proposal.md, en la sección "Why". El diseño detallado de cada pieza ya existe: `docs/flujo-orquestador.md` es la guía del flujo y cada skill y agente describe su propia pieza. Este documento solo registra las decisiones que condicionan la implementación.
 
 Restricciones:
-- Se implementa en un solo día y en secuencia: entrega A, luego la HU 1b y el compose mínimo, y después el resto (flujo-orquestador, decisión #22).
+- Se implementa en un solo día y en secuencia: entrega A, luego la HU 1b y el compose mínimo, y después el resto (decisión #22).
 - No hay proyecto Node todavía (`package.json` llega con la HU 1b), así que las pruebas de esta historia no pueden depender de Vitest ni de dependencias del proyecto.
 - La versión instalada es Claude Code 2.1.330. La sintaxis de permisos con espacio (`Bash(git fetch *)`) se comprueba en A8.
 
@@ -27,8 +27,8 @@ Restricciones:
    - Sin dependencias y sin esperar el Vitest de la HU 1b.
    - Para leer YAML se usa el paquete `yaml` que trae OpenSpec instalado globalmente, resuelto con `npm root -g`. Si no está, la prueba falla con un mensaje claro.
    - Alternativas descartadas: Vitest (no existe el proyecto todavía) y un parser YAML propio (frágil).
-2. **`config.yaml` mínimo.** Solo las reglas de formato de specs, `CA-n` y `## Purpose`. El resto vive en `CLAUDE.md` (flujo-orquestador 7.1). Así hay una sola fuente de reglas y menos riesgo de claves duplicadas.
-3. **`deny` ampliado** (flujo-orquestador 7.3).
+2. **`config.yaml` mínimo.** Solo las reglas de formato de specs, `CA-n` y `## Purpose`. El resto vive en `CLAUDE.md` (`CLAUDE.md` y `openspec/config.yaml`). Así hay una sola fuente de reglas y menos riesgo de claves duplicadas.
+3. **`deny` ampliado** (`.claude/settings.json`).
    - Agrega `Bash(git reset)` sin argumentos, porque `git reset *` no lo cubre.
    - Agrega `Edit` de `/.claude/worktrees/**/.github/**` (cubre todas las herramientas de edición), limitado a los worktrees para no estorbar a quien edita el CI en modo interactivo.
 4. **Pruebas de agentes como corridas reproducibles.** Cada una usa una fixture fija y un prompt fijo, y su salida se guarda en `evidencias/issue-1/pruebas/<pieza>.md`. El PR declara que CA-4 a CA-7 se verifican así y no con pruebas unitarias.
@@ -37,7 +37,7 @@ Restricciones:
    - Un job `configuracion-ia` con Node 24: instala OpenSpec 2.1 global, corre `node --test ".claude/tests/*.test.mjs"` y `openspec validate --all --strict --no-interactive`.
    - Un job `proyecto` que corre lint, typecheck, `test:unit` y build solo si existe `package.json`. Así el CI sirve antes y después de la HU 1b sin editarlo.
    - La HU 2 agrega el resto.
-7. **Fixtures en `.claude/fixtures/`.** La HU 1b las excluye de lint, typecheck y Vitest (flujo-orquestador 4.1). El change de ejemplo vive ahí y no en `openspec/changes/`, para que `openspec validate --all` no lo valide como change real. Las pruebas lo copian a un directorio temporal con su propio `openspec/` y lo validan allí.
+7. **Fixtures en `.claude/fixtures/`.** La HU 1b las excluye de lint, typecheck y Vitest. El change de ejemplo vive ahí y no en `openspec/changes/`, para que `openspec validate --all` no lo valide como change real. Las pruebas lo copian a un directorio temporal con su propio `openspec/` y lo validan allí.
 8. **Modelos.** Todo con sonnet. `model` y `effort` se pasan en cada invocación y quedan en `agentes-log.md`.
 9. **Un solo modo de 8 pasos, 5 minutos o menos** (decisión del usuario, 2026-11-21): preparador → `contexto.mjs` → propose → G2 (`revisor-salida` con `openspec validate` y `trazabilidad-grep.mjs`) → apply → `build-test` en paralelo con `revisor-reglas` → una corrección solo si hay CRITICAL → commit, PR en borrador y evidencias. Se descartó mantener dos modos (`demo` y normal reducido), porque complicaba el flujo. Salen del flujo el agente `trazabilidad` (en su lugar, un script; ahorra unos 30 s), G3, la trazabilidad final, `entorno-docker`, worktrees, decisor, revisor cruzado y explorar.
 

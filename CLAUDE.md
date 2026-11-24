@@ -2,11 +2,12 @@
 
 ## 1. Proyecto
 
-Tablero de sensores eléctricos: nodos, sensores, lecturas simuladas, alertas por umbral y roles (administrador y técnico). Se construye con SDD (OpenSpec) y un orquestador de agentes de Claude Code. Documentación en `docs/`: `propuesta.md` (producto), `flujo-orquestador.md` (todo el flujo de IA: secuencia, convenciones, fichas de skills y agentes, y plan de construcción) y `backlog/`.
+Tablero de sensores eléctricos: nodos, sensores, lecturas simuladas, alertas por umbral y roles (administrador y técnico). Se construye con SDD (OpenSpec) y un orquestador de agentes de Claude Code. Documentación en `docs/`: `propuesta.md` (producto), `flujo-orquestador.md` (todo el flujo de IA: secuencia, convenciones, fichas de skills y agentes, y plan de construcción). Las historias viven solo como issues de GitHub; el flujo guarda su copia en `evidencias/issue-<n>/issue.md`.
 
 ## 2. Comandos
 
 - `npm run lint | typecheck | test:unit | test:integration | build | seed | e2e` (existen desde la HU 1b).
+- El orquestador solo ejecuta `typecheck` y `test:unit`. `test:integration`, `e2e`, `lint` y `build` los corre el CI del PR; el orquestador sí escribe las pruebas de integración y e2e.
 - `node --test ".claude/tests/*.test.mjs"`: pruebas de la configuración de IA.
 - **Primera vez en un clon:** abre Claude Code en modo interactivo en la raíz y acepta el diálogo de confianza. Si no lo aceptas, Claude Code ignora las reglas `allow` de `.claude/settings.json` y el orquestador pide permiso en cada paso.
 - `docker compose run --rm flyway migrate info` (HU 2).
