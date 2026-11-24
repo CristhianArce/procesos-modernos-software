@@ -93,6 +93,30 @@ components:
         estado:
           type: string
           enum: [conectado, desconectado]
+    TecnicoAsignar:
+      type: object
+      required: [tecnicoId]
+      properties:
+        tecnicoId:
+          type: string
+          format: uuid
+          description: Identificador de un usuario con rol técnico
+    TecnicoDeNodo:
+      type: object
+      required: [nodoId, tecnico]
+      properties:
+        nodoId:
+          type: string
+          format: uuid
+        tecnico:
+          type: object
+          required: [id, nombreUsuario]
+          properties:
+            id:
+              type: string
+              format: uuid
+            nombreUsuario:
+              type: string
     Lectura:
       type: object
       required: [id, sensorId, voltaje, corriente, potencia, tomadaEn]
@@ -808,6 +832,38 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/EstadoNodoActual"
+        "400":
+          $ref: "#/components/responses/DatosInvalidos"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+        "403":
+          $ref: "#/components/responses/SinPermiso"
+        "404":
+          $ref: "#/components/responses/NoEncontrado"
+  /api/mantenimiento/nodos/{id}/tecnico:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    put:
+      summary: Asignar el técnico de un nodo
+      description: >-
+        Solo administradores. Asigna al nodo un usuario con rol técnico; un nodo tiene como máximo un técnico
+        y asignar otro reemplaza al anterior. Responde 400 si el usuario no es técnico (`El usuario no es técnico`)
+        o el cuerpo es inválido, y 404 si el nodo (`Nodo no encontrado`) o el usuario (`Usuario no encontrado`) no existen.
+      security:
+        - sesion: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TecnicoAsignar"
+      responses:
+        "200":
+          description: Técnico asignado al nodo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TecnicoDeNodo"
         "400":
           $ref: "#/components/responses/DatosInvalidos"
         "401":
