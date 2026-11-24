@@ -1,19 +1,21 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { db } from "@/lib/db";
-import { listarPorNodo } from "../repo";
+import { crear, listarPorNodo } from "../repo";
 
 const prefijo = `int-repo-afectados-${randomUUID().slice(0, 8)}`;
 let conDatos: string;
 let otro: string;
 let vacio: string;
 let paraBorrar: string;
+let altaA: string;
+let altaB: string;
 const idMenor = "00000000-0000-4000-8000-0000000000a1";
 const idMayor = "00000000-0000-4000-8000-0000000000a2";
 
 beforeAll(async () => {
   const q = (sql: string, p: unknown[]) => db().query(sql, p).then((r) => r.rows);
-  [conDatos, otro, vacio, paraBorrar] = (await q("INSERT INTO nodos (nombre) VALUES ($1), ($1), ($1), ($1) RETURNING id", [prefijo])).map((f) => f.id);
+  [conDatos, otro, vacio, paraBorrar, altaA, altaB] = (await q("INSERT INTO nodos (nombre) VALUES ($1), ($1), ($1), ($1), ($1), ($1) RETURNING id", [prefijo])).map((f) => f.id);
   await q(
     `INSERT INTO nodo_usuarios (id, nodo_id, alias) VALUES
        ($2, $1, 'Beta ${prefijo}'),
@@ -59,5 +61,31 @@ describe("repo de afectados", () => {
 
   it("#25 CA-1: un alias vacío viola el CHECK", async () => {
     await expect(db().query("INSERT INTO nodo_usuarios (nodo_id, alias) VALUES ($1, '   ')", [vacio])).rejects.toThrow();
+  });
+});
+
+describe("repo de afectados: crear", () => {
+  it("#54 CA-1: inserta y devuelve { id, alias }, y queda guardado en su nodo", async () => {
+    const creado = await crear(altaA, `Nuevo ${prefijo}`);
+    expect(creado).toEqual({ id: expect.any(String), alias: `Nuevo ${prefijo}` });
+    expect(Object.keys(creado).sort()).toEqual(["alias", "id"]);
+    expect(await listarPorNodo(altaA)).toEqual([creado]);
+  });
+
+  it("#54 CA-1: el afectado solo aparece en su nodo", async () => {
+    const creado = await crear(altaB, `Solo aqui ${prefijo}`);
+    expect((await listarPorNodo(altaB)).map((a) => a.id)).toContain(creado.id);
+    expect((await listarPorNodo(altaA)).map((a) => a.id)).not.toContain(creado.id);
+    expect((await listarPorNodo(otro)).map((a) => a.alias)).toEqual([`Ajeno ${prefijo}`]);
+  });
+
+  it("#54 CA-1: un alias repetido en el nodo se guarda dos veces", async () => {
+    const antes = (await listarPorNodo(vacio)).length;
+    const a = await crear(vacio, `Repetido ${prefijo}`);
+    const b = await crear(vacio, `Repetido ${prefijo}`);
+    expect(a.id).not.toBe(b.id);
+    const lista = await listarPorNodo(vacio);
+    expect(lista).toHaveLength(antes + 2);
+    expect(lista.filter((x) => x.alias === `Repetido ${prefijo}`)).toHaveLength(2);
   });
 });
