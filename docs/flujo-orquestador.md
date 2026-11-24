@@ -15,6 +15,43 @@ SDD (desarrollo guiado por especificaciones) significa que primero se escribe qu
 
 ## 2. El flujo
 
+![Flujo del orquestador](img/flujo-orquestador.png)
+
+**Cómo leer el diagrama**
+
+*Colores: quién ejecuta el paso*
+
+| Color | Actor | Qué hace |
+|---|---|---|
+| Violeta | La **sesión del orquestador** (opus) | Escribe el código de producción, lanza y recoge a los agentes de pruebas, y corrige. Borde punteado: coordinación de la sesión, sin skill ni agente. Verde y amarillo nunca van solos dentro de un nodo violeta. Un cuadro violeta o verde con otro amarillo adentro es la sesión o el agente usando una herramienta de OpenSpec |
+| Verde | **Agentes** de `.claude/agents/` (sonnet) | `preparador` (1), `revisor-salida` (4), tres `escritor-pruebas` (5) y `revisor-reglas` (6). `build-test` del paso 6 es un skill, pero va dentro de un paso con agente |
+| Amarillo | **OpenSpec** (skills `openspec-*` y su CLI) | Genera la propuesta (3, dentro de la sesión), valida la propuesta (4, dentro del agente), guía la implementación (5, dentro de la sesión) y archiva el change tras el merge |
+| Azul | **Commit y PR, CI de GitHub y la persona** | Skills `commit` y `abrir-pr` (8), CI del PR y revisión humana, que es quien fusiona |
+| Rojo | Estado de **bloqueo** | El flujo se detiene y se avisa a la persona |
+
+*Formas: qué tipo de elemento es*
+
+| Forma | Significa |
+|---|---|
+| Rectángulo | Un paso del flujo |
+| Rombo | Una decisión con veredicto (`APROBADO`, `CORREGIR` o `BLOQUEAR`) |
+| Rectángulo con barras dobles a los lados | Un agente que corre en segundo plano, en paralelo con la sesión |
+| Estadio (extremos redondeados) | Estado final del flujo |
+
+*Líneas: qué tipo de relación es*
+
+| Línea | Significa |
+|---|---|
+| Continua con flecha | Siguiente paso del camino normal; con texto, la condición que lo activa |
+| Gruesa con flecha | Lanzamiento en paralelo y en segundo plano: el agente trabaja mientras la sesión sigue |
+| Continua que vuelve atrás | Un reintento: el mismo paso se repite con los hallazgos corregidos |
+| Punteada con flecha | Salida por excepción hacia «Bloqueado» |
+
+En el paso 5 la sesión escribe el código y, al mismo tiempo, tres agentes escriben las pruebas, uno por tipo (unitarias, integración y e2e). Las pruebas salen de las specs y del diseño, no del código ya escrito. Al terminar, la sesión las recoge, comprueba que cada tarea de pruebas tiene su archivo y alinea el código con las firmas que los agentes tuvieron que suponer.
+
+<details>
+<summary>Fuente del diagrama (mermaid), para editarlo</summary>
+
 ```mermaid
 flowchart LR
     PRE["0 Precondición<br/>Sesión: checkout limpio<br/>y rama base"] --> S1["1 Preparar<br/>agente preparador"]
@@ -86,37 +123,7 @@ flowchart LR
     style S7 stroke-dasharray: 5 4
 ```
 
-**Cómo leer el diagrama**
-
-*Colores: quién ejecuta el paso*
-
-| Color | Actor | Qué hace |
-|---|---|---|
-| Violeta | La **sesión del orquestador** (opus) | Escribe el código de producción, lanza y recoge a los agentes de pruebas, y corrige. Borde punteado: coordinación de la sesión, sin skill ni agente. Verde y amarillo nunca van solos dentro de un nodo violeta. Un cuadro violeta o verde con otro amarillo adentro es la sesión o el agente usando una herramienta de OpenSpec |
-| Verde | **Agentes** de `.claude/agents/` (sonnet) | `preparador` (1), `revisor-salida` (4), tres `escritor-pruebas` (5) y `revisor-reglas` (6). `build-test` del paso 6 es un skill, pero va dentro de un paso con agente |
-| Amarillo | **OpenSpec** (skills `openspec-*` y su CLI) | Genera la propuesta (3, dentro de la sesión), valida la propuesta (4, dentro del agente), guía la implementación (5, dentro de la sesión) y archiva el change tras el merge |
-| Azul | **Commit y PR, CI de GitHub y la persona** | Skills `commit` y `abrir-pr` (8), CI del PR y revisión humana, que es quien fusiona |
-| Rojo | Estado de **bloqueo** | El flujo se detiene y se avisa a la persona |
-
-*Formas: qué tipo de elemento es*
-
-| Forma | Significa |
-|---|---|
-| Rectángulo | Un paso del flujo |
-| Rombo | Una decisión con veredicto (`APROBADO`, `CORREGIR` o `BLOQUEAR`) |
-| Rectángulo con barras dobles a los lados | Un agente que corre en segundo plano, en paralelo con la sesión |
-| Estadio (extremos redondeados) | Estado final del flujo |
-
-*Líneas: qué tipo de relación es*
-
-| Línea | Significa |
-|---|---|
-| Continua con flecha | Siguiente paso del camino normal; con texto, la condición que lo activa |
-| Gruesa con flecha | Lanzamiento en paralelo y en segundo plano: el agente trabaja mientras la sesión sigue |
-| Continua que vuelve atrás | Un reintento: el mismo paso se repite con los hallazgos corregidos |
-| Punteada con flecha | Salida por excepción hacia «Bloqueado» |
-
-En el paso 5 la sesión escribe el código y, al mismo tiempo, tres agentes escriben las pruebas, uno por tipo (unitarias, integración y e2e). Las pruebas salen de las specs y del diseño, no del código ya escrito. Al terminar, la sesión las recoge, comprueba que cada tarea de pruebas tiene su archivo y alinea el código con las firmas que los agentes tuvieron que suponer.
+</details>
 
 | # | Paso | Quién | Qué deja |
 |---|---|---|---|
