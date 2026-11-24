@@ -157,3 +157,22 @@ test("CA-6: el paso 8 usa un script por skill, no lee plantillas y deja el PR ab
   assert.match(pr, /El PR debe quedar abierto/);
   assert.match(pr, /`gh pr close`/);
 });
+
+test("CA-6: el archivado con openspec es un skill de la persona que se corre después del merge y está escrito en el proyecto", () => {
+  const skill = leer(".claude/skills/archivar-change-openspec/SKILL.md");
+  const fm = frontmatter(skill);
+  assert.equal(fm.name, "archivar-change-openspec");
+  assert.equal(fm["disable-model-invocation"], true, "solo lo invoca la persona");
+  assert.doesNotMatch(String(fm["allowed-tools"]), /Bash(?!\()/, "allowed-tools acotado: nunca Bash a secas");
+  assert.match(skill, /DESPUÉS del merge|después de que ese PR se mezcla/);
+  assert.match(skill, /openspec archive <change> --yes/);
+  assert.match(skill, /`openspec\/specs\/`/);
+  assert.match(skill, /Si el PR aún no se ha mezclado|aún no se ha mezclado/);
+  assert.match(skill, /chore\/archivar-<change>/);
+  assert.match(leer("CLAUDE.md"), /\/archivar-change-openspec <n>` DESPUÉS de mezclar el PR/);
+  assert.match(leer("docs/flujo-orquestador.md"), /\*\*Después de mezclar\*\*, una persona corre `\/archivar-change-openspec <n>`/);
+  assert.match(leer(".claude/skills/orquestador/plantillas/pr-body.md"), /## Después del merge[\s\S]*\/archivar-change-openspec <n>/);
+  const orq = leer(".claude/skills/orquestador/SKILL.md");
+  assert.match(orq, /## Después del merge/);
+  assert.match(orq, /\*\*Pendiente tras el merge:\*\* correr `\/archivar-change-openspec <n>`/);
+});

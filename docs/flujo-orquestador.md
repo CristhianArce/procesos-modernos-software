@@ -89,7 +89,7 @@ flowchart LR
     S7 -->|"repite build-test"| V6
     V6 --> S8["8 PR borrador<br/>y evidencias"]
     S8 --> CI["CI del PR<br/>openspec validate --all<br/>y revisión humana"]
-    CI --> ARC["Último commit del mismo PR<br/>openspec archive"]
+    CI --> ARC["Después de mezclar: PR chore<br/>/archivar-change-openspec<br/>(openspec archive)"]
 
     VER -.->|"BLOQUEAR o 2.º CORREGIR"| BLOQ(["Bloqueado"])
     UNI -.->|"tareas pendientes sin motivo"| BLOQ
@@ -163,6 +163,7 @@ Así el orquestador no necesita Docker ni base de datos y se mantiene liviano. E
 | Agente `escritor-pruebas` | `.claude/agents/` | Escribe las pruebas de un tipo (unitarias, integración o e2e); se lanzan tres a la vez, en segundo plano, mientras la sesión escribe el código. Solo crea archivos de prueba (las unitarias siempre `*.test.ts`) y no ejecuta nada |
 | Skills `openspec-*` | `.claude/skills/` | Los comandos de OpenSpec: `explore`, `propose`, `apply`, `archive`, `sync-specs` y `update-change`. El orquestador usa `propose` y `apply` |
 | Skills `build-test`, `commit`, `abrir-pr` | `.claude/skills/` | Compilar y probar, commitear, abrir el PR |
+| Skill `archivar-change-openspec` | `.claude/skills/` | Después de mezclar el PR de la historia: archiva el change con `openspec archive` para pasar los deltas a `openspec/specs/` y abre un PR `chore`. Lo invoca solo la persona, con `/archivar-change-openspec <n>` |
 | Skill `crear-hu` | `.claude/skills/` | Redactar una historia con `CA-n` y publicarla como issue |
 | Scripts `.mjs` | `.claude/skills/orquestador/scripts/` | `estado`, `contexto`, `trazabilidad-grep`, `registrar-agente`, `tiempos`, `puede-commitear`, `copiar-evidencias` |
 | Plantillas | `.claude/skills/orquestador/plantillas/` | Formato de cada archivo de `<trabajo>` |
@@ -192,8 +193,8 @@ Así el orquestador no necesita Docker ni base de datos y se mantiene liviano. E
 
 1. El CI corre todos los controles de la sección 3.
 2. Una persona revisa.
-3. Con el CI en verde y la revisión terminada, una persona archiva en el mismo PR, como último commit: `openspec archive <change> --yes`, que pasa la especificación a `openspec/specs/`.
-4. Una persona fusiona.
+3. Una persona fusiona el PR. El orquestador nunca fusiona ni archiva.
+4. **Después de mezclar**, una persona corre `/archivar-change-openspec <n>` desde `main`: archiva el change (`openspec archive <change> --yes`), que pasa la especificación a `openspec/specs/`, y lo sube en una rama `chore/archivar-<change>` con su propio PR. **Este paso es obligatorio**: sin él los specs vigentes quedan desactualizados y la siguiente historia que los modifique falla en la revisión de la propuesta.
 
 ## 8. Cómo probar que el flujo funciona
 
