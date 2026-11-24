@@ -62,6 +62,12 @@ TypeScript, una sola app Next.js 16 (App Router) para interfaz y API, Route Hand
 - BDD: cada CA del issue (Dado/Cuando/Entonces) se vuelve al menos un escenario `**WHEN**`/`**THEN**` y al menos una prueba automatizada.
 - TDD: en cada tarea se escribe primero la prueba que la verifica y luego el código que la hace pasar.
 - El nombre de cada prueba nueva cita el issue y el CA que verifica: `it("#<n> CA-2: rechaza un umbral negativo con 400")`. El número del issue hace única la referencia (todas las historias tienen un CA-1). Las páginas que son Server Components asíncronos o leen datos solo se prueban con Playwright, porque Vitest no las renderiza; los componentes síncronos sin datos se renderizan a HTML con `react-dom/server` en Vitest.
+- Pruebas e2e (Playwright), que comparten una sola base con las demás:
+  - Toda prueba que crea o cambia datos los elimina o los restaura al terminar, también si falla (`afterEach`). Un nodo, sensor o usuario que quede cambia lo que cuentan otras pruebas.
+  - Una prueba no afirma totales ni estados globales («hay 1 nodo desconectado») sobre datos que no creó; solo cuenta lo suyo o lo acota por un nombre propio.
+  - Los selectores apuntan a un solo elemento: rol con nombre `exact: true`, `data-testid` o un elemento contenedor. Un texto que la página repite (el estado del nodo aparece en el encabezado y en su ficha) o un nombre que contiene otro texto de la página no sirve.
+  - Los nombres y datos de prueba son únicos (`Date.now()`) y no dependen de valores aleatorios ni de lecturas del simulador continuo.
+  - Como el orquestador no las ejecuta, se revisan leyendo la prueba contra estas reglas; el CI del PR es la primera ejecución real.
 - Al aplicar: marcar `[x]` solo lo hecho, dejar `[ ]` lo pendiente con su motivo en `decisiones.md` (citando el número de la tarea), y no reformatear líneas no tocadas.
 - Las pruebas de aceptación de la historia pasan antes de fusionar, también en el CI del PR (integración continua).
 - Commits y PR citan el issue (`#<n>`) y el change (`Change: <nombre>`).
