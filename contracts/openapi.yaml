@@ -112,6 +112,51 @@ components:
         tomadaEn:
           type: string
           format: date-time
+    LecturaHistorico:
+      type: object
+      description: Una lectura del histórico con los nombres de su sensor y de su nodo (solo para mostrar; los filtros usan el id).
+      required: [id, sensorId, sensorNombre, nodoId, nodoNombre, voltaje, corriente, potencia, tomadaEn]
+      properties:
+        id:
+          type: string
+          format: uuid
+        sensorId:
+          type: string
+          format: uuid
+        sensorNombre:
+          type: string
+        nodoId:
+          type: string
+          format: uuid
+        nodoNombre:
+          type: string
+        voltaje:
+          type: number
+        corriente:
+          type: number
+        potencia:
+          type: number
+        tomadaEn:
+          type: string
+          format: date-time
+    PaginaHistorico:
+      type: object
+      required: [items, pagina, porPagina, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/LecturaHistorico"
+        pagina:
+          type: integer
+          minimum: 1
+        porPagina:
+          type: integer
+          example: 25
+        total:
+          type: integer
+          minimum: 0
+          description: Lecturas que cumplen los filtros, en todas las páginas.
     Alerta:
       type: object
       description: Una lectura superó el umbral máximo de su sensor en una magnitud. Una sola severidad y sin estado.
@@ -890,6 +935,60 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Lectura"
+        "400":
+          $ref: "#/components/responses/DatosInvalidos"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+  /api/historico:
+    get:
+      summary: Consultar el histórico de lecturas, paginado y con filtros
+      description: >-
+        Administradores y técnicos. 25 lecturas por página, de la más reciente a la más antigua y, a igual fecha,
+        por identificador descendente. Los filtros se combinan con AND; un identificador que no existe da una lista vacía.
+      security:
+        - sesion: []
+      parameters:
+        - name: nodoId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: sensorId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: desde
+          in: query
+          required: false
+          description: Fecha y hora ISO 8601 en UTC (con `Z`), extremo inclusivo. No puede ser posterior a `hasta`.
+          schema:
+            type: string
+            format: date-time
+        - name: hasta
+          in: query
+          required: false
+          description: Fecha y hora ISO 8601 en UTC (con `Z`), extremo inclusivo.
+          schema:
+            type: string
+            format: date-time
+        - name: pagina
+          in: query
+          required: false
+          description: Una página más allá del final devuelve `items` vacío.
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+      responses:
+        "200":
+          description: Una página del histórico
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginaHistorico"
         "400":
           $ref: "#/components/responses/DatosInvalidos"
         "401":
