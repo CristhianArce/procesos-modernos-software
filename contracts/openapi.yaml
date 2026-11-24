@@ -1125,6 +1125,38 @@ paths:
           $ref: "#/components/responses/NoAutenticado"
         "403":
           $ref: "#/components/responses/SinPermiso"
+  /api/notificaciones/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Identificador UUID de la notificación. Uno mal formado responde 400.
+        schema:
+          type: string
+          format: uuid
+    patch:
+      summary: Marcar como leída una notificación propia
+      description: >-
+        Solo técnicos. Sin cuerpo (si llega uno, se ignora). El destinatario es el de la sesión. Marcar una ya
+        leída responde 200 sin cambiar nada. Una notificación de otro técnico o que no existe responde 404, sin
+        revelar si existe.
+      security:
+        - sesion: []
+      responses:
+        "200":
+          description: La notificación, ya leída
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notificacion"
+        "400":
+          $ref: "#/components/responses/DatosInvalidos"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+        "403":
+          $ref: "#/components/responses/SinPermiso"
+        "404":
+          $ref: "#/components/responses/NoEncontrado"
   /api/topologia:
     get:
       summary: Consultar la topología de la red para el mímico
