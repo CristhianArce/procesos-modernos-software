@@ -194,7 +194,7 @@ Así el orquestador no necesita Docker ni base de datos y se mantiene liviano. E
 1. El CI corre todos los controles de la sección 3.
 2. Una persona revisa.
 3. Una persona fusiona el PR. El orquestador nunca fusiona ni archiva.
-4. **Después de mezclar**, una persona corre `/archivar-change-openspec <n>` desde `main`: archiva el change (`openspec archive <change> --yes`), que pasa la especificación a `openspec/specs/`, y lo sube en una rama `chore/archivar-<change>` con su propio PR. **Este paso es obligatorio**: sin él los specs vigentes quedan desactualizados y la siguiente historia que los modifique falla en la revisión de la propuesta.
+4. **Después de mezclar**, una persona corre `/archivar-change-openspec <n>` desde `main`: archiva el change (`openspec archive <change> --yes`), que pasa la especificación a `openspec/specs/`, y lo sube en una rama `chore/archivar-<change>` con su propio PR. **Este paso es obligatorio**: sin él los specs vigentes quedan desactualizados y la siguiente historia que los modifique falla en la revisión de la propuesta. Solo recibe el número del issue: detecta el PR (por `(#<n>)` en el título), el change (línea `Change:` del cuerpo) y la rama base, y si el issue sigue abierto (un `Closes #<n>` solo cierra al llegar a `main`) lo cierra con un comentario que enlaza el PR.
 
 ## 8. Cómo probar que el flujo funciona
 
