@@ -36,11 +36,11 @@ flowchart LR
     subgraph S5["5 Implementar el código (sesión)"]
         OA["skill openspec-apply-change<br/>ejecuta tasks.md"]
     end
-    VER -->|APROBADO| FORK(( ))
-    FORK --> OA
-    FORK ==>|"segundo plano"| TU[["escritor-pruebas<br/>unitarias"]]
-    FORK ==>|"segundo plano"| TI[["escritor-pruebas<br/>integración"]]
-    FORK ==>|"segundo plano"| TE[["escritor-pruebas<br/>e2e"]]
+    VER -->|APROBADO| INI["Sesión: lanza en paralelo<br/>el código y 3 agentes de pruebas"]
+    INI --> OA
+    INI ==>|"segundo plano"| TU[["escritor-pruebas<br/>unitarias"]]
+    INI ==>|"segundo plano"| TI[["escritor-pruebas<br/>integración"]]
+    INI ==>|"segundo plano"| TE[["escritor-pruebas<br/>e2e"]]
 
     OA --> UNI["5 Unir<br/>Sesión: espera a los 3 agentes y ajusta<br/>los nombres que las pruebas supusieron"]
     TU --> UNI
@@ -64,14 +64,14 @@ flowchart LR
     classDef gha fill:#dbeafe,stroke:#1d4ed8,color:#1e3a8a
     classDef bloq fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d
     class OP,OA,OV,ARC openspec
-    class PRE,S2,FIX,UNI,S7 sesion
+    class PRE,S2,FIX,INI,UNI,S7 sesion
     class S1,VER,TU,TI,TE,V6 agente
     class S8,CI gha
     class BLOQ bloq
     style S3G fill:#ede9fe,stroke:#6d28d9,color:#4c1d95
     style S5 fill:#ede9fe,stroke:#6d28d9,color:#4c1d95
     style REV fill:#dcfce7,stroke:#15803d,color:#14532d
-    style FORK fill:#4c1d95,stroke:#4c1d95
+    style INI stroke-dasharray: 5 4
     style PRE stroke-dasharray: 5 4
     style S2 stroke-dasharray: 5 4
     style FIX stroke-dasharray: 5 4
@@ -98,7 +98,6 @@ flowchart LR
 | Rectángulo | Un paso del flujo |
 | Rombo | Una decisión con veredicto (`APROBADO`, `CORREGIR` o `BLOQUEAR`) |
 | Rectángulo con barras dobles a los lados | Un agente que corre en segundo plano, en paralelo con la sesión |
-| Punto morado | El punto donde la sesión lanza varias cosas a la vez (el código y los tres agentes de pruebas) |
 | Estadio (extremos redondeados) | Estado final del flujo |
 
 *Líneas: qué tipo de relación es*
