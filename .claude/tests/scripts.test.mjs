@@ -9,7 +9,7 @@ import { leer, RAIZ } from "./util.mjs";
 import { escribirCampo, leerCampo } from "../skills/orquestador/scripts/estado.mjs";
 import { calcular, componer, leerMarcas, resumenMarkdown } from "../skills/orquestador/scripts/tiempos.mjs";
 import { aMarkdown, analizar, criteriosDelIssue, decisionesCitadas, decisionesRegistradas, pruebasDeHistoria, pruebasDeTexto } from "../skills/orquestador/scripts/trazabilidad-grep.mjs";
-import { filaDeAgente, registrarAgente } from "../skills/orquestador/scripts/registrar-agente.mjs";
+import { contarTareas, filaDeAgente, registrarAgente } from "../skills/orquestador/scripts/registrar-agente.mjs";
 import { agentesDesdeLog, copiarEvidencias } from "../skills/orquestador/scripts/copiar-evidencias.mjs";
 import { capacidadesEspecificadas, changesActivos, generarContexto, rutasDelContrato, tablasDeMigraciones } from "../skills/orquestador/scripts/contexto.mjs";
 
@@ -213,4 +213,70 @@ test("CA-6: un agente en segundo plano (--paralelo) deja su fila sin marca de ti
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test("CA-6: registrar-agente cuenta las tareas hechas y el total de un tasks.md", () => {
+  assert.equal(contarTareas("- [x] 1.1 a\n- [x] 1.2 b\n  - [ ] 2.1 c\n- [X] 3.1 d\n"), "3 de 4 tareas");
+  assert.equal(contarTareas("# sin tareas\n"), "0 de 0 tareas");
+});
+
+test("CA-6: --tipos registra los tres escritor-pruebas en una llamada y --tareas cuenta las tareas, sin mover la fase", () => {
+  const dir = temporal();
+  try {
+    const run = (...a) => spawnSync(process.execPath, a, { encoding: "utf8" });
+    const E = join(SCRIPTS, "estado.mjs");
+    const R = join(SCRIPTS, "registrar-agente.mjs");
+    const tasks = join(dir, "tasks.md");
+    writeFileSync(tasks, "- [x] 1.1 a\n- [x] 1.2 b\n");
+    assert.equal(run(E, "escribir", "902", "Última fase cerrada", "4", "--trabajo", dir).status, 0);
+    const lote = run(R, "902", "5 Escribir pruebas", "escritor-pruebas", "sonnet / medium", "a1,b2,c3", "OK", "--trabajo", dir, "--tipos", "unitarias,integracion,e2e");
+    assert.equal(lote.status, 0, lote.stderr);
+    const log = readFileSync(join(dir, "agentes-log.md"), "utf8");
+    assert.match(log, /5 Escribir pruebas \(unitarias\) \| escritor-pruebas \| sonnet \/ medium \| a1 \|/);
+    assert.match(log, /5 Escribir pruebas \(e2e\) \| escritor-pruebas \| sonnet \/ medium \| c3 \|/);
+    assert.equal(leerCampo(readFileSync(join(dir, "estado.md"), "utf8"), "Última fase cerrada"), "4", "los agentes en segundo plano no mueven la fase");
+    const desparejos = run(R, "902", "5 Escribir pruebas", "escritor-pruebas", "sonnet / medium", "a1,b2", "OK", "--trabajo", dir, "--tipos", "unitarias,integracion,e2e");
+    assert.notEqual(desparejos.status, 0, "tipos e ids deben coincidir");
+    const cierre = run(R, "902", "5 Implementar", "sesión", "opus", "-", "-", "--trabajo", dir, "--tareas", tasks);
+    assert.equal(cierre.status, 0, cierre.stderr);
+    assert.match(readFileSync(join(dir, "agentes-log.md"), "utf8"), /5 Implementar \| sesión \| opus \| — \| 2 de 2 tareas/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("CA-6: tiempos.mjs separa la espera de la persona del tiempo activo y no la pierde al cerrar pasos", () => {
+  const marcas = [{ paso: 1, hora: "2026-11-21T10:00:20Z" }, { paso: 2, hora: "2026-11-21T10:00:22Z" }, { paso: 3, hora: "2026-11-21T10:01:52Z" }];
+  const esperas = [{ inicio: "2026-11-21T10:00:30Z", fin: "2026-11-21T10:01:00Z" }];
+  const r = calcular("2026-11-21T10:00:00Z", marcas, new Date("2026-11-21T10:02:30Z"), 300, esperas);
+  assert.equal(r.espera, 30);
+  assert.equal(r.activo, 120);
+  assert.equal(r.pasos.find((p) => p.paso === 3).espera, 30);
+  assert.equal(r.dentro, true, "la meta se compara con el total, no con el tiempo activo");
+  const md = resumenMarkdown(r);
+  assert.match(md, /Espera de la persona/);
+  assert.match(md, /Tiempo activo \(sin la espera de la persona\): 2 min 00 s \(120 s\)\. Espera de la persona: 0 min 30 s\./);
+  assert.doesNotMatch(resumenMarkdown(calcular("2026-11-21T10:00:00Z", marcas, new Date("2026-11-21T10:02:30Z"))), /Espera de la persona/, "sin esperas el resumen no cambia");
+
+  const dir = temporal();
+  try {
+    const run = (...a) => spawnSync(process.execPath, a, { encoding: "utf8" });
+    const T = join(SCRIPTS, "tiempos.mjs");
+    assert.equal(run(T, "inicio", "903", "--trabajo", dir).status, 0);
+    assert.equal(run(T, "espera", "903", "inicio", "--trabajo", dir).status, 0);
+    assert.equal(run(T, "espera", "903", "fin", "--trabajo", dir).status, 0);
+    assert.equal(run(T, "cerrar", "903", "3", "--trabajo", dir).status, 0);
+    assert.equal(run(T, "resumen", "903", "--trabajo", dir).status, 0);
+    const { marcas: leidas, esperas: leidasEsperas } = leerMarcas(readFileSync(join(dir, "tiempos.md"), "utf8"));
+    assert.deepEqual(leidas.map((m) => m.paso), [3]);
+    assert.equal(leidasEsperas.length, 1);
+    assert.ok(leidasEsperas[0].fin, "la espera quedó cerrada");
+    assert.notEqual(run(T, "espera", "903", "mañana", "--trabajo", dir).status, 0);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("CA-1: config.yaml limita cada requisito a 500 caracteres", () => {
+  assert.match(leer("openspec/config.yaml"), /máximo 500 caracteres/);
 });

@@ -23,6 +23,7 @@ rules:
   specs:
     - "Encabezados y palabras clave en inglés: ## ADDED|MODIFIED|REMOVED|RENAMED Requirements, ### Requirement:, #### Scenario:, SHALL/MUST, **WHEN**/**THEN**. Nunca ### Requisito:, DEBE ni **CUANDO**."
     - Cada requisito y cada escenario cita su criterio CA-n del issue.
+    - "El texto de cada requisito tiene como máximo 500 caracteres: con más, openspec validate --strict falla. Lo que sobre (ejemplos, casos límite, la interfaz) va en escenarios o en otro requisito."
     - "Si el change crea una capacidad nueva, su delta specs/<cap>/spec.md empieza con ## Purpose y un texto real."
   design:
     - design.md es obligatorio si el change modifica contracts/openapi.yaml o agrega una migración en db/migration/.

@@ -113,7 +113,10 @@ test("CA-6: escritor-pruebas solo crea pruebas, sin Bash ni lanzar agentes, y el
   assert.match(texto, /<tipo>: unitarias, integracion o e2e/);
   assert.match(texto, /las pruebas las escribe `escritor-pruebas`: no las escribas tú/);
   assert.match(texto, /recoge a los tres agentes `escritor-pruebas`/);
-  assert.match(texto, /"5 Escribir pruebas \(<tipo>\)" escritor-pruebas "sonnet \/ medium" <id> <OK o PARCIAL> "" --paralelo/);
+  assert.match(texto, /"5 Escribir pruebas" escritor-pruebas "sonnet \/ medium" <id1>,<id2>,<id3> <OK o PARCIAL> "" --tipos unitarias,integracion,e2e/);
+  assert.match(texto, /"5 Escribir pruebas \(<tipo>\)"` y `--paralelo`/);
+  assert.match(texto, /No corras `build-test` en este paso/);
+  assert.match(texto, /--tareas openspec\/changes\/<change>\/tasks\.md/);
 });
 
 test("CA-6: escritor-pruebas reparte el trabajo por tipo, un archivo de supuestos por tipo y e2e sin totales de la semilla", () => {

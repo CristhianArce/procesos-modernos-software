@@ -5,6 +5,9 @@
 //   pero no deja marca de tiempo ni mueve "Última fase cerrada": su marca llegaría después de la del paso 5 y falsearía las duraciones y el retomar con desde=.
 //   <paso>: número del paso, con etiqueta opcional ("4" o "4 Revisar propuesta (intento 1)"). <id>: id del agente, o - para la sesión.
 //   rechazos: texto plano y corto (sin comillas invertidas ni $); el detalle queda en gates.md y verificacion.md.
+//   --tipos <t1,t2,...>: registra de una vez varios agentes del mismo tipo (los tres escritor-pruebas). <id> lleva sus ids separados por comas, en el
+//   mismo orden, y cada fila se llama "<paso> (<tipo>)". Siempre va en segundo plano (--paralelo implícito).
+//   --tareas <ruta de tasks.md>: el veredicto pasa a ser "<hechas> de <total> tareas", contadas en ese archivo (pon - como veredicto).
 // La hora la pone el script: el modelo no la conoce. Un CORREGIR o BLOQUEAR deja marca de tiempo, pero no cierra la fase.
 import { appendFileSync, copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -19,6 +22,13 @@ export function filaDeAgente({ paso, agente, modelo, id, veredicto, rechazos }, 
 }
 
 export const numeroDePaso = (paso) => String(paso).match(/^\s*(\d+)/)?.[1];
+
+/** "<hechas> de <total> tareas" según las casillas de un tasks.md (las tareas pendientes `[ ]` cuentan en el total). */
+export function contarTareas(texto) {
+  const hechas = (texto.match(/^\s*- \[[xX]\] /gm) ?? []).length;
+  const total = hechas + (texto.match(/^\s*- \[ \] /gm) ?? []).length;
+  return `${hechas} de ${total} tareas`;
+}
 export const cierraFase = (veredicto) => !/^\s*(CORREGIR|BLOQUEAR)/i.test(String(veredicto));
 
 export function registrarAgente(n, datos, trabajo = dirTrabajo(n), ahora = new Date()) {
@@ -45,8 +55,20 @@ if (esPrincipal(import.meta.url)) {
     fallar("Uso: registrar-agente.mjs <n> <paso> <agente> <modelo> <id|-> <veredicto> [rechazos...] [--trabajo <dir>] [--paralelo]", 2);
   }
   try {
-    const r = registrarAgente(n, { paso, agente, modelo, id, veredicto, rechazos: rechazos.join(" "), paralelo: o.paralelo === true }, typeof o.trabajo === "string" ? o.trabajo : undefined);
-    console.log(`${r.fila}\n${r.medido ? "Marca de tiempo registrada." : "Sin marca de tiempo (paralelo, o la corrida no se está midiendo)."}`);
+    const trabajo = typeof o.trabajo === "string" ? o.trabajo : undefined;
+    const cuerpo = { paso, agente, modelo, id, veredicto, rechazos: rechazos.join(" "), paralelo: o.paralelo === true };
+    if (typeof o.tareas === "string") cuerpo.veredicto = contarTareas(readFileSync(o.tareas, "utf8"));
+    if (typeof o.tipos === "string") {
+      const tipos = o.tipos.split(",");
+      const ids = id.split(",");
+      if (tipos.length !== ids.length) fallar(`--tipos trae ${tipos.length} tipos y <id> trae ${ids.length} ids`, 2);
+      for (const [i, tipo] of tipos.entries()) {
+        console.log(registrarAgente(n, { ...cuerpo, paso: `${paso} (${tipo})`, id: ids[i], paralelo: true }, trabajo).fila);
+      }
+    } else {
+      const r = registrarAgente(n, cuerpo, trabajo);
+      console.log(`${r.fila}\n${r.medido ? "Marca de tiempo registrada." : "Sin marca de tiempo (paralelo, o la corrida no se está midiendo)."}`);
+    }
   } catch (e) {
     fallar(e.message, 2);
   }
