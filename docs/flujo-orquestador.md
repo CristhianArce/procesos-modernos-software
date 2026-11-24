@@ -17,34 +17,45 @@ SDD (desarrollo guiado por especificaciones) significa que primero se escribe qu
 
 ```mermaid
 flowchart LR
-    S12["1 Preparar<br/>2 Contexto"] --> S3["3 Propuesta<br/>skill openspec-propose"]
+    PRE["0 Precondición<br/>Sesión: checkout limpio<br/>y rama base"] --> S1["1 Preparar<br/>agente preparador"]
+    S1 --> S2["2 Contexto<br/>Sesión: script contexto.mjs"]
+    S1 -.->|BLOQUEAR| BLOQ
+
+    subgraph S3G["3 Propuesta (sesión: pregunta a la persona)"]
+        OP["skill openspec-propose"]
+    end
+    S2 --> OP
+
     subgraph REV["4 Revisar la propuesta (agente revisor-salida)"]
         OV["openspec validate --strict"] --> VER{"Veredicto"}
     end
-    S3 --> OV
-    VER -->|CORREGIR, una vez| S3
-    VER -->|APROBADO| INI{{"Inicio del paso 5<br/>un solo mensaje"}}
+    OP --> OV
+    VER -->|CORREGIR, una vez| FIX["Sesión: corrige solo los hallazgos<br/>(no regenera la propuesta)"]
+    FIX --> OV
+    VER -->|APROBADO| INI{{"Sesión: lanza en paralelo<br/>el código y 3 agentes de pruebas"}}
 
     subgraph S5["5 Implementar el código (sesión)"]
         OA["skill openspec-apply-change<br/>ejecuta tasks.md"]
     end
-    INI --> S5
+    INI --> OA
     INI ==>|"segundo plano"| TU[["escritor-pruebas<br/>unitarias"]]
     INI ==>|"segundo plano"| TI[["escritor-pruebas<br/>integración"]]
     INI ==>|"segundo plano"| TE[["escritor-pruebas<br/>e2e"]]
 
-    S5 --> UNI["5 Unir<br/>recoger las 3 pruebas<br/>y alinear firmas"]
+    OA --> UNI["5 Unir<br/>Sesión: espera a los 3 agentes y ajusta<br/>los nombres que las pruebas supusieron"]
     TU --> UNI
     TI --> UNI
     TE --> UNI
 
     UNI --> V6["6 Verificar<br/>build-test y revisor-reglas"]
-    V6 -->|"7 Corregir<br/>(CRITICAL o build rojo)"| V6
+    V6 -->|"CRITICAL o build rojo por código"| S7["7 Corregir<br/>Sesión: una sola pasada"]
+    S7 -->|"repite build-test"| V6
     V6 --> S8["8 PR borrador<br/>y evidencias"]
     S8 --> CI["CI del PR<br/>openspec validate --all<br/>y revisión humana"]
     CI --> ARC["Tras el merge, PR aparte<br/>openspec archive"]
 
-    VER -.->|BLOQUEAR| BLOQ(["Bloqueado"])
+    VER -.->|"BLOQUEAR o 2.º CORREGIR"| BLOQ(["Bloqueado"])
+    UNI -.->|"tareas pendientes sin motivo"| BLOQ
     V6 -.->|entorno o reintentos agotados| BLOQ
 
     classDef openspec fill:#fef3c7,stroke:#b45309,color:#78350f
@@ -52,13 +63,20 @@ flowchart LR
     classDef agente fill:#dcfce7,stroke:#15803d,color:#14532d
     classDef gha fill:#dbeafe,stroke:#1d4ed8,color:#1e3a8a
     classDef bloq fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d
-    class S3,OA,OV,ARC openspec
-    class UNI,INI sesion
-    style S5 fill:#ede9fe,stroke:#6d28d9,color:#4c1d95
-    class S12,VER,TU,TI,TE,V6 agente
-    style REV fill:#dcfce7,stroke:#15803d,color:#14532d
+    class OP,OA,OV,ARC openspec
+    class PRE,S2,FIX,INI,UNI,S7 sesion
+    class S1,VER,TU,TI,TE,V6 agente
     class S8,CI gha
     class BLOQ bloq
+    style S3G fill:#ede9fe,stroke:#6d28d9,color:#4c1d95
+    style S5 fill:#ede9fe,stroke:#6d28d9,color:#4c1d95
+    style REV fill:#dcfce7,stroke:#15803d,color:#14532d
+    style PRE stroke-dasharray: 5 4
+    style S2 stroke-dasharray: 5 4
+    style FIX stroke-dasharray: 5 4
+    style INI stroke-dasharray: 5 4
+    style UNI stroke-dasharray: 5 4
+    style S7 stroke-dasharray: 5 4
 ```
 
 **Cómo leer el diagrama**
@@ -67,9 +85,9 @@ flowchart LR
 
 | Color | Actor | Qué hace |
 |---|---|---|
-| Violeta | La **sesión del orquestador** (opus) | Escribe el código de producción, lanza y recoge a los agentes de pruebas, y corrige. Un cuadro violeta o verde con otro amarillo adentro es la sesión o el agente usando una herramienta de OpenSpec |
-| Verde | **Agentes** de `.claude/agents/` (sonnet) | `preparador` (1), `revisor-salida` (4), tres `escritor-pruebas` (5) y `revisor-reglas` (6). El paso 2 es un script y `build-test` del paso 6 es un skill, pero van dentro de un paso con agente |
-| Amarillo | **OpenSpec** (skills `openspec-*` y su CLI) | Genera la propuesta (3), valida la propuesta (4, dentro del agente), guía la implementación (5, dentro de la sesión) y archiva el change tras el merge |
+| Violeta | La **sesión del orquestador** (opus) | Escribe el código de producción, lanza y recoge a los agentes de pruebas, y corrige. Borde punteado: coordinación de la sesión, sin skill ni agente. Verde y amarillo nunca van solos dentro de un nodo violeta. Un cuadro violeta o verde con otro amarillo adentro es la sesión o el agente usando una herramienta de OpenSpec |
+| Verde | **Agentes** de `.claude/agents/` (sonnet) | `preparador` (1), `revisor-salida` (4), tres `escritor-pruebas` (5) y `revisor-reglas` (6). `build-test` del paso 6 es un skill, pero va dentro de un paso con agente |
+| Amarillo | **OpenSpec** (skills `openspec-*` y su CLI) | Genera la propuesta (3, dentro de la sesión), valida la propuesta (4, dentro del agente), guía la implementación (5, dentro de la sesión) y archiva el change tras el merge |
 | Azul | **Commit y PR, CI de GitHub y la persona** | Skills `commit` y `abrir-pr` (8), CI del PR y revisión humana, que es quien fusiona |
 | Rojo | Estado de **bloqueo** | El flujo se detiene y se avisa a la persona |
 
