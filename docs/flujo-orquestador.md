@@ -78,7 +78,7 @@ Así el orquestador no necesita Docker ni base de datos y se mantiene liviano. E
 | Skill `crear-hu` | `.claude/skills/` | Redactar una historia con `CA-n` y publicarla como issue |
 | Scripts `.mjs` | `.claude/skills/orquestador/scripts/` | `estado`, `contexto`, `trazabilidad-grep`, `registrar-agente`, `tiempos`, `puede-commitear`, `copiar-evidencias` |
 | Plantillas | `.claude/skills/orquestador/plantillas/` | Formato de cada archivo de `<trabajo>` |
-| Reglas | `CLAUDE.md`, `openspec/config.yaml` | Capas, seguridad, datos y formato de las specs. Todos los agentes las cargan solos |
+| Reglas | `CLAUDE.md`, `openspec/config.yaml` | Capas, seguridad, datos, interfaz (sistema de diseño de la sala de control: tokens `--sc-*`, componentes de `src/modulos/ui/`) y formato de las specs. Todos los agentes las cargan solos; `revisor-reglas` y G2 las comprueban |
 | Permisos | `.claude/settings.json` | Qué comandos corre sin pedir permiso y cuáles tiene prohibidos |
 
 `openspec-explore` existe, pero el orquestador no lo usa: `contexto.mjs` cubre lo esencial en 2 segundos, sin agentes.

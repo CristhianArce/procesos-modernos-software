@@ -26,9 +26,11 @@ rules:
     - "Si el change crea una capacidad nueva, su delta specs/<cap>/spec.md empieza con ## Purpose y un texto real."
   design:
     - design.md es obligatorio si el change modifica contracts/openapi.yaml o agrega una migración en db/migration/.
+    - "Si el change agrega o modifica .tsx o CSS, design.md lista los componentes de src/modulos/ui/ que reutiliza y los nuevos que agrega, con su estado de carga, error y vacío (regla Interfaz de CLAUDE.md §4)."
   tasks:
     - 'Cada tarea cita su CA-n o "Derivado: decisión #k".'
     - "Agrupa por capa según CLAUDE.md §7 (migración, repo, service, schema, handler + contrato, página/ui, menu.ts). Cada grupo incluye sus pruebas unitarias o de integración; el grupo final es solo para integración y aceptación de toda la historia."
+    - "Si el change agrega o modifica .tsx o CSS, el grupo página/ui reutiliza src/modulos/ui/ y los tokens --sc-* (CLAUDE.md §4) y cada tarea dice cómo se verifica el estado (color, forma y texto), el uso con teclado y los estados de carga, error y vacío."
     - "Abrir el PR, esperar el CI y archivar no son tareas con casilla: van como viñetas en ## Workflow follow-up, al final."
     - "Escribir una prueba e2e sí es tarea (se verifica con npx playwright test --list); correrla contra la app levantada no: va en ## Workflow follow-up como verificada en el CI."
 
@@ -37,6 +39,7 @@ operations:
     guidance:
       - "Marca [x] solo lo hecho; deja [ ] con su motivo en <trabajo>/decisiones.md (citando el número X.Y de la tarea) y no reformatees líneas no tocadas."
       - "Usa los nombres reales de <trabajo>/contexto.md; si algo no existe y el change no lo crea, pregúntalo."
+      - "Interfaz: sigue la regla Interfaz de CLAUDE.md §4 (tokens --sc-*, componentes de src/modulos/ui/, estados con color, forma y texto, teclado y prefers-reduced-motion); no edites src/shell/ ni los tokens existentes."
       - "TDD: en cada tarea escribe primero la prueba que la verifica y luego el código que la hace pasar."
       - "El nombre de cada it/test/describe nuevo cita el issue y el CA que verifica: it(\"#<n> CA-2: rechaza un umbral negativo con 400\"). Varios: \"#<n> CA-1, CA-3: ...\". Las páginas que son Server Components asíncronos o leen datos solo se prueban con Playwright (Vitest no las renderiza): su CA se cita en un test(\"#<n> CA-k: ...\") de e2e/. Los componentes síncronos sin datos se renderizan a HTML con react-dom/server en Vitest."
   archive:

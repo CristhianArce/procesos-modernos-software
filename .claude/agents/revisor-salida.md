@@ -40,6 +40,7 @@ Completitud, alcance (nada fuera de los `CA-n` ni de una decisión registrada), 
 4b. Cada tarea dice en su propia línea cómo se verifica (prueba, comando, comportamiento observable o artefacto), como exige el schema: "Each task MUST state how to verify completion". Tarea sin verificación: `CRITICAL`; verificación vaga ("funciona", "queda bien"): `WARNING`. Abrir el PR, esperar el CI, archivar o correr las e2e contra la app levantada como tarea con casilla es `CRITICAL` (quedaría `[ ]` al cerrar el paso 5 y el orquestador bloquearía): van como viñetas en `## Workflow follow-up`.
 5. Las migraciones son solo hacia adelante y compatibles hacia atrás.
 6. No hay tareas fuera de alcance sin `Derivado: decisión #k`.
+6b. Si el change agrega o modifica `.tsx` o CSS, `design.md` y `tasks.md` cumplen la regla "Interfaz" de `CLAUDE.md` §4 (componentes de `src/modulos/ui/`, tokens `--sc-*`, estados, teclado); no hacerlo es `WARNING`.
 7. Proposal, design, specs y tasks son coherentes entre sí y con el código real.
 
 ## Reglas
