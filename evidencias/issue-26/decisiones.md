@@ -1,0 +1,10 @@
+| # | Fecha | Fase | Decisión | Decidió | Votos | Evidencia | Alternativas descartadas | Revisar |
+|---|-------|------|----------|---------|-------|-----------|--------------------------|---------|
+| 1 | 2026-11-24 | 3 Propuesta | CA-2: los extremos del rango de fechas son inclusivos ambos (`desde <= tomada_en <= hasta`). | Persona | — | preguntas.md #1 | Inicial inclusivo y final exclusivo | no |
+| 2 | 2026-11-24 | 3 Propuesta | CA-1: las lecturas con la misma fecha se desempatan por identificador descendente (`tomada_en DESC, id DESC`). | Persona | — | preguntas.md #2 | Sin desempate definido | no |
+| 3 | 2026-11-24 | 3 Propuesta | CA-3: una página fuera de rango responde 200 con lista vacía (y el total real). | Persona | — | preguntas.md #3 | 400 por validación | no |
+| 4 | 2026-11-24 | 3 Propuesta | CA-1: el histórico lo consultan ambos roles (administrador y técnico), porque el CA dice "usuario con sesión" sin restringir rol. | Orquestador | — | issue.md CA-1, CA-5 | Solo administrador | sí |
+| 5 | 2026-11-24 | 3 Propuesta | CA-1: parámetro `pagina` (entero ≥ 1, por defecto 1) y respuesta `{ lecturas, total, pagina, tamano }` con `tamano` fijo en 25 (RN-2). | Orquestador | — | issue.md RN-2 | Solo arreglo de lecturas; cursor | sí |
+| 6 | 2026-11-24 | 3 Propuesta | CA-4: `desde` y `hasta` son fechas ISO 8601 con zona (`2026-11-24T10:00:00Z`); la interfaz convierte lo que elige el usuario antes de enviar. Cualquier otro texto es "fecha mal formada" y da 400. | Orquestador | — | issue.md CA-4 | Aceptar solo fecha sin hora | sí |
+| 7 | 2026-11-24 | 3 Propuesta | CA-3: un `nodoId` o `sensorId` bien formado que no existe devuelve lista vacía, no 404 (igual que `sensorId` en `GET /api/lecturas`). | Orquestador | — | contracts/openapi.yaml SensorIdConsulta | 404 | sí |
+| 8 | 2026-11-24 | 3 Propuesta | RN-1: no hay migración ni semilla propia; el índice `lecturas_sensor_tomada_idx` existente basta para esta consulta. | Orquestador | — | contexto.md Tablas, issue.md Notas técnicas | Semilla `db/seed/historico.sql` | sí |
