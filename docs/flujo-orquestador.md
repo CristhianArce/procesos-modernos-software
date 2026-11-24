@@ -40,11 +40,11 @@ Amarillo: lo que ejecuta OpenSpec. Azul: el CI y la revisión humana.
 
 | # | Paso | Quién | Qué deja |
 |---|---|---|---|
-| 1 | **Preparar**: crea la rama `feature/issue-<n>-<slug>` desde `main`, copia el issue y extrae los `CA-n`; bloquea si el issue está cerrado o ya tiene PR | agente `preparador` | `issue.md`, `preguntas.md`, `decisiones.md` |
-| 2 | **Contexto**: lista lo que ya existe (capacidades de `openspec/specs/`, tablas de `db/migration/`, módulos, semillas, rutas del contrato) para que la propuesta no suponga nada | script `contexto.mjs` | `contexto.md` |
+| 1 | **Preparar**: crea la rama `feature/issue-<n>-<slug>` desde `main`, copia el issue y extrae los `CA-n`; bloquea si el issue está cerrado o ya tiene PR | script `preparar.mjs` (lo mecánico) y agente `preparador` (decide las preguntas de negocio) | `issue.md`, `preguntas.md`, `decisiones.md` |
+| 2 | **Contexto**: lista lo que ya existe (capacidades de `openspec/specs/`, tablas de `db/migration/`, módulos, semillas, rutas del contrato) para que la propuesta no suponga nada | script `contexto.mjs`, lanzado junto al paso 1 | `contexto.md` |
 | 3 | **Propuesta**: pregunta a la persona las dudas de negocio y genera proposal, specs, design y tasks | skill `openspec-propose` | `openspec/changes/<change>/` |
-| 4 | **Revisar la propuesta**: `openspec validate --strict`, trazabilidad CA → requisito → tarea, formato y alcance; con CORREGIR se arregla y se repite una sola vez | script `trazabilidad-grep.mjs` y agente `revisor-salida` | veredicto en `gates.md` |
-| 5 | **Implementar**: ejecuta `tasks.md` (código, migración, semilla y pruebas unitarias, de integración y e2e) | skill `openspec-apply-change` | código en la rama, tareas `[x]` |
+| 4 | **Revisar la propuesta**: `openspec validate --strict`, trazabilidad CA → requisito → tarea, formato y alcance; con CORREGIR se arregla y se repite una sola vez. El agente corre en segundo plano mientras se implementa y se recoge antes del paso 6 | script `trazabilidad-grep.mjs` y agente `revisor-salida` | veredicto en `gates.md` |
+| 5 | **Implementar**: ejecuta `tasks.md`. La sesión escribe el código, la migración, la semilla y el contrato; el agente `escritor-pruebas`, en segundo plano, escribe las pruebas unitarias, de integración y e2e a partir de las specs y de `
 | 6 | **Verificar**: `typecheck` y `test:unit`, en paralelo con la revisión del diff contra las reglas del proyecto | skill `build-test` y agente `revisor-reglas` | `verificacion.md`, último build en `estado.md` |
 | 7 | **Corregir** (solo si hace falta): una pasada para los hallazgos CRITICAL o un build rojo, y se repite el paso 6 | la sesión | build en verde |
 | 8 | **Commit, PR y evidencias**: commit con `#<n>` y `Change: <change>`, PR en borrador y copia a `evidencias/issue-<n>/` | skills `commit` y `abrir-pr`, script `copiar-evidencias.mjs` | PR en borrador |
@@ -72,7 +72,7 @@ Así el orquestador no necesita Docker ni base de datos y se mantiene liviano. E
 | Pieza | Dónde | Para qué |
 |---|---|---|
 | Skill `orquestador` | `.claude/skills/orquestador/` | Dirige los 8 pasos. Lo invoca solo la persona, con `/orquestador <n>` |
-| Agentes `preparador`, `revisor-salida`, `revisor-reglas` | `.claude/agents/` | Preparar el issue, revisar la propuesta y revisar el código. Son de solo lectura |
+| Agentes `preparador`, `revisor-salida`, `revisor-reglas`, `escritor-pruebas` | `.claude/agents/` | Preparar el issue, revisar la propuesta, revisar el código y escribir las pruebas. Los tres primeros son de solo lectura; `escritor-pruebas` solo crea archivos de prueba (sin Bash ni edición de código de producción) |
 | Skills `openspec-*` | `.claude/skills/` | Los comandos de OpenSpec: `explore`, `propose`, `apply`, `archive`, `sync-specs` y `update-change`. El orquestador usa `propose` y `apply` |
 | Skills `build-test`, `commit`, `abrir-pr` | `.claude/skills/` | Compilar y probar, commitear, abrir el PR |
 | Skill `crear-hu` | `.claude/skills/` | Redactar una historia con `CA-n` y publicarla como issue |

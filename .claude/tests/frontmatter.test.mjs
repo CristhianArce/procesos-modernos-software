@@ -3,7 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-import { frontmatter, leer, RAIZ } from "./util.mjs";
+import { cargarYaml, frontmatter, leer, RAIZ } from "./util.mjs";
 
 const AGENTES_IMPRESCINDIBLES = ["preparador", "revisor-salida", "revisor-reglas"];
 const SKILLS_IMPRESCINDIBLES = ["orquestador", "build-test", "commit", "abrir-pr"];
@@ -100,4 +100,37 @@ test("CA-2: el orquestador solo lo invoca la persona", () => {
   const ruta = join(RAIZ, ".claude", "skills", "orquestador", "SKILL.md");
   if (!existsSync(ruta)) return; // se escribe en la tarea 7.1
   assert.equal(frontmatter(leer(".claude/skills/orquestador/SKILL.md"))["disable-model-invocation"], true);
+});
+
+test("CA-6: pasos 1 y 2 juntos, con la parte mecánica del paso 1 en preparar.mjs", () => {
+  const texto = leer(".claude/skills/orquestador/SKILL.md");
+  assert.match(texto, /Los pasos 1 y 2 van en un mismo mensaje/);
+  assert.match(texto, /El agente corre `preparar\.mjs`/);
+  assert.match(leer(".claude/agents/preparador.md"), /scripts\/preparar\.mjs <n> <base>/);
+});
+
+test("CA-6: la revisión de la propuesta corre en segundo plano durante la implementación y se recoge antes de verificar", () => {
+  const texto = leer(".claude/skills/orquestador/SKILL.md");
+  assert.match(texto, /`revisor-salida` \(`model: sonnet`, `effort: medium`, `run_in_background: true`/);
+  assert.match(texto, /recógelo antes de lanzar el paso 6/);
+  assert.match(texto, /Antes de lanzar el paso 6, confirma que la revisión del paso 4 terminó/);
+  assert.match(texto, /`--paralelo` como \*\*último\*\* argumento/);
+});
+
+test("CA-6: escritor-pruebas solo crea pruebas, sin Bash ni lanzar agentes, y el orquestador lo lanza en segundo plano", () => {
+  const agente = frontmatter(leer(".claude/agents/escritor-pruebas.md"));
+  assert.equal(agente.model, "sonnet");
+  assert.equal(agente.effort, "medium");
+  assert.doesNotMatch(agente.tools, /Bash|Edit/, "escribe archivos nuevos y no ejecuta comandos");
+  assert.match(agente.disallowedTools, /Agent/);
+  const texto = leer(".claude/skills/orquestador/SKILL.md");
+  assert.match(texto, /agente `escritor-pruebas` \(`subagent_type: escritor-pruebas`, `model: sonnet`, `effort: medium`, `run_in_background: true`\)/);
+  assert.match(texto, /recoge al agente `escritor-pruebas`/);
+  assert.match(texto, /"5 Escribir pruebas" escritor-pruebas "sonnet \/ medium" <id> <OK o PARCIAL> "" --paralelo/);
+});
+
+test("CA-6: design.md fija las firmas públicas para que las pruebas se escriban en paralelo con el código", () => {
+  const { rules } = cargarYaml().parse(leer("openspec/config.yaml"));
+  assert.match(rules.design.join("\n"), /## Interfaces/);
+  assert.match(leer(".claude/agents/escritor-pruebas.md"), /`## Interfaces` de `design\.md`/);
 });

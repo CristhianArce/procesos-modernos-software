@@ -193,3 +193,53 @@ test("CA-6: estado.mjs registra en tiempos.md la hora de cada paso cerrado, sin 
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("CA-6: un agente en segundo plano (--paralelo) deja su fila sin marca de tiempo ni retroceder la fase", () => {
+  const dir = temporal();
+  try {
+    const run = (...a) => spawnSync(process.execPath, a, { encoding: "utf8" });
+    const T = join(SCRIPTS, "tiempos.mjs");
+    const E = join(SCRIPTS, "estado.mjs");
+    const R = join(SCRIPTS, "registrar-agente.mjs");
+    assert.equal(run(E, "escribir", "901", "Última fase cerrada", "0", "--trabajo", dir).status, 0);
+    assert.equal(run(T, "inicio", "901", "--trabajo", dir).status, 0);
+    assert.equal(run(R, "901", "5 Implementar", "sesión", "sonnet", "-", "8 de 8", "--trabajo", dir).status, 0);
+    const antes = readFileSync(join(dir, "tiempos.md"), "utf8");
+    const r = run(R, "901", "4 Revisar propuesta (intento 1)", "revisor-salida", "sonnet / medium", "abc", "APROBADO", "--trabajo", dir, "--paralelo");
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(readFileSync(join(dir, "tiempos.md"), "utf8"), antes, "sin marca de tiempo nueva");
+    assert.equal(leerCampo(readFileSync(join(dir, "estado.md"), "utf8"), "Última fase cerrada"), "5", "la fase no retrocede");
+    assert.match(readFileSync(join(dir, "agentes-log.md"), "utf8"), /4 Revisar propuesta \(intento 1\) \| revisor-salida/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("CA-6: preparar.mjs deriva el slug, copia los CA-n y distingue los cambios con seguimiento", async () => {
+  const { armarIssueMd, extraerCriterios, hayCambiosConSeguimiento, seccion, slugDeTitulo } = await import("../skills/orquestador/scripts/preparar.mjs");
+  assert.equal(slugDeTitulo("PRÁCTICA: Página Acerca de la app y su versión"), "practica-pagina-acerca-de-la");
+  assert.equal(slugDeTitulo("¡¡¡"), "historia");
+  const issue = leer(".claude/fixtures/trabajo-ejemplo/issue.md");
+  const { criterios, numerados } = extraerCriterios(issue);
+  assert.deepEqual(criterios.map((c) => c.id), ["CA-1", "CA-2", "CA-3"]);
+  assert.equal(numerados, true);
+  assert.match(criterios[0].texto, /^Dado un usuario autenticado/);
+  const sinNumerar = extraerCriterios("## Criterios de aceptación\n\n- Uno\n- Dos\n");
+  assert.deepEqual(sinNumerar.criterios.map((c) => c.id), ["CA-1", "CA-2"]);
+  assert.equal(sinNumerar.numerados, false);
+  assert.deepEqual(extraerCriterios("## Historia\n\nSin criterios").criterios, []);
+  assert.equal(seccion("## A\n\nuno\n\n## B\n\ndos", /^## B/), "dos");
+  assert.equal(hayCambiosConSeguimiento("?? .flujo/issue-1/\n"), false, "lo sin seguimiento no cuenta");
+  assert.equal(hayCambiosConSeguimiento("?? .flujo/x\n M src/a.ts\n"), true);
+  const md = armarIssueMd({ numero: 7, titulo: "Algo", estado: "abierto", etiquetas: ["historia"], cuerpo: "Cuerpo", criterios });
+  assert.match(md, /^# Issue #7: Algo/);
+  assert.match(md, /## Criterios numerados\n\n- CA-1: Dado un usuario autenticado/);
+  assert.match(armarIssueMd({ numero: 7, titulo: "Algo", estado: "abierto", etiquetas: [], cuerpo: "", criterios: [] }), /\(pendiente: el agente deriva los CA-n del cuerpo\)/);
+});
+
+test("CA-6: preparar.mjs sale de origin/<base> y, si la base solo existe en local, de la rama local", async () => {
+  const { puntoDePartida } = await import("../skills/orquestador/scripts/preparar.mjs");
+  assert.equal(puntoDePartida({ remota: true, local: true, base: "main" }), "origin/main");
+  assert.equal(puntoDePartida({ remota: false, local: true, base: "refactor-orquestador" }), "refactor-orquestador");
+  assert.equal(puntoDePartida({ remota: false, local: false, base: "nada" }), undefined);
+});
