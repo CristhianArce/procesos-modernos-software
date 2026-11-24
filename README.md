@@ -16,6 +16,7 @@ Aplicación para administrar nodos y sensores de una red eléctrica, simular lec
 
 - [Propuesta de arquitectura y SDD](docs/propuesta.md): requisitos, arquitectura, backlog, reglas del proyecto, cronograma y riesgos.
 - [Flujo del orquestador](docs/flujo-orquestador.md): guía de cómo funciona el SDD con IA: los 8 pasos del orquestador (5 minutos o menos), qué corre en el orquestador y qué en el CI, las piezas y dónde queda cada archivo.
+- [Rediseño SCADA](docs/ui-scada/plan.md): plan por fases, decisiones y medidas de la interfaz de sala de control.
 
 ## Configuración inicial (una vez por portátil)
 
@@ -94,6 +95,36 @@ docker pull ghcr.io/cristhianarce/procesos-modernos-software:latest
 | `tecnico` | técnico | `Demo-Tecnico-2026` |
 
 Se inicia sesión en `/login`. Tras 5 intentos fallidos en un minuto, la API responde 429 y hay que esperar.
+
+## Sala de control (rediseño SCADA)
+
+La interfaz es una sala de control de tema oscuro. Muestra un **mímico** (diagrama unifilar) de la red, con flujo de energía animado, indicadores, panel de alarmas y datos en vivo. Está hecha sin librerías nuevas, con SVG y CSS propios. La semilla `db/seed/topologia.sql` trae una red de 13 nodos.
+
+![Dashboard a 1440 px](docs/ui-scada/capturas/dashboard-1440.jpg)
+
+| Panel lateral del nodo | Editor del administrador |
+|---|---|
+| ![Panel lateral con medidores y minigráficas](docs/ui-scada/capturas/panel-nodo-1440.jpg) | ![Modo edición de la topología](docs/ui-scada/capturas/editor-1440.jpg) |
+| **Nodos** | **Tableta (768 px)** |
+| ![Lista de nodos con estado y búsqueda](docs/ui-scada/capturas/nodos-1440.jpg) | ![Dashboard a 768 px](docs/ui-scada/capturas/dashboard-768.jpg) |
+
+Más capturas en [docs/ui-scada/capturas](docs/ui-scada/capturas): login, dashboard a 1024 px y página completa.
+
+**Datos en vivo.** El navegador consulta `GET /api/estado` cada 2,5 s. El sondeo se pausa con la pestaña oculta y, si falla, la barra superior dice «Sin conexión». Para que las lecturas se muevan solas, enciende el simulador continuo con `SIM_AUTO_MS` (milisegundos entre pasos, mínimo 500; sin la variable queda apagado):
+
+```
+SIM_AUTO_MS=2500 npm run dev        # o: npm run build && SIM_AUTO_MS=2500 npm start
+```
+
+El simulador genera lecturas con deriva suave y picos ocasionales, omite los nodos desconectados, registra las alertas por el mismo camino que el botón Simular y poda las lecturas de más de una hora. El `docker-compose.yml` no pasa `SIM_AUTO_MS` a la app, así que en Docker queda apagado.
+
+**Uso.**
+- Clic o Enter en un nodo abre su panel lateral (medidores frente a los umbrales, minigráficas y alertas); Esc lo cierra.
+- La rueda acerca o aleja, el fondo se arrastra y el botón de encuadre muestra toda la red.
+- El administrador tiene «Editar topología»: arrastra nodos o los mueve con las flechas, elige dos nodos para enlazarlos, elige un enlace para borrarlo y guarda las posiciones. El técnico no ve el editor y la API le responde 403.
+- Con `prefers-reduced-motion` no hay animaciones de flujo ni parpadeos.
+
+**Pruebas e2e del rediseño:** `e2e/mimico.spec.ts` y `e2e/topologia.spec.ts`, contra la app levantada con la semilla (`BASE_URL=http://localhost:<puerto> npm run e2e`).
 
 ## Implementar un issue con el orquestador
 

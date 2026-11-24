@@ -20,7 +20,7 @@ test("#22 CA-1, CA-2: el técnico ve en el dashboard la última lectura y las tr
   for (const titulo of ["Voltaje (V)", "Corriente (A)", "Potencia (W)"]) {
     await expect(tarjeta.getByText(titulo)).toBeVisible();
   }
-  await expect(tarjeta.locator("svg.recharts-surface")).toHaveCount(3);
+  await expect(tarjeta.locator("figure svg[role=img]")).toHaveCount(3); // ui-scada: gráficas en SVG propio, sin Recharts
 });
 
 test("#22 CA-4: tras simular un sensor con umbral de voltaje 1, su alerta aparece primero en el dashboard", async ({ page }) => {

@@ -15,32 +15,34 @@ export async function PanelSensores({ nodoId }: { nodoId: string }) {
   return (
     <div>
       {sensores.length === 0 ? (
-        <p className="mt-2 text-gray-600">Este nodo aún no tiene sensores.</p>
+        <p className="text-tenue">Este nodo aún no tiene sensores.</p>
       ) : (
-        <table className="mt-2 w-full text-left text-sm">
-          <thead>
-            <tr className="border-b border-gray-200">
-              <th className="py-2">Sensor</th>
-              <th className="py-2">Umbral de voltaje</th>
-              <th className="py-2">Umbral de corriente</th>
-              <th className="py-2">Umbral de potencia</th>
-              <th className="py-2">Última lectura</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sensores.map((sensor) => (
-              <tr key={sensor.id} className="border-b border-gray-100">
-                <td className="py-2">{sensor.nombre}</td>
-                <td className="py-2">{umbral(sensor.umbralVoltaje, "V")}</td>
-                <td className="py-2">{umbral(sensor.umbralCorriente, "A")}</td>
-                <td className="py-2">{umbral(sensor.umbralPotencia, "W")}</td>
-                <td className="py-2" data-testid="ultima-lectura">
-                  {lectura(sensor.ultimaLectura)}
-                </td>
+        <div className="-mx-4 overflow-x-auto">
+          <table className="tabla">
+            <thead>
+              <tr>
+                <th>Sensor</th>
+                <th>Umbral de voltaje</th>
+                <th>Umbral de corriente</th>
+                <th>Umbral de potencia</th>
+                <th>Última lectura</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {sensores.map((sensor) => (
+                <tr key={sensor.id}>
+                  <td className="font-medium">{sensor.nombre}</td>
+                  <td className="cifra">{umbral(sensor.umbralVoltaje, "V")}</td>
+                  <td className="cifra">{umbral(sensor.umbralCorriente, "A")}</td>
+                  <td className="cifra">{umbral(sensor.umbralPotencia, "W")}</td>
+                  <td className="cifra text-tenue" data-testid="ultima-lectura">
+                    {lectura(sensor.ultimaLectura)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
       {/* Ocultar el formulario es cosmético: la API verifica el rol. */}
       {sesion?.rol === "administrador" && <FormularioSensor nodoId={nodoId} />}

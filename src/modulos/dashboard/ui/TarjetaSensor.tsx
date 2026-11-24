@@ -7,17 +7,17 @@ import { GraficaSensor } from "./GraficaSensor";
 export function TarjetaSensor({ nombre, lecturas }: { nombre: string; lecturas: Lectura[] }) {
   const ultima = lecturas.at(-1);
   return (
-    <article className="rounded border border-gray-200 p-4">
-      <h3 className="font-semibold">{nombre}</h3>
+    <article className="rounded-sc-lg border border-borde bg-panel p-4 shadow-sc">
+      <h3 className="font-semibold text-texto">{nombre}</h3>
       {ultima ? (
         <>
-          <p data-testid="ultima-lectura" className="mt-1 text-sm">
+          <p data-testid="ultima-lectura" className="cifra mt-1 text-sm text-tenue">
             {`${MAGNITUDES.map((m) => conUnidad(ultima[m], m)).join(" · ")} · ${formatearFecha(ultima.tomadaEn)}`}
           </p>
           <GraficaSensor lecturas={lecturas} />
         </>
       ) : (
-        <p className="mt-1 text-sm text-gray-600">Sin lecturas</p>
+        <p className="mt-1 text-sm text-tenue">Sin lecturas</p>
       )}
     </article>
   );
