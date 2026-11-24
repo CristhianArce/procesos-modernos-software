@@ -56,6 +56,7 @@ En el paso 5 la sesión deja primero escritas la migración y la semilla y compl
 flowchart LR
     PRE["0 Precondición<br/>Sesión: checkout limpio<br/>y rama base"] --> S1["1 Preparar<br/>agente preparador"]
     S1 --> S2["2 Contexto<br/>Sesión: script contexto.mjs"]
+    PRE -.->|checkout con cambios| BLOQ
     S1 -.->|BLOQUEAR| BLOQ
 
     subgraph S3G["3 Propuesta (sesión: pregunta a la persona)"]
@@ -64,7 +65,7 @@ flowchart LR
     S2 --> OP
 
     subgraph REV["4 Revisar la propuesta (agente revisor-salida)"]
-        OV["openspec validate --strict"] --> VER{"Veredicto"}
+        OV["trazabilidad-grep +<br/>openspec validate --strict"] --> VER{"Veredicto"}
     end
     OP --> OV
     VER -->|CORREGIR, una vez| FIX["Sesión: corrige solo los hallazgos<br/>(no regenera la propuesta)"]
@@ -88,7 +89,7 @@ flowchart LR
     V6 -->|"CRITICAL o build rojo por código"| S7["7 Corregir<br/>Sesión: una sola pasada"]
     S7 -->|"repite build-test"| V6
     V6 --> S8["8 PR borrador<br/>y evidencias"]
-    S8 --> CI["CI del PR<br/>openspec validate --all<br/>y revisión humana"]
+    S8 --> CI["CI del PR: lint, build, integración, e2e,<br/>openspec validate --all<br/>y revisión humana"]
     CI --> ARC["Después de mezclar: PR chore<br/>/archivar-change-openspec<br/>(openspec archive)"]
 
     VER -.->|"BLOQUEAR o 2.º CORREGIR"| BLOQ(["Bloqueado"])
