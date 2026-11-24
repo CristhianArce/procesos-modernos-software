@@ -1048,6 +1048,59 @@ paths:
           $ref: "#/components/responses/DatosInvalidos"
         "401":
           $ref: "#/components/responses/NoAutenticado"
+  /api/historico/exportar:
+    get:
+      summary: Exportar el histórico de lecturas a CSV
+      description: >-
+        Cualquier usuario con sesión. Mismos filtros que `/api/historico`, sin paginar: como máximo las 10 000
+        lecturas más recientes que los cumplen, la más reciente primero. Columnas nodo, sensor, voltaje, corriente,
+        potencia y fecha (ISO 8601 en UTC), separadas por coma; un valor que empieza por =, +, - o @ va precedido
+        de un apóstrofo.
+      security:
+        - sesion: []
+      parameters:
+        - name: nodoId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: sensorId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: desde
+          in: query
+          required: false
+          description: Primer día del rango (AAAA-MM-DD), incluido.
+          schema:
+            type: string
+            format: date
+        - name: hasta
+          in: query
+          required: false
+          description: Último día del rango (AAAA-MM-DD), incluido; no puede ser anterior a desde.
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Archivo CSV para descargar (historico.csv); sin resultados trae solo el encabezado
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+                example: attachment; filename="historico.csv"
+          content:
+            text/csv:
+              schema:
+                type: string
+        "400":
+          $ref: "#/components/responses/DatosInvalidos"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
   /api/lecturas:
     get:
       summary: Listar las lecturas más recientes
