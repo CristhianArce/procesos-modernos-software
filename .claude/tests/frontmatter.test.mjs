@@ -102,24 +102,29 @@ test("CA-2: el orquestador solo lo invoca la persona", () => {
   assert.equal(frontmatter(leer(".claude/skills/orquestador/SKILL.md"))["disable-model-invocation"], true);
 });
 
-test("CA-6: escritor-pruebas solo crea pruebas, sin Bash ni lanzar agentes, y el orquestador lo lanza una vez por tipo en segundo plano", () => {
+test("CA-6: escritor-pruebas solo crea pruebas, solo corre vitest unit y no lanza agentes; el orquestador lo lanza dos veces en segundo plano", () => {
   const agente = frontmatter(leer(".claude/agents/escritor-pruebas.md"));
   assert.equal(agente.model, "sonnet");
   assert.equal(agente.effort, "medium");
-  assert.doesNotMatch(agente.tools, /Bash|Edit/, "escribe archivos nuevos y no ejecuta comandos");
+  assert.match(agente.tools, /Bash/, "corre las unitarias que escribe");
+  assert.doesNotMatch(agente.tools, /Edit/, "escribe archivos nuevos y no edita");
   assert.match(agente.disallowedTools, /Agent/);
+  assert.match(leer(".claude/agents/escritor-pruebas.md"), /Bash solo para `npx vitest run --project unit <archivo>`/);
   const texto = leer(".claude/skills/orquestador/SKILL.md");
-  assert.match(texto, /lanza \*\*tres veces\*\* el agente `escritor-pruebas`, una por tipo y las tres en paralelo \(cada una con `subagent_type: escritor-pruebas`, `model: sonnet`, `effort: medium`, `run_in_background: true`\)/);
-  assert.match(texto, /<tipo>: unitarias, integracion o e2e/);
-  assert.match(texto, /las pruebas las escribe `escritor-pruebas`: no las escribas tú/);
-  assert.match(texto, /recoge a los tres agentes `escritor-pruebas`/);
+  assert.match(texto, /lanza \*\*dos veces\*\* el agente `escritor-pruebas`, una por tipo \(unitarias e integración\) y las dos en paralelo \(cada una con `subagent_type: escritor-pruebas`, `model: sonnet`, `effort: medium`, `run_in_background: true`\)/);
+  assert.match(texto, /<tipo>: unitarias o integracion/);
+  assert.match(texto, /la e2e sí la escribes tú, después de la página y la semilla/);
+  assert.match(texto, /recoge a los dos agentes `escritor-pruebas`/);
+  assert.match(texto, /`build-test` corre una sola vez, en el paso 6/);
+  assert.match(texto, /vitest no recoge `\*\.test\.tsx`/);
   assert.match(texto, /"5 Escribir pruebas \(<tipo>\)" escritor-pruebas "sonnet \/ medium" <id> <OK o PARCIAL> "" --paralelo/);
 });
 
-test("CA-6: escritor-pruebas reparte el trabajo por tipo, un archivo de supuestos por tipo y e2e sin totales de la semilla", () => {
+test("CA-6: escritor-pruebas reparte el trabajo por tipo, un archivo de supuestos por tipo y solo escribe .test.ts", () => {
   const texto = leer(".claude/agents/escritor-pruebas.md");
-  for (const tipo of ["unitarias", "integracion", "e2e"]) assert.match(texto, new RegExp(`\| \`${tipo}\` \|`));
+  for (const tipo of ["unitarias", "integracion"]) assert.match(texto, new RegExp(`\\| \`${tipo}\` \\|`));
+  assert.doesNotMatch(texto, /\| `e2e` \|/, "la e2e la escribe la sesión");
   assert.match(texto, /pruebas-supuestos-<tipo>\.md/);
-  assert.match(texto, /ni siquiera sobre la semilla/);
+  assert.match(texto, /siempre `\.ts`, nunca `\.tsx`/);
   assert.match(texto, /## Errores frecuentes/);
 });
