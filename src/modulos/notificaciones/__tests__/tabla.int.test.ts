@@ -75,6 +75,11 @@ describe("tabla notificaciones", () => {
 });
 
 describe("semilla de notificaciones", () => {
+  // La semilla de notificaciones lee las cuentas de la HU 3; en una base recién migrada hay que cargarlas antes.
+  beforeAll(async () => {
+    await db().query(readFileSync("db/seed/auth.sql", "utf8"));
+  });
+
   it("#24 CA-1: aplicada dos veces deja a tecnico con leídas y sin leer, sin duplicados", async () => {
     await db().query(semilla);
     await db().query(semilla);
