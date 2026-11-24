@@ -4,6 +4,7 @@ import { cifraConUnidad } from "@/modulos/ui/formato";
 import { Insignia } from "@/modulos/ui/Insignia";
 import { Tarjeta } from "@/modulos/ui/Tarjeta";
 import type { CentroNotificaciones } from "../service";
+import { BotonMarcarLeida } from "./BotonMarcarLeida";
 
 /** Centro de notificaciones del técnico: contador de no leídas y la lista, la más reciente primero (CA-1). */
 export function ListaNotificaciones({ noLeidas, notificaciones }: CentroNotificaciones) {
@@ -31,7 +32,10 @@ export function ListaNotificaciones({ noLeidas, notificaciones }: CentroNotifica
                 <span className="cifra">{cifraConUnidad(n.valor, UNIDAD[n.magnitud])}</span> ·{" "}
                 <span className="cifra text-tenue">{formatearFecha(n.creadaEn)}</span>
               </p>
-              <Insignia tono={n.leida ? "neutro" : "acento"}>{n.leida ? "Leída" : "Sin leer"}</Insignia>
+              <div className="flex items-center gap-2">
+                <Insignia tono={n.leida ? "neutro" : "acento"}>{n.leida ? "Leída" : "Sin leer"}</Insignia>
+                {!n.leida && <BotonMarcarLeida id={n.id} />}
+              </div>
             </li>
           ))}
         </ul>

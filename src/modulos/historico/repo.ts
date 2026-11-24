@@ -63,3 +63,15 @@ export async function listarPagina(filtros: FiltrosHistorico, pagina: number): P
   );
   return rows.map(aLectura);
 }
+
+/** Las `tope` lecturas más recientes del filtro, para exportar (RN-4, decisión #7). */
+export async function listarParaExportar(filtros: FiltrosHistorico, tope: number): Promise<LecturaHistorico[]> {
+  const { rows } = await db().query<Fila>(
+    `SELECT l.id, n.id AS nodo_id, n.nombre AS nodo_nombre, s.id AS sensor_id, s.nombre AS sensor_nombre,
+            l.voltaje, l.corriente, l.potencia, l.tomada_en
+     ${ORIGEN}
+     ORDER BY l.tomada_en DESC, l.id DESC LIMIT $5`,
+    [...parametros(filtros), tope],
+  );
+  return rows.map(aLectura);
+}

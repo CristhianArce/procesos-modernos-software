@@ -45,6 +45,18 @@ export async function contarNoLeidas(destinatarioId: string): Promise<number> {
   return rows[0].total;
 }
 
+/**
+ * Marca como leída la notificación si es del destinatario (HU 13, CA-1, CA-2). Idempotente (RN-4).
+ * Devuelve null si no existe o es de otro destinatario: no distingue los dos casos.
+ */
+export async function marcarLeida(id: string, destinatarioId: string): Promise<Notificacion | null> {
+  const { rows } = await db().query<Fila>(
+    `UPDATE notificaciones SET leida = true WHERE id = $1 AND destinatario_id = $2 RETURNING ${COLUMNAS}`,
+    [id, destinatarioId],
+  );
+  return rows[0] ? aNotificacion(rows[0]) : null;
+}
+
 /** La usan las pruebas y la HU 12; esta historia solo consulta. */
 export async function insertar(n: NotificacionNueva): Promise<Notificacion> {
   const { rows } = await db().query<Fila>(
