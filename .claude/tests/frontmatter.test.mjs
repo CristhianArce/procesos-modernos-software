@@ -117,22 +117,26 @@ test("CA-6: escritor-pruebas solo crea pruebas, sin Bash ni lanzar agentes, y el
 });
 
 test("CA-6: el paso 5 deja migración, semilla y textos visibles antes de lanzar a los agentes y cierra sin reprocesos", () => {
-  const texto = leer(".claude/skills/orquestador/SKILL.md");
-  assert.match(texto, /escribe la migración y la semilla/);
-  assert.match(texto, /`## Textos visibles`/);
-  assert.match(texto, /npx vitest list --project unit/);
-  assert.match(texto, /npx playwright test --list/);
-  assert.match(texto, /no edites ningún archivo a commitear después del `build-test`/);
-  assert.match(texto, /`build-test` corre \*\*una sola vez\*\*/);
+  const paso5 = leer(".claude/skills/orquestador/SKILL.md").split("\n").find((l) => l.startsWith("| 5 |")) ?? "";
+  assert.ok(paso5, "existe la fila del paso 5");
+  assert.match(paso5, /escribe la migración y la semilla/);
+  assert.match(paso5, /`## Textos visibles`/);
+  assert.match(paso5, /un solo `npx vitest list src\/modulos\/<modulo>`/);
+  assert.match(paso5, /solo si `sinPrueba` viene vacío/);
+  assert.match(paso5, /no edites ningún archivo a commitear después del `build-test`/);
+  assert.match(paso5, /`build-test` corre \*\*una sola vez\*\*/);
+  // El Grep de tareas pendientes es el último control: va después de recoger a los agentes y de marcar el grupo final.
+  const grep = paso5.indexOf("(d) último control");
+  assert.ok(grep > paso5.indexOf("recoge a los tres agentes"), "el Grep de casillas pendientes va después de recoger a los agentes");
+  assert.ok(grep > paso5.indexOf("marca `[x]` el grupo final"), "el Grep de casillas pendientes va después de marcar el grupo final");
 });
 
 test("CA-6: escritor-pruebas reparte el trabajo por tipo, lee la semilla, un archivo de supuestos por tipo y solo escribe .test.ts", () => {
   const texto = leer(".claude/agents/escritor-pruebas.md");
-  for (const tipo of ["unitarias", "integracion", "e2e"]) assert.match(texto, new RegExp(`\\| \`${tipo}\` \\|`));
+  for (const tipo of ["unitarias", "integracion", "e2e"]) assert.match(texto, new RegExp(`\| \`${tipo}\` \|`));
   assert.match(texto, /pruebas-supuestos-<tipo>\.md/);
-  assert.match(texto, /ni siquiera sobre la semilla/);
-  assert.match(texto, /db\/seed\/<modulo>\.sql/);
-  assert.match(texto, /## Textos visibles/);
+  assert.match(texto, /ni siquiera sobre la semilla: afirma el orden y el contenido de filas concretas leídas de `db\/seed\/<modulo>\.sql`/);
+  assert.match(texto, /`design\.md` \(secciones `## Firmas` y `## Textos visibles`\)/);
   assert.match(texto, /siempre `\.ts`, nunca `\.tsx`/);
   assert.match(texto, /## Errores frecuentes/);
 });

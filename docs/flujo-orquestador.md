@@ -47,7 +47,7 @@ SDD (desarrollo guiado por especificaciones) significa que primero se escribe qu
 | Continua que vuelve atrás | Un reintento: el mismo paso se repite con los hallazgos corregidos |
 | Punteada con flecha | Salida por excepción hacia «Bloqueado» |
 
-En el paso 5 la sesión deja primero escritas la migración y la semilla y completa en `design.md` las firmas y los textos visibles; después escribe el código y, al mismo tiempo, tres agentes escriben las pruebas, uno por tipo (unitarias, integración y e2e). Las pruebas salen de las specs, del diseño, de la migración y de la semilla, no del código ya escrito: lo que ya está escrito se lee, no se supone. Al cerrar, la sesión comprueba que los runners detectan cada archivo (`vitest list`, `playwright test --list`), corre la trazabilidad y marca todas las casillas **antes** del único `build-test` del paso 6: cualquier edición posterior al build impide el commit.
+En el paso 5 la sesión deja primero escritas la migración y la semilla y completa en `design.md` las firmas y los textos visibles; después escribe el código y, al mismo tiempo, tres agentes escriben las pruebas, uno por tipo (unitarias, integración y e2e). Las pruebas salen de las specs, del diseño, de la migración y de la semilla, no del código ya escrito: lo que ya está escrito se lee, no se supone. Al cerrar, la sesión comprueba que los runners detectan cada archivo con un solo `vitest list`, corre la trazabilidad y marca todas las casillas **antes** del único `build-test` del paso 6: cualquier edición posterior al build impide el commit.
 
 <details>
 <summary>Fuente del diagrama (mermaid), para editarlo</summary>
@@ -131,7 +131,7 @@ flowchart LR
 | 2 | **Contexto**: lista lo que ya existe (capacidades de `openspec/specs/`, tablas de `db/migration/`, módulos, semillas, rutas del contrato) para que la propuesta no suponga nada; las capacidades que comparten ruta o palabras con el issue vienen completas (requisitos y escenarios) para copiarlas en un `MODIFIED` | script `contexto.mjs` | `contexto.md` |
 | 3 | **Propuesta**: pregunta a la persona las dudas de negocio y genera proposal, specs, design y tasks | skill `openspec-propose` | `openspec/changes/<change>/` |
 | 4 | **Revisar la propuesta**: `openspec validate --strict`, trazabilidad CA → requisito → tarea, deltas contra las specs base (`MODIFIED` de un requisito que existe, `ADDED` de uno que no), formato y alcance; con CORREGIR se arregla y se repite una sola vez | script `trazabilidad-grep.mjs` y agente `revisor-salida` | veredicto en `gates.md` |
-| 5 | **Implementar**: la sesión escribe primero la migración y la semilla y fija firmas y textos visibles en `design.md`; luego ejecuta `tasks.md` (código y contrato) mientras tres agentes escriben en paralelo las pruebas, uno por tipo; al final la sesión las une, alinea las firmas, comprueba que `vitest list` y `playwright test --list` ven cada archivo y marca todas las casillas antes del build | skill `openspec-apply-change` y tres agentes `escritor-pruebas` | código y pruebas en la rama, tareas `[x]`, `pruebas-supuestos-<tipo>.md` si hubo firmas supuestas |
+| 5 | **Implementar**: la sesión escribe primero la migración y la semilla y fija firmas y textos visibles en `design.md`; luego ejecuta `tasks.md` (código y contrato) mientras tres agentes escriben en paralelo las pruebas, uno por tipo; al final la sesión las une, alinea las firmas, comprueba con un solo `vitest list` que ve cada archivo, corre la trazabilidad y marca todas las casillas antes del build | skill `openspec-apply-change` y tres agentes `escritor-pruebas` | código y pruebas en la rama, tareas `[x]`, `pruebas-supuestos-<tipo>.md` si hubo firmas supuestas |
 | 6 | **Verificar**: `typecheck` y `test:unit`, en paralelo con la revisión del diff contra las reglas del proyecto | skill `build-test` y agente `revisor-reglas` | `verificacion.md`, último build en `estado.md` |
 | 7 | **Corregir** (solo si hace falta): una pasada para los hallazgos CRITICAL o un build rojo, y se repite el paso 6 | la sesión | build en verde |
 | 8 | **Commit, PR y evidencias**: commit con `#<n>` y `Change: <change>`, PR en borrador y copia a `evidencias/issue-<n>/` | skills `commit` y `abrir-pr`, script `copiar-evidencias.mjs` | PR en borrador |
@@ -173,7 +173,7 @@ Así el orquestador no necesita Docker ni base de datos y se mantiene liviano. E
 
 ## 5. Dónde queda cada cosa
 
-- **`<trabajo>` = `.flujo/issue-<n>/`:** carpeta de trabajo de la corrida. Está fuera de git. Cada paso lee sus entradas de ahí y escribe su salida antes de cerrar. Contiene `estado.md`, `issue.md`, `preguntas.md`, `decisiones.md`, `contexto.md`, `gates.md`, `trazabilidad.md`, `verificacion.md`, `agentes-log.md`, `tiempos.md` y `pr-body.md`.
+- **`<trabajo>` = `.flujo/issue-<n>/`:** carpeta de trabajo de la corrida. Está fuera de git. Cada paso lee sus entradas de ahí y escribe su salida antes de cerrar. Contiene `estado.md`, `issue.md`, `preguntas.md`, `decisiones.md`, `contexto.md`, `gates.md`, `trazabilidad.md`, `verificacion.md`, `agentes-log.md`, `tiempos.md`, `pr-body.md` y, si los agentes de pruebas suponen alguna firma, `pruebas-supuestos-<tipo>.md`.
 - **`evidencias/issue-<n>/`:** copia de lo anterior que sí se commitea, para que el PR muestre qué decidió y qué revisó cada agente.
 - **`openspec/changes/<change>/`:** la especificación de la historia.
 

@@ -58,7 +58,7 @@ Qué trae el repo y no hay que configurar a mano:
 
 - `CLAUDE.md`: reglas del proyecto (stack, capas, datos, seguridad, SDD y reglas de agentes).
 - `.claude/settings.json`: permisos compartidos. La lista `allow` cubre los comandos del flujo y la lista `deny` bloquea merge, aprobar PR, force push, amend, rebase, reset y leer `.env`. Los ajustes personales van en `.claude/settings.local.json` (ignorado por git), nunca en el compartido.
-- `.claude/skills/`: `orquestador`, `build-test`, `commit`, `abrir-pr`, `crear-hu` (redacta y publica historias como issues) y los skills de OpenSpec. `.claude/agents/`: `preparador`, `revisor-salida` (G2), `revisor-reglas` y `trazabilidad` (pospuesto).
+- `.claude/skills/`: `orquestador`, `build-test`, `commit`, `abrir-pr`, `crear-hu` (redacta y publica historias como issues) y los skills de OpenSpec. `.claude/agents/`: `preparador`, `revisor-salida` (G2), `escritor-pruebas`, `revisor-reglas` y `trazabilidad` (pospuesto).
 - `.flujo/` (`<trabajo>` de cada issue) está fuera de git.
 
 Para cualquier cambio, actualiza `main` y crea una rama: `git switch main`, `git pull` y `git switch -c <rama>`. El flujo no usa worktrees.
