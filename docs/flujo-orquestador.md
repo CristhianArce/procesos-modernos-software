@@ -24,7 +24,7 @@ SDD (desarrollo guiado por especificaciones) significa que primero se escribe qu
 | Color | Actor | Qué hace |
 |---|---|---|
 | Violeta | La **sesión del orquestador** (opus) | Escribe el código de producción, lanza y recoge a los agentes de pruebas, y corrige. Borde punteado: coordinación de la sesión, sin skill ni agente. Verde y amarillo nunca van solos dentro de un nodo violeta. Un cuadro violeta o verde con otro amarillo adentro es la sesión o el agente usando una herramienta de OpenSpec |
-| Verde | **Agentes** de `.claude/agents/` (sonnet) | `preparador` (1), `revisor-salida` (4), dos `escritor-pruebas` (5) y `revisor-reglas` (6). `build-test` del paso 6 es un skill, pero va dentro de un paso con agente |
+| Verde | **Agentes** de `.claude/agents/` (sonnet) | `preparador` (1), `revisor-salida` (4), tres `escritor-pruebas` (5) y `revisor-reglas` (6). `build-test` del paso 6 es un skill, pero va dentro de un paso con agente |
 | Amarillo | **OpenSpec** (skills `openspec-*` y su CLI) | Genera la propuesta (3, dentro de la sesión), valida la propuesta (4, dentro del agente), guía la implementación (5, dentro de la sesión) y archiva el change tras el merge |
 | Azul | **Commit y PR, CI de GitHub y la persona** | Skills `commit` y `abrir-pr` (8), CI del PR y revisión humana, que es quien fusiona |
 | Rojo | Estado de **bloqueo** | El flujo se detiene y se avisa a la persona |
@@ -47,7 +47,7 @@ SDD (desarrollo guiado por especificaciones) significa que primero se escribe qu
 | Continua que vuelve atrás | Un reintento: el mismo paso se repite con los hallazgos corregidos |
 | Punteada con flecha | Salida por excepción hacia «Bloqueado» |
 
-En el paso 5 la sesión escribe el código y, al mismo tiempo, dos agentes escriben las pruebas unitarias y de integración, uno por tipo; la prueba e2e, el tipo más riesgoso porque nunca se ejecuta aquí y depende del marcado y la semilla reales, la escribe la sesión cuando la página y la semilla ya existen. Las pruebas salen de las specs y del diseño, no del código ya escrito. Al terminar, la sesión las recoge, comprueba que cada tarea de pruebas tiene su archivo y alinea el código con las firmas que los agentes tuvieron que suponer.
+En el paso 5 la sesión deja primero escritas la migración y la semilla y completa en `design.md` las firmas y los textos visibles; después escribe el código y, al mismo tiempo, tres agentes escriben las pruebas, uno por tipo (unitarias, integración y e2e). Las pruebas salen de las specs, del diseño, de la migración y de la semilla, no del código ya escrito: lo que ya está escrito se lee, no se supone. Al cerrar, la sesión comprueba que los runners detectan cada archivo (`vitest list`, `playwright test --list`), corre la trazabilidad y marca todas las casillas **antes** del único `build-test` del paso 6: cualquier edición posterior al build impide el commit.
 
 <details>
 <summary>Fuente del diagrama (mermaid), para editarlo</summary>
@@ -71,16 +71,18 @@ flowchart LR
     FIX --> OV
 
     subgraph S5["5 Implementar el código (sesión)"]
-        OA["skill openspec-apply-change<br/>ejecuta tasks.md<br/>y escribe la prueba e2e"]
+        OA["skill openspec-apply-change<br/>ejecuta tasks.md"]
     end
-    VER -->|APROBADO| INI["Sesión: lanza en paralelo<br/>el código y 2 agentes de pruebas<br/>(unitarias e integración)"]
+    VER -->|APROBADO| INI["Sesión: deja migración, semilla<br/>y textos visibles; lanza en paralelo<br/>el código y 3 agentes de pruebas"]
     INI --> OA
     INI ==>|"segundo plano"| TU[["escritor-pruebas<br/>unitarias"]]
     INI ==>|"segundo plano"| TI[["escritor-pruebas<br/>integración"]]
+    INI ==>|"segundo plano"| TE[["escritor-pruebas<br/>e2e"]]
 
-    OA --> UNI["5 Unir<br/>Sesión: espera a los 2 agentes y ajusta<br/>los nombres que las pruebas supusieron"]
+    OA --> UNI["5 Unir<br/>Sesión: espera a los 3 agentes, ajusta<br/>los nombres que supusieron<br/>y comprueba que los runners ven cada archivo"]
     TU --> UNI
     TI --> UNI
+    TE --> UNI
 
     UNI --> V6["6 Verificar<br/>build-test y revisor-reglas"]
     V6 -->|"CRITICAL o build rojo por código"| S7["7 Corregir<br/>Sesión: una sola pasada"]
@@ -106,7 +108,7 @@ flowchart LR
     classDef bloq fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d
     class OP,OA,OV,ARC,L4 openspec
     class PRE,S2,FIX,INI,UNI,S7,L1,L2 sesion
-    class S1,VER,TU,TI,V6,L3 agente
+    class S1,VER,TU,TI,TE,V6,L3 agente
     class S8,CI,L5 gha
     class BLOQ,L6 bloq
     style S3G fill:#ede9fe,stroke:#6d28d9,color:#4c1d95
@@ -129,7 +131,7 @@ flowchart LR
 | 2 | **Contexto**: lista lo que ya existe (capacidades de `openspec/specs/`, tablas de `db/migration/`, módulos, semillas, rutas del contrato) para que la propuesta no suponga nada; las capacidades que comparten ruta o palabras con el issue vienen completas (requisitos y escenarios) para copiarlas en un `MODIFIED` | script `contexto.mjs` | `contexto.md` |
 | 3 | **Propuesta**: pregunta a la persona las dudas de negocio y genera proposal, specs, design y tasks | skill `openspec-propose` | `openspec/changes/<change>/` |
 | 4 | **Revisar la propuesta**: `openspec validate --strict`, trazabilidad CA → requisito → tarea, deltas contra las specs base (`MODIFIED` de un requisito que existe, `ADDED` de uno que no), formato y alcance; con CORREGIR se arregla y se repite una sola vez | script `trazabilidad-grep.mjs` y agente `revisor-salida` | veredicto en `gates.md` |
-| 5 | **Implementar**: la sesión ejecuta `tasks.md` (código, migración, semilla y contrato) mientras dos agentes escriben en paralelo las pruebas unitarias y de integración, y la sesión escribe la e2e al final; la sesión une y alinea las firmas | skill `openspec-apply-change` y dos agentes `escritor-pruebas` | código y pruebas en la rama, tareas `[x]`, `pruebas-supuestos-<tipo>.md` si hubo firmas supuestas |
+| 5 | **Implementar**: la sesión escribe primero la migración y la semilla y fija firmas y textos visibles en `design.md`; luego ejecuta `tasks.md` (código y contrato) mientras tres agentes escriben en paralelo las pruebas, uno por tipo; al final la sesión las une, alinea las firmas, comprueba que `vitest list` y `playwright test --list` ven cada archivo y marca todas las casillas antes del build | skill `openspec-apply-change` y tres agentes `escritor-pruebas` | código y pruebas en la rama, tareas `[x]`, `pruebas-supuestos-<tipo>.md` si hubo firmas supuestas |
 | 6 | **Verificar**: `typecheck` y `test:unit`, en paralelo con la revisión del diff contra las reglas del proyecto | skill `build-test` y agente `revisor-reglas` | `verificacion.md`, último build en `estado.md` |
 | 7 | **Corregir** (solo si hace falta): una pasada para los hallazgos CRITICAL o un build rojo, y se repite el paso 6 | la sesión | build en verde |
 | 8 | **Commit, PR y evidencias**: commit con `#<n>` y `Change: <change>`, PR en borrador y copia a `evidencias/issue-<n>/` | skills `commit` y `abrir-pr`, script `copiar-evidencias.mjs` | PR en borrador |
@@ -138,7 +140,7 @@ Sin build verde no hay commit.
 
 ## 3. Quién ejecuta qué prueba
 
-El orquestador **escribe** todas las pruebas (una por cada `CA-n`; las unitarias y de integración las escriben los agentes `escritor-pruebas`; la e2e, la sesión, cuando la página y la semilla ya existen), pero solo **ejecuta** las rápidas.
+El orquestador **escribe** todas las pruebas (una por cada `CA-n`; las escriben los agentes `escritor-pruebas`, no la sesión que programa el código), pero solo **ejecuta** las rápidas.
 
 | Prueba o control | Orquestador | CI del PR |
 |---|---|---|
@@ -158,7 +160,7 @@ Así el orquestador no necesita Docker ni base de datos y se mantiene liviano. E
 |---|---|---|
 | Skill `orquestador` | `.claude/skills/orquestador/` | Dirige los 8 pasos. Lo invoca solo la persona, con `/orquestador <n>` |
 | Agentes `preparador`, `revisor-salida`, `revisor-reglas` | `.claude/agents/` | Preparar el issue, revisar la propuesta y revisar el código. Son de solo lectura |
-| Agente `escritor-pruebas` | `.claude/agents/` | Escribe las pruebas de un tipo (unitarias o integración); se lanzan dos a la vez, en segundo plano, mientras la sesión escribe el código. Solo crea archivos de prueba y solo ejecuta `vitest` unitario |
+| Agente `escritor-pruebas` | `.claude/agents/` | Escribe las pruebas de un tipo (unitarias, integración o e2e); se lanzan tres a la vez, en segundo plano, mientras la sesión escribe el código. Solo crea archivos de prueba (las unitarias siempre `*.test.ts`) y no ejecuta nada |
 | Skills `openspec-*` | `.claude/skills/` | Los comandos de OpenSpec: `explore`, `propose`, `apply`, `archive`, `sync-specs` y `update-change`. El orquestador usa `propose` y `apply` |
 | Skills `build-test`, `commit`, `abrir-pr` | `.claude/skills/` | Compilar y probar, commitear, abrir el PR |
 | Skill `crear-hu` | `.claude/skills/` | Redactar una historia con `CA-n` y publicarla como issue |
