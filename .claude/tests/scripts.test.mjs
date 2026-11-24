@@ -255,6 +255,22 @@ test("CA-6: paquete-diff.mjs excluye .flujo, .claude, openspec y evidencias, y a
   assert.match(md, /## Archivo nuevo: src\/b\.ts[\s\S]*export const b = 1;/);
 });
 
+test("CA-6: tiempos.mjs suma la espera de la persona entre los hitos de pregunta y respuesta y da el total sin ella", async () => {
+  const { esperaPersona, resumenMarkdown, calcular } = await import("../skills/orquestador/scripts/tiempos.mjs");
+  const hitos = [
+    { etiqueta: "3 pregunta a la persona", hora: "2026-11-24T10:00:30Z" },
+    { etiqueta: "3 respuesta de la persona", hora: "2026-11-24T10:03:30Z" },
+    { etiqueta: "5 código listo", hora: "2026-11-24T10:04:00Z" },
+    { etiqueta: "5 pregunta a la persona", hora: "2026-11-24T10:05:00Z" },
+  ];
+  assert.deepEqual(esperaPersona(hitos), { segundos: 180, rondas: 1 }, "una pregunta sin respuesta no suma");
+  assert.deepEqual(esperaPersona([]), { segundos: 0, rondas: 0 });
+  const r = calcular("2026-11-24T10:00:00Z", [{ paso: 3, hora: "2026-11-24T10:05:00Z" }], new Date("2026-11-24T10:06:00Z"));
+  const md = resumenMarkdown(r, [], esperaPersona(hitos));
+  assert.match(md, /Espera de la persona: 3 min 00 s en 1 ronda de preguntas\. Total sin la espera: 3 min 00 s \(dentro de la meta\)/);
+  assert.doesNotMatch(resumenMarkdown(r, [], esperaPersona([])), /Espera de la persona/, "sin preguntas no se agrega la línea");
+});
+
 test("CA-6: tiempos.mjs guarda hitos con nombre sin mover los pasos y los conserva al cerrar un paso", async () => {
   const { duracionesHitos, registrarCierre, registrarHito, leerMarcas: leer2, lineaDeInicio, componer: componer2 } = await import("../skills/orquestador/scripts/tiempos.mjs");
   const dir = temporal();

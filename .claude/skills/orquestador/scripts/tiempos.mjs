@@ -8,6 +8,8 @@
 // La duración de un paso va del cierre del paso anterior (o del inicio de la corrida) a su propio cierre.
 // Un hito es una marca con nombre dentro de un paso (por ejemplo "5 código listo"): no cierra ni mueve ningún paso,
 // solo permite ver en qué parte de un paso largo se fue el tiempo.
+// Los hitos "<paso> pregunta a la persona" y "<paso> respuesta de la persona" delimitan una ronda de preguntas:
+// el resumen suma esas esperas y da el total sin ellas, porque no dependen del flujo.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { dirTrabajo, esPrincipal, fallar, opciones } from "./comun.mjs";
@@ -88,6 +90,25 @@ export function duracionesHitos(inicio, marcas, hitos) {
   });
 }
 
+// Espera de la persona: suma, en orden, de cada par de hitos "… pregunta a la persona" → "… respuesta de la persona".
+// Una pregunta sin respuesta (la corrida se cortó) no suma. El orquestador deja los dos hitos alrededor de cada ronda de preguntas.
+export const HITO_PREGUNTA = /pregunta a la persona/i;
+export const HITO_RESPUESTA = /respuesta de la persona/i;
+export function esperaPersona(hitos) {
+  let segundos = 0;
+  let rondas = 0;
+  let pregunta = null;
+  for (const { etiqueta, hora } of hitos) {
+    if (HITO_PREGUNTA.test(etiqueta)) pregunta = Date.parse(hora);
+    else if (HITO_RESPUESTA.test(etiqueta) && pregunta !== null) {
+      segundos += Math.max(0, (Date.parse(hora) - pregunta) / 1000);
+      rondas += 1;
+      pregunta = null;
+    }
+  }
+  return { segundos, rondas };
+}
+
 const fmt = (s) => {
   const t = Math.round(s);
   return `${Math.floor(t / 60)} min ${String(t % 60).padStart(2, "0")} s`;
@@ -114,7 +135,8 @@ export function calcular(inicio, marcas, ahora, meta = META_SEGUNDOS) {
   return { pasos, total, meta, dentro: total <= meta };
 }
 
-export function resumenMarkdown(r, hitos = []) {
+export function resumenMarkdown(r, hitos = [], espera = { segundos: 0, rondas: 0 }) {
+  const sinEspera = Math.max(0, r.total - espera.segundos);
   return [
     "## Resumen",
     "",
@@ -124,6 +146,12 @@ export function resumenMarkdown(r, hitos = []) {
     "",
     ...(hitos.length ? ["Hitos (desde el hito o el cierre de paso anterior):", "", "| Hito | Duración |", "|---|---|", ...hitos.map((h) => `| ${h.etiqueta} | ${fmt(h.segundos)} |`), ""] : []),
     `Total: ${fmt(r.total)} (${Math.round(r.total)} s). Meta: ≤ ${fmt(r.meta)}. ${r.dentro ? "Dentro de la meta." : `**Fuera de la meta por ${fmt(r.total - r.meta)}.**`}`,
+    ...(espera.rondas
+      ? [
+          "",
+          `Espera de la persona: ${fmt(espera.segundos)} en ${espera.rondas} ${espera.rondas === 1 ? "ronda" : "rondas"} de preguntas. Total sin la espera: ${fmt(sinEspera)} (${sinEspera <= r.meta ? "dentro" : "fuera"} de la meta).`,
+        ]
+      : []),
     "",
   ].join("\n");
 }
@@ -150,7 +178,7 @@ if (esPrincipal(import.meta.url)) {
       if (!registrarHito(ruta, o._.slice(2).join(" "))) fallar("hito espera una etiqueta de texto sin barras verticales", 2);
     } else {
       const meta = o.meta !== undefined ? Number(o.meta) : META_SEGUNDOS;
-      const md = resumenMarkdown(calcular(inicio, marcas, new Date(), meta), duracionesHitos(inicio, marcas, hitos));
+      const md = resumenMarkdown(calcular(inicio, marcas, new Date(), meta), duracionesHitos(inicio, marcas, hitos), esperaPersona(hitos));
       writeFileSync(ruta, componer(lineaInicio, marcas, md, hitos));
       console.log(md);
     }
