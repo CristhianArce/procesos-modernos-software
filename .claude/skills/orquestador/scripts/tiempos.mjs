@@ -10,7 +10,7 @@ import { dirname, join } from "node:path";
 import { dirTrabajo, esPrincipal, fallar, opciones } from "./comun.mjs";
 
 export const META_SEGUNDOS = 300;
-export const NOMBRES = { 1: "Preparar", 2: "Contexto", 3: "Propuesta", 4: "G2", 5: "Implementar", 6: "Verificar", 7: "Corregir", 8: "Commit, PR y evidencias" };
+export const NOMBRES = { 1: "Preparar", 2: "Contexto", 3: "Propuesta", 4: "Revisar propuesta", 5: "Implementar", 6: "Verificar", 7: "Corregir", 8: "Commit, PR y evidencias" };
 const MARCA = /^\|\s*(\d+)\s*\|\s*(\d{4}-\d{2}-\d{2}T[^|\s]+)\s*\|\s*$/;
 
 export const rutaTiempos = (n, trabajo) => join(trabajo ?? dirTrabajo(n), "tiempos.md");

@@ -2,7 +2,7 @@
 name: crear-hu
 description: Redacta historias de usuario con formato claro (Como/quiero/para, criterios de aceptación CA-n en Dado/Cuando/Entonces, reglas, fuera de alcance) y las publica como issues de GitHub listos para el orquestador. Úsala cuando pidan "crea la historia de usuario #N de la propuesta", "crea las historias 6 a 10", "crea todas las historias del backlog", "convierte esta idea en una historia" o "crea el issue de la historia N".
 argument-hint: <N | N-M | todas | "idea libre"> [borrador]
-allowed-tools: Read Grep Glob Write Bash(gh auth status*) Bash(gh repo view*) Bash(gh issue list*) Bash(gh issue view*) Bash(gh issue create*) Bash(gh issue edit*) Bash(gh label list*) Bash(gh label create*) Bash(mkdir -p .flujo/*) Bash(mkdir -p docs/backlog*)
+allowed-tools: Read Grep Glob Write Bash(gh auth status*) Bash(gh repo view*) Bash(gh issue list*) Bash(gh issue view*) Bash(gh issue create*) Bash(gh issue edit*) Bash(gh label list*) Bash(gh label create*) Bash(mkdir -p .flujo/*)
 ---
 
 # Crear historias de usuario como issues de GitHub
@@ -20,9 +20,9 @@ Convierte una historia del backlog de `docs/propuesta.md` (sección 5) o una ide
 | "crea una historia de práctica para mostrar la versión de la app" | Historia de práctica (ver abajo): para probar este skill o el orquestador sin tocar el backlog |
 | Cualquiera de los anteriores + "borrador" | Solo escribe los borradores; no publica nada |
 
-**Historias de práctica.** Si el pedido dice "práctica" o "prueba", la historia no entra al backlog: no recibe número HU, el título es `PRÁCTICA: <título>`, la etiqueta de fase es `practica` (color `c5def5`) en lugar de `linea-base`/`clase`, el borrador se guarda como `.flujo/historias/practica-<slug>.md` y **no** se registra en el índice `docs/backlog/README.md`. Todo lo demás (formato, verificación, confirmación antes de publicar) es igual.
+**Historias de práctica.** Si el pedido dice "práctica" o "prueba", la historia no entra al backlog: no recibe número HU, el título es `PRÁCTICA: <título>`, la etiqueta de fase es `practica` (color `c5def5`) en lugar de `linea-base`/`clase` y el borrador se guarda como `.flujo/historias/practica-<slug>.md`. Todo lo demás (formato, verificación, confirmación antes de publicar) es igual.
 
-El número `N` es el de la propuesta (HU N), **no** el número del issue: GitHub asigna el suyo y la relación queda en `docs/backlog/README.md`.
+El número `N` es el de la propuesta (HU N), **no** el número del issue: GitHub asigna el suyo. El issue es la única fuente de la historia; el repo no guarda copia (el flujo la deja en `evidencias/issue-<n>/issue.md`).
 
 ## Pasos
 
@@ -33,7 +33,6 @@ El número `N` es el de la propuesta (HU N), **no** el número del issue: GitHub
 
 ### 2. Leer las fuentes (de disco, no de memoria)
 - `docs/propuesta.md`: sección 5 (fila de la historia, dependencias, entrega y puntos de extensión), secciones 3 y 4 (arquitectura, módulos, estructura de carpetas), sección 8 (reglas del proyecto).
-- `docs/backlog/README.md` si existe (historias ya creadas y su issue).
 - El código y `openspec/specs/` si ya existen, para no contradecir lo construido.
 
 Si la fila de la propuesta no da información suficiente para un criterio (por ejemplo, un umbral o un texto exacto), **no inventar**: dejar el punto en "Preguntas abiertas" con las opciones razonables. El orquestador las resuelve con el decisor o preguntando a la persona.
@@ -57,7 +56,7 @@ Usar exactamente la estructura de [plantilla-issue.md](plantilla-issue.md); hay 
 Antes de seguir, revisar la historia con la lista de [Verificación](#verificación-antes-de-publicar).
 
 ### 4. Guardar el borrador
-Escribir cada historia en `docs/backlog/hu-<NN>-<slug>.md` (versionado: es el backlog del proyecto; crear la carpeta con `mkdir -p docs/backlog`). Las historias de práctica van a `.flujo/historias/` (fuera de git). El `slug` es el título en minúsculas, sin tildes, con guiones.
+Escribir cada historia en `.flujo/historias/hu-<NN>-<slug>.md` (fuera de git; crear la carpeta con `mkdir -p .flujo/historias`) y las de práctica en `.flujo/historias/practica-<slug>.md`. El `slug` es el título en minúsculas, sin tildes, con guiones.
 
 ### 5. Confirmar antes de publicar
 Publicar crea issues visibles para todo el repositorio. Mostrar a la persona, por cada historia: título, frase de la historia, los `CA-n` y las preguntas abiertas, y preguntar si se publican tal cual. Si el pedido incluía "borrador", terminar aquí y entregar las rutas de los borradores.
@@ -68,20 +67,12 @@ Publicar crea issues visibles para todo el repositorio. Mostrar a la persona, po
    - `habilitadora` (`5319e7`) para HU 1 y 2, `linea-base` (`0e8a16`) para HU 3 a 5, `clase` (`fbca04`) para HU 6 a 10 y para las ideas nuevas que se asignen a clase.
 
    `gh label create <nombre> --color <color> --description "<descripción>"`.
-2. Si no existe issue para `HU <N>`: `gh issue create --title "HU <N>: <título>" --body-file docs/backlog/hu-<NN>-<slug>.md --label historia --label <fase>`.
+2. Si no existe issue para `HU <N>`: `gh issue create --title "HU <N>: <título>" --body-file .flujo/historias/hu-<NN>-<slug>.md --label historia --label <fase>`.
 3. Si ya existe: mostrar la diferencia con el cuerpo actual y solo con confirmación explícita `gh issue edit <número> --body-file …`. Nunca cerrar, borrar ni reasignar issues.
 4. Al crear varias, hacerlo en orden de número para que las dependencias puedan citar `#<número>`; si una historia depende de otra recién creada, actualizar su sección "Dependencias" con el número real antes de publicarla.
 
-### 7. Registrar en `docs/backlog/README.md`
-Crear o actualizar el índice `docs/backlog/README.md` con una fila por historia, enlazando su archivo (mantener las existentes, ordenadas por HU):
-
-```markdown
-| HU | Título | Fase | Issue | Depende de | CA |
-|---|---|---|---|---|---|
-| 6 | Aislar un nodo de la red | Clase | #12 | HU 4 (#9) | 5 |
-```
-
-Este archivo sí se versiona: es la evidencia del backlog para la rúbrica. No hacer commit; avisar que quedó modificado.
+### 7. Informar
+Entregar la lista de issues creados (HU, número y URL). No se escribe nada versionado en el repo.
 
 ## Verificación antes de publicar
 - [ ] La frase tiene rol, acción y beneficio, y el beneficio no repite la acción.

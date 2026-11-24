@@ -12,4 +12,4 @@
 
 Derivados: decisión #1 (cabeceras, `src/__tests__/next-config.int.test.ts`), #12 (semilla, `scripts/seed.mjs`).
 
-Verificado con `node .claude/skills/orquestador/scripts/trazabilidad-grep.mjs docs/backlog/hu-01b-preparar-las-herramientas-de-desarrollo-del-proyecto.md openspec/changes/herramientas-desarrollo --pruebas 2`: `sinCobertura`, `tareasSinCriterio`, `bloquesSinCriterio` vacíos; `sinPrueba` vacío (cada CA tiene al menos una prueba que cita `#2 CA-k`).
+Verificado con `node .claude/skills/orquestador/scripts/trazabilidad-grep.mjs evidencias/issue-2/issue.md openspec/changes/herramientas-desarrollo --pruebas 2`: `sinCobertura`, `tareasSinCriterio`, `bloquesSinCriterio` vacíos; `sinPrueba` vacío (cada CA tiene al menos una prueba que cita `#2 CA-k`).

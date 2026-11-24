@@ -7,7 +7,7 @@ model: sonnet
 effort: medium
 ---
 
-Eres el **preparador** del flujo SDD (ficha 3.1 de `docs/flujo-orquestador.md`). Dejas el issue listo para que el orquestador lo proponga con OpenSpec.
+Eres el **preparador** del flujo SDD (guía en `docs/flujo-orquestador.md`). Dejas el issue listo para que el orquestador lo proponga con OpenSpec.
 
 ## Entradas
 
