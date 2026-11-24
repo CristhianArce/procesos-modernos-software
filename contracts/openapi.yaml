@@ -112,6 +112,40 @@ components:
         tomadaEn:
           type: string
           format: date-time
+    Notificacion:
+      type: object
+      description: Aviso de una alerta para un técnico. Guarda una copia del nombre del sensor, sin umbral ni nodo.
+      required: [id, sensor, magnitud, valor, fecha, leida]
+      properties:
+        id:
+          type: string
+          format: uuid
+        sensor:
+          type: string
+        magnitud:
+          type: string
+          enum: [voltaje, corriente, potencia]
+        valor:
+          type: number
+        fecha:
+          type: string
+          format: date-time
+          description: Fecha de la alerta que originó la notificación.
+        leida:
+          type: boolean
+    CentroNotificaciones:
+      type: object
+      required: [notificaciones, noLeidas]
+      properties:
+        notificaciones:
+          type: array
+          description: Las 50 más recientes del técnico, de la más reciente a la más antigua; en empate de fecha, el id mayor primero.
+          items:
+            $ref: "#/components/schemas/Notificacion"
+        noLeidas:
+          type: integer
+          minimum: 0
+          description: Todas las no leídas del técnico, no solo las listadas.
     Alerta:
       type: object
       description: Una lectura superó el umbral máximo de su sensor en una magnitud. Una sola severidad y sin estado.
@@ -923,6 +957,23 @@ paths:
           $ref: "#/components/responses/DatosInvalidos"
         "401":
           $ref: "#/components/responses/NoAutenticado"
+  /api/notificaciones:
+    get:
+      summary: Consultar las notificaciones propias
+      description: Solo técnicos. El destinatario es el de la sesión; no recibe parámetros.
+      security:
+        - sesion: []
+      responses:
+        "200":
+          description: Notificaciones del técnico y número de no leídas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CentroNotificaciones"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+        "403":
+          $ref: "#/components/responses/SinPermiso"
   /api/topologia:
     get:
       summary: Consultar la topología de la red para el mímico
