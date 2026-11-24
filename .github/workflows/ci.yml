@@ -90,12 +90,15 @@ jobs:
           METRICS_TOKEN: ci
           BASE_URL: http://localhost:3000
         run: |
-          npm start &
+          npm start > app.log 2>&1 &
           for i in $(seq 1 60); do
             curl -fsS http://localhost:3000/api/health && break
             sleep 1
           done
           npm run e2e
+      - name: Log de la app
+        if: failure()
+        run: tail -n 80 app.log
       - name: Informe de Playwright
         if: failure()
         uses: actions/upload-artifact@v4
