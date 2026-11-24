@@ -133,6 +133,29 @@ components:
         creadaEn:
           type: string
           format: date-time
+    Afectado:
+      type: object
+      required: [id, alias]
+      properties:
+        id:
+          type: string
+          format: uuid
+        alias:
+          type: string
+          minLength: 1
+          maxLength: 80
+    AfectadosNodo:
+      type: object
+      required: [total, afectados]
+      properties:
+        total:
+          type: integer
+          minimum: 0
+        afectados:
+          description: Ordenados por alias y, entre alias repetidos, por id.
+          type: array
+          items:
+            $ref: "#/components/schemas/Afectado"
     Notificacion:
       type: object
       description: Aviso de una alerta para un técnico. El sensor es una copia de su nombre; no guarda umbral ni nodo.
@@ -896,6 +919,32 @@ paths:
           $ref: "#/components/responses/NoAutenticado"
         "403":
           $ref: "#/components/responses/SinPermiso"
+        "404":
+          $ref: "#/components/responses/NoEncontrado"
+  /api/afectados:
+    get:
+      summary: Listar los afectados de un nodo
+      description: Administradores y técnicos. Devuelve el total y la lista; un nodo sin afectados responde una lista vacía y total 0.
+      security:
+        - sesion: []
+      parameters:
+        - name: nodoId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Afectados del nodo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AfectadosNodo"
+        "400":
+          $ref: "#/components/responses/DatosInvalidos"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
         "404":
           $ref: "#/components/responses/NoEncontrado"
   /api/lecturas:
