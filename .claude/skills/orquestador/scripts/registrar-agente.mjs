@@ -1,7 +1,7 @@
 // Registra en una sola llamada el cierre de un agente o de un paso de la sesión: agrega la fila a
 // <trabajo>/agentes-log.md con la hora real, deja la marca del paso en tiempos.md y actualiza estado.md.
 // Uso: node .claude/skills/orquestador/scripts/registrar-agente.mjs <n> <paso> <agente> <modelo> <id> <veredicto> [rechazos...] [--trabajo <dir>] [--paralelo]
-//   --paralelo (siempre al final): el agente corrió en segundo plano durante otro paso (revisor-salida durante el paso 5). Agrega la fila al registro,
+//   --paralelo (siempre al final): el agente corrió en segundo plano durante otro paso (escritor-pruebas durante el paso 5). Agrega la fila al registro,
 //   pero no deja marca de tiempo ni mueve "Última fase cerrada": su marca llegaría después de la del paso 5 y falsearía las duraciones y el retomar con desde=.
 //   <paso>: número del paso, con etiqueta opcional ("4" o "4 Revisar propuesta (intento 1)"). <id>: id del agente, o - para la sesión.
 //   rechazos: texto plano y corto (sin comillas invertidas ni $); el detalle queda en gates.md y verificacion.md.

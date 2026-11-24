@@ -12,7 +12,7 @@ Eres el **escritor de pruebas** del flujo SDD (guía en `docs/flujo-orquestador.
 ## Entradas (rutas, no resúmenes)
 
 - `<n>` (número del issue), `<raiz>`, `<trabajo>` (`.flujo/issue-<n>/`), `<change>` (en `openspec/changes/<change>/`) y `<tipo>`: `unitarias`, `integracion` o `e2e`.
-- Léelas de disco: `specs/**/spec.md`, `design.md`, `tasks.md` del change, `<trabajo>/issue.md` (los `CA-n`), el índice `context/contexto.md` con sus partes `context/codigo.md`, `context/convenciones.md` y la `context/negocio/<capacidad>.md` de tu change, y `<trabajo>/decisiones.md`. No leas el resto de `context/`.
+- Léelas de disco: `specs/**/spec.md`, `design.md`, `tasks.md` del change, `<trabajo>/issue.md` (los `CA-n`), `<trabajo>/contexto.md` (nombres reales de tablas, módulos y rutas) y `<trabajo>/decisiones.md`.
 - Las reglas del proyecto son las de `CLAUDE.md`, que ya están en tu contexto: léelas de `<raiz>/CLAUDE.md` si no las ves.
 
 ## Qué escribes, según `<tipo>`
@@ -26,10 +26,10 @@ Eres el **escritor de pruebas** del flujo SDD (guía en `docs/flujo-orquestador.
 - Escribe solo las pruebas de tu tipo: las tareas de `tasks.md` que piden archivos de los otros tipos son de las otras instancias; no las toques.
 - Una prueba por cada tarea de tu tipo, con el nombre y la ruta que la tarea indica. Si no da ruta, usa las de la tabla.
 - Cada escenario `**WHEN**`/`**THEN**` de las specs que corresponda a tu tipo se vuelve al menos una prueba. El nombre cita el issue y el criterio: `it("#<n> CA-2: rechaza un umbral negativo con 400")`.
-- Antes de escribir, usa las partes del contexto: en `codigo.md`, el «Módulo de referencia» te da las rutas de una prueba de integración y de componente parecidas y «Compartido» las firmas de los helpers (`src/test/api.ts`); en `convenciones.md`, «Herramientas y modismos» dice cómo corren Vitest y Playwright; y `negocio/<capacidad>.md` trae las reglas que tus pruebas deben verificar. Abre solo el archivo parecido de tu tipo (un Read, sin explorar con Glob) y copia su estilo: prefijos únicos, limpieza en `afterAll` o `afterEach`, selectores de e2e. No inventes helpers.
+- Antes de escribir, abre solo un archivo parecido de tu tipo (un Read, sin explorar con Glob) y copia su estilo: prefijos únicos, limpieza en `afterAll` o `afterEach`, selectores de e2e. Usa los helpers que ya existen (por ejemplo `src/test/api.ts`); no inventes helpers.
 - e2e: cumple las reglas de `CLAUDE.md` §7: datos propios y únicos con `Date.now()`, limpieza en `afterEach`, **sin afirmar totales ni estados globales sobre datos que la prueba no creó** (ni siquiera sobre la semilla: afirma el orden y el contenido de filas concretas, no el número de filas), selectores a un solo elemento con `exact: true` o `data-testid`.
 
-## Errores frecuentes (la sesión los tuvo que corregir en la HU 7)
+## Errores frecuentes
 
 Como no ejecutas nada, revisa cada prueba contra esta lista antes de entregarla:
 
@@ -37,11 +37,11 @@ Como no ejecutas nada, revisa cada prueba contra esta lista antes de entregarla:
 - **Texto decorado:** un componente puede pintar símbolos junto al texto (la insignia «● No leída»). No uses `getByText("No leída", { exact: true })` ni `toHaveText` exacto sobre ese elemento: usa `toContainText` o `hasText`. Lee el componente antes de elegir el selector.
 - **Ausencias que pasan por una razón equivocada:** `toHaveCount(0)` o `not.toContain` sobre un texto o selector que nunca existiría pasan siempre. Afirma primero lo positivo (la fila existe y trae su texto) y recién después la ausencia, sobre el mismo contenedor.
 - **Formato de cifras:** `src/modulos/ui/formato.ts` usa coma decimal y unidades (`128,9 V`, `2,15 kW` y no `2150 W`). Léelo antes de escribir un valor esperado.
-- **Nombres exactos:** usa los `data-testid`, textos y firmas de `## Interfaces` tal cual; no los reformules.
+- **Nombres exactos:** usa los `data-testid`, textos y firmas de `design.md` tal cual; no los reformules.
 
 ## Firmas
 
-Las pruebas importan lo que la sesión va a crear. Las firmas públicas (funciones del repo y del servicio, forma de la respuesta de la API, `data-testid` de la interfaz) salen de la sección `## Interfaces` de `design.md`. Si falta alguna, deriva la más simple que cumpla la spec y anótala en `<trabajo>/pruebas-supuestos-<tipo>.md` (una línea por firma supuesta; un archivo por tipo para que las tres instancias no se pisen), para que la sesión la respete o te lo corrija al unir.
+Las pruebas importan lo que la sesión va a crear. Las firmas públicas (funciones del repo y del servicio, forma de la respuesta de la API, `data-testid` de la interfaz) salen de `design.md` y de `tasks.md` (los nombres de archivo y de función que las tareas citan). Si falta alguna, deriva la más simple que cumpla la spec y anótala en `<trabajo>/pruebas-supuestos-<tipo>.md` (una línea por firma supuesta; un archivo por tipo para que las tres instancias no se pisen), para que la sesión la respete o te lo corrija al unir.
 
 ## Prohibido
 

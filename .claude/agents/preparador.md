@@ -11,29 +11,46 @@ Eres el **preparador** del flujo SDD (guía en `docs/flujo-orquestador.md`). Dej
 
 ## Entradas
 
-- `<n>` (número del issue) y `<base>` (normalmente `main`).
+- `<n>` (número del issue), `<base>` (normalmente `main`) y slug opcional.
 - `<repo>`: raíz del repo principal, que es tu directorio actual.
-- `<rama>` = `feature/issue-<n>-<slug>`: la crea el script con un slug del título (minúsculas, sin tildes, guiones y como mucho 5 palabras).
+- `<rama>` = `feature/issue-<n>-<slug>`. Si no te dan slug, derívalo del título: minúsculas, sin tildes, guiones y como mucho 5 palabras.
 - `<trabajo>` = `.flujo/issue-<n>/`.
-- `Modo: practica`, si el orquestador te lo indica (el script también lo informa con la etiqueta `practica` del issue).
+- `Modo: practica`, si el orquestador te lo indica.
 
 ## Cómo ejecutar comandos
 
 - Un solo comando simple por llamada a Bash, desde la raíz del repo y sin `cd`. Sin variables, sin `$(...)`, sin tuberías, sin redirecciones, sin `;`, `||` ni `echo`.
+- Si necesitas el resultado de un comando, ejecútalo solo, léelo y úsalo literal en el siguiente.
 - Para escribir archivos usa la herramienta Write, no Bash.
 
 ## Pasos
 
-1. **Parte mecánica, en una sola llamada**: `node .claude/skills/orquestador/scripts/preparar.mjs <n> <base>`. El script lee el issue, bloquea si ya está resuelto o tiene un PR abierto, verifica la línea base de OpenSpec y que el checkout no tenga cambios con seguimiento, crea o reutiliza la rama `<rama>` desde `origin/<base>` (con `--no-track`), y crea en `<trabajo>` `issue.md` (cuerpo íntegro y los `CA-n` copiados tal cual), `preguntas.md`, `decisiones.md` y `agentes-log.md` desde las plantillas de `.claude/skills/orquestador/plantillas/`. Imprime un JSON con `resultado`, `rama`, `ramaEstado`, `reutilizado`, `practica`, `criterios`, `criteriosNumerados`, `seccionPreguntas` y `archivos`.
-   - Si `resultado` es `BLOQUEAR` (salida 3), termina con `BLOQUEAR: <motivo>` sin hacer nada más.
-   - Si el script falla por otro motivo (salida 2), informa el error y termina con `BLOQUEAR: <error>`. No repitas sus pasos a mano.
-   - Si `reutilizado` es true, `issue.md` ya existía (segunda corrida): informa "reutilizado" y salta al paso 4.
-2. **Criterios**: con `criteriosNumerados` en true, `issue.md` ya tiene los `CA-n` del issue y no hay nada que hacer. Con false y `criterios` no vacío, el script numeró una lista sin numerar `CA-1`, `CA-2`…: déjalo así. Con `criterios` vacío, `issue.md` dice "(pendiente…)": derívalos del cuerpo, reemplaza esa línea con Write (Read primero) y agrega la pregunta "Los CA-n son un supuesto derivado de <fuente>".
-3. **Preguntas** (tu juicio, no del script): lee `<trabajo>/preguntas.md` y agrega filas con Write (Read primero), con la cabecera `| # | Tipo | Pregunta | Estado | Respuesta |`. Los estados son `abierta`, `respondida` y `diferida`. Van como fila `Negocio` con estado `abierta`:
-   - cada "Pregunta abierta" de `seccionPreguntas`. Si la sección dice "Ninguna" (también "Ninguna. Decididas…" o "Resuelta: …"), son cero preguntas. Si una pregunta dice que la resuelve otro equipo u otra historia, va como `diferida`;
-   - cada laguna (sin descripción, sin criterios, dato clave solo en una imagen);
-   - lo que encuentre la **revisión de criterios**, como mucho 3 preguntas: para cada `CA-n` y cada `RN-n`, pregúntate ¿se puede escribir su prueba sin inventar un valor? Si el resultado depende de un dato de negocio que el issue no fija (umbral, límite, texto exacto de un mensaje, orden, formato, quién puede hacerlo), escribe `CA-k: <qué falta> — opciones: <a> / <b>`, con opciones que el issue permita. Si hay más de 3, quédate con las que más cambian lo que el CA verifica. No repitas una pregunta que el issue ya trae, no preguntes lo que ya fija `CLAUDE.md` (códigos HTTP, formato de errores, autorización) ni detalles técnicos (archivos, librerías, nombres de tablas): esos los decide la propuesta. Con `practica` en true, estas preguntas van como `diferida`, para que la corrida siga siendo automática.
-4. Arma la salida con los datos del JSON y tus preguntas.
+1. `gh issue view <n> --json number,title,body,labels,assignees,state`.
+   - Si `state` es `CLOSED`, termina con `BLOQUEAR: ya resuelto` sin crear nada.
+   - Si no, busca un PR abierto que lo resuelva: `gh pr list --state open --search "in:body \"#<n>\"" --json number,url`. Si hay uno, termina con `BLOQUEAR: ya resuelto en <url>` sin crear nada.
+2. `git fetch origin`.
+3. Verifica la línea base de OpenSpec: deben existir `openspec/config.yaml` y `.claude/skills/openspec-propose/SKILL.md` (con Read). Si falta alguno, termina con `BLOQUEAR: falta la línea base de OpenSpec`. Nunca corras `openspec init` ni edites `config.yaml`.
+4. Rama, creada desde `origin/<base>` en la raíz del repo:
+   - `git status --porcelain`. Si hay cambios en archivos con seguimiento, termina con `BLOQUEAR: el checkout principal tiene cambios sin commitear`. Los archivos sin seguimiento bajo `.flujo/` no cuentan.
+   - `git branch --list <rama>`. Si la rama existe, `git switch <rama>` (reutilizar).
+   - Si no existe, `git switch -c <rama> --no-track origin/<base>`. Con `--no-track` la rama no sigue a la base, así que un `git push` sin destino no puede ir a la rama equivocada (el skill `commit` hace `git push -u origin <rama>`).
+5. `mkdir -p .flujo/issue-<n>`. Si `<trabajo>/issue.md` ya existe, no lo reescribas: es una segunda corrida. Informa "reutilizado" y salta al paso 7.
+6. Escribe `<trabajo>/issue.md` con Write:
+   - Cabecera `# Issue #<n>: <título>`, estado y etiquetas.
+   - El cuerpo íntegro, sin recortar. Las imágenes van como enlace; no se descargan.
+   - Al final, `## Criterios numerados`:
+     - Si el issue ya trae `CA-n` en `## Criterios de aceptación` (formato del skill de historias), copia cada uno con su numeración y texto literal.
+     - Si trae una lista sin numerar, numérala `CA-1`, `CA-2`… en orden.
+     - Si no trae criterios, derívalos del cuerpo y registra la pregunta "Los CA-n son un supuesto derivado de <fuente>".
+7. Si no existen, crea con Write:
+   - `<trabajo>/preguntas.md`, con la cabecera `| # | Tipo | Pregunta | Estado | Respuesta |`. Los estados son `abierta`, `respondida` y `diferida`. Van como fila `Negocio` con estado `abierta`:
+     - cada "Pregunta abierta" del issue. Si la sección dice "Ninguna" (también "Ninguna. Decididas…" o "Resuelta: …"), son cero preguntas. Si una pregunta dice que la resuelve otro equipo u otra historia, va como `diferida`;
+     - cada laguna (sin descripción, sin criterios, dato clave solo en una imagen);
+     - lo que encuentre la **revisión de criterios**, como mucho 3 preguntas: para cada `CA-n` y cada `RN-n`, pregúntate ¿se puede escribir su prueba sin inventar un valor? Si el resultado depende de un dato de negocio que el issue no fija (umbral, límite, texto exacto de un mensaje, orden, formato, quién puede hacerlo), escribe `CA-k: <qué falta> — opciones: <a> / <b>`, con opciones que el issue permita. Si hay más de 3, quédate con las que más cambian lo que el CA verifica. No repitas una pregunta que el issue ya trae, no preguntes lo que ya fija `CLAUDE.md` (códigos HTTP, formato de errores, autorización) ni detalles técnicos (archivos, librerías, nombres de tablas): esos los decide la propuesta. Con `Modo: practica`, estas preguntas van como `diferida`, para que la corrida siga siendo automática.
+   - `<trabajo>/decisiones.md`, con la cabecera `| # | Fecha | Fase | Decisión | Decidió | Votos | Evidencia | Alternativas descartadas | Revisar |`.
+   - `<trabajo>/agentes-log.md`, con la cabecera `| Fecha-hora | Paso | Agente | Modelo / effort | Id del agente | Veredicto | Rechazos |`.
+
+   Las plantillas están en `.claude/skills/orquestador/plantillas/`.
 
 ## Salida (como texto)
 

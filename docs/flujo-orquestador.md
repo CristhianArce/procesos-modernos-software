@@ -17,32 +17,83 @@ SDD (desarrollo guiado por especificaciones) significa que primero se escribe qu
 
 ```mermaid
 flowchart LR
-    CTX[("context/<br/>negocio y técnica")]
-    P1["1 Preparar"] --> P3["3 Propuesta"]
-    P3 --> P5["5 Implementar<br/>y pruebas en paralelo"]
-    P5 --> P6["6 Verificar"]
-    P6 --> P8["8 PR en borrador"]
-    P8 --> CI["CI y revisión humana"]
-    P3 -.->|"4 Revisar propuesta<br/>en segundo plano"| P6
-    CTX -.->|lee| P3
-    CTX -.->|lee| P5
+    S12["1 Preparar<br/>2 Contexto"] --> S3["3 Propuesta<br/>skill openspec-propose"]
+    S3 --> REV{"4 Revisar propuesta<br/>openspec validate --strict"}
+    REV -->|CORREGIR, una vez| S3
+    REV -->|APROBADO| INI{{"Inicio del paso 5<br/>un solo mensaje"}}
 
-    classDef nucleo fill:#fef3c7,stroke:#b45309,color:#78350f
-    classDef externo fill:#dbeafe,stroke:#1d4ed8,color:#1e3a8a
-    class P3,P5 nucleo
-    class CTX,CI externo
+    INI --> S5["5 Implementar el código<br/>skill openspec-apply-change"]
+    INI ==>|"segundo plano"| TU[["escritor-pruebas<br/>unitarias"]]
+    INI ==>|"segundo plano"| TI[["escritor-pruebas<br/>integración"]]
+    INI ==>|"segundo plano"| TE[["escritor-pruebas<br/>e2e"]]
+
+    S5 --> UNI["5 Unir<br/>recoger las 3 pruebas<br/>y alinear firmas"]
+    TU --> UNI
+    TI --> UNI
+    TE --> UNI
+
+    UNI --> V6["6 Verificar<br/>build-test y revisor-reglas"]
+    V6 -->|"7 Corregir<br/>(CRITICAL o build rojo)"| V6
+    V6 --> S8["8 PR borrador<br/>y evidencias"]
+    S8 --> CI["CI del PR<br/>openspec validate --all<br/>y revisión humana"]
+    CI --> ARC["Tras el merge, PR aparte<br/>openspec archive"]
+
+    REV -.->|BLOQUEAR| BLOQ(["Bloqueado"])
+    V6 -.->|entorno o reintentos agotados| BLOQ
+
+    classDef openspec fill:#fef3c7,stroke:#b45309,color:#78350f
+    classDef sesion fill:#ede9fe,stroke:#6d28d9,color:#4c1d95
+    classDef agente fill:#dcfce7,stroke:#15803d,color:#14532d
+    classDef gha fill:#dbeafe,stroke:#1d4ed8,color:#1e3a8a
+    classDef bloq fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d
+    class S3,ARC openspec
+    class S5,UNI,INI sesion
+    class S12,REV,TU,TI,TE,V6 agente
+    class S8,CI gha
+    class BLOQ bloq
 ```
 
-Línea continua: el orden del flujo. Punteada: lo que corre aparte o solo se lee. La revisión de la propuesta (paso 4) corre en segundo plano mientras se implementa y se recoge antes del 6. El paso 7 (corregir) solo corre si el 6 encuentra un `CRITICAL` o un build rojo. `context/` no se genera en el flujo: lo mantiene el skill `/actualizar-contexto` y el orquestador solo lo lee. Amarillo: lo que ejecuta OpenSpec. Azul: lo que vive fuera de la sesión (el contexto, el CI y la revisión humana).
+**Cómo leer el diagrama**
+
+*Colores: quién ejecuta el paso*
+
+| Color | Actor | Qué hace |
+|---|---|---|
+| Violeta | La **sesión del orquestador** (opus) | Escribe el código de producción, lanza y recoge a los agentes de pruebas, y corrige |
+| Verde | **Agentes** de `.claude/agents/` (sonnet) | `preparador` (1), `revisor-salida` (4), tres `escritor-pruebas` (5) y `revisor-reglas` (6). El paso 2 es un script y `build-test` del paso 6 es un skill, pero van dentro de un paso con agente |
+| Amarillo | **OpenSpec** (skills `openspec-*` y su CLI) | Genera la propuesta (3) y archiva el change tras el merge |
+| Azul | **Commit y PR, CI de GitHub y la persona** | Skills `commit` y `abrir-pr` (8), CI del PR y revisión humana, que es quien fusiona |
+| Rojo | Estado de **bloqueo** | El flujo se detiene y se avisa a la persona |
+
+*Formas: qué tipo de elemento es*
+
+| Forma | Significa |
+|---|---|
+| Rectángulo | Un paso del flujo |
+| Rombo | Una decisión con veredicto (`APROBADO`, `CORREGIR` o `BLOQUEAR`) |
+| Hexágono | El punto donde la sesión lanza varias cosas a la vez |
+| Rectángulo con barras dobles a los lados | Un agente que corre en segundo plano, en paralelo con la sesión |
+| Estadio (extremos redondeados) | Estado final del flujo |
+
+*Líneas: qué tipo de relación es*
+
+| Línea | Significa |
+|---|---|
+| Continua con flecha | Siguiente paso del camino normal; con texto, la condición que lo activa |
+| Gruesa con flecha | Lanzamiento en paralelo y en segundo plano: el agente trabaja mientras la sesión sigue |
+| Continua que vuelve atrás | Un reintento: el mismo paso se repite con los hallazgos corregidos |
+| Punteada con flecha | Salida por excepción hacia «Bloqueado» |
+
+En el paso 5 la sesión escribe el código y, al mismo tiempo, tres agentes escriben las pruebas, uno por tipo (unitarias, integración y e2e). Las pruebas salen de las specs y del diseño, no del código ya escrito. Al terminar, la sesión las recoge, comprueba que cada tarea de pruebas tiene su archivo y alinea el código con las firmas que los agentes tuvieron que suponer.
 
 | # | Paso | Quién | Qué deja |
 |---|---|---|---|
-| 1 | **Preparar**: crea la rama `feature/issue-<n>-<slug>` desde `main`, copia el issue y extrae los `CA-n`; bloquea si el issue está cerrado o ya tiene PR | script `preparar.mjs` (lo mecánico) y agente `preparador` (decide las preguntas de negocio) | `issue.md`, `preguntas.md`, `decisiones.md` |
-| 2 | **Contexto**: no se genera en el flujo. Se lee el índice `context/contexto.md` y, de las partes de `context/`, solo las que indica «Qué leer en cada paso». Trae el negocio (producto y backlog con dependencias, `RN-n`, fuera de alcance y decisiones de la persona de cada historia, y todos los requisitos vigentes por capacidad) y lo técnico (inventario, módulo de referencia, firmas, convenciones y herramientas). Con eso la sesión no vuelve a preguntar lo ya decidido ni contradice una regla vigente, y no explora el código. Si falta `context/`, el orquestador se bloquea | lectura de `context/`, mantenido por el skill `actualizar-contexto` | nada: es insumo de los pasos 3 a 5 |
+| 1 | **Preparar**: crea la rama `feature/issue-<n>-<slug>` desde `main`, copia el issue y extrae los `CA-n`; bloquea si el issue está cerrado o ya tiene PR | agente `preparador` | `issue.md`, `preguntas.md`, `decisiones.md` |
+| 2 | **Contexto**: lista lo que ya existe (capacidades de `openspec/specs/`, tablas de `db/migration/`, módulos, semillas, rutas del contrato) para que la propuesta no suponga nada | script `contexto.mjs` | `contexto.md` |
 | 3 | **Propuesta**: pregunta a la persona las dudas de negocio y genera proposal, specs, design y tasks | skill `openspec-propose` | `openspec/changes/<change>/` |
-| 4 | **Revisar la propuesta**: `openspec validate --strict`, trazabilidad CA → requisito → tarea, formato y alcance; con CORREGIR se arregla y se repite una sola vez. El agente corre en segundo plano mientras se implementa y se recoge antes del paso 6 | script `trazabilidad-grep.mjs` y agente `revisor-salida` | veredicto en `gates.md` |
-| 5 | **Implementar**: ejecuta `tasks.md`. La sesión escribe el código, la migración, la semilla y el contrato; tres instancias del agente `escritor-pruebas` (unitarias, de integración y e2e), en paralelo y en segundo plano, escriben las pruebas unitarias, de integración y e2e a partir de las specs y de `
-| 6 | **Verificar**: `typecheck` y `test:unit`, en paralelo con la revisión del diff contra las reglas del proyecto | skill `build-test` y agente `revisor-reglas`, que lee el paquete del diff que deja `paquete-diff.mjs` | `verificacion.md`, último build en `estado.md` |
+| 4 | **Revisar la propuesta**: `openspec validate --strict`, trazabilidad CA → requisito → tarea, formato y alcance; con CORREGIR se arregla y se repite una sola vez | script `trazabilidad-grep.mjs` y agente `revisor-salida` | veredicto en `gates.md` |
+| 5 | **Implementar**: la sesión ejecuta `tasks.md` (código, migración, semilla y contrato) mientras tres agentes escriben en paralelo las pruebas, uno por tipo; al final la sesión las une y alinea las firmas | skill `openspec-apply-change` y tres agentes `escritor-pruebas` | código y pruebas en la rama, tareas `[x]`, `pruebas-supuestos-<tipo>.md` si hubo firmas supuestas |
+| 6 | **Verificar**: `typecheck` y `test:unit`, en paralelo con la revisión del diff contra las reglas del proyecto | skill `build-test` y agente `revisor-reglas` | `verificacion.md`, último build en `estado.md` |
 | 7 | **Corregir** (solo si hace falta): una pasada para los hallazgos CRITICAL o un build rojo, y se repite el paso 6 | la sesión | build en verde |
 | 8 | **Commit, PR y evidencias**: commit con `#<n>` y `Change: <change>`, PR en borrador y copia a `evidencias/issue-<n>/` | skills `commit` y `abrir-pr`, script `copiar-evidencias.mjs` | PR en borrador |
 
@@ -50,7 +101,7 @@ Sin build verde no hay commit.
 
 ## 3. Quién ejecuta qué prueba
 
-El orquestador **escribe** todas las pruebas (una por cada `CA-n`), pero solo **ejecuta** las rápidas.
+El orquestador **escribe** todas las pruebas (una por cada `CA-n`; las escriben los agentes `escritor-pruebas`, no la sesión que programa el código), pero solo **ejecuta** las rápidas.
 
 | Prueba o control | Orquestador | CI del PR |
 |---|---|---|
@@ -69,21 +120,21 @@ Así el orquestador no necesita Docker ni base de datos y se mantiene liviano. E
 | Pieza | Dónde | Para qué |
 |---|---|---|
 | Skill `orquestador` | `.claude/skills/orquestador/` | Dirige los 8 pasos. Lo invoca solo la persona, con `/orquestador <n>` |
-| Agentes `preparador`, `revisor-salida`, `revisor-reglas`, `escritor-pruebas` | `.claude/agents/` | Preparar el issue, revisar la propuesta, revisar el código y escribir las pruebas. Los tres primeros son de solo lectura; `escritor-pruebas` se lanza una vez por tipo de prueba y solo crea archivos de prueba (sin Bash ni edición de código de producción) |
+| Agentes `preparador`, `revisor-salida`, `revisor-reglas` | `.claude/agents/` | Preparar el issue, revisar la propuesta y revisar el código. Son de solo lectura |
+| Agente `escritor-pruebas` | `.claude/agents/` | Escribe las pruebas de un tipo (unitarias, integración o e2e); se lanzan tres a la vez, en segundo plano, mientras la sesión escribe el código. Solo crea archivos de prueba y no ejecuta nada |
 | Skills `openspec-*` | `.claude/skills/` | Los comandos de OpenSpec: `explore`, `propose`, `apply`, `archive`, `sync-specs` y `update-change`. El orquestador usa `propose` y `apply` |
 | Skills `build-test`, `commit`, `abrir-pr` | `.claude/skills/` | Compilar y probar, commitear, abrir el PR |
 | Skill `crear-hu` | `.claude/skills/` | Redactar una historia con `CA-n` y publicarla como issue |
-| Skill `actualizar-contexto` | `.claude/skills/actualizar-contexto/` | Fuera del flujo: amplía `context/` con lo nuevo del repo (agrega entradas y reemplaza la que cambió, sin borrar). Lo corre la persona, por ejemplo tras fusionar una historia |
-| Scripts `.mjs` | `.claude/skills/orquestador/scripts/` | `estado`, `preparar`, `trazabilidad-grep`, `paquete-diff`, `registrar-agente`, `tiempos`, `puede-commitear`, `copiar-evidencias` |
+| Scripts `.mjs` | `.claude/skills/orquestador/scripts/` | `estado`, `contexto`, `trazabilidad-grep`, `registrar-agente`, `tiempos`, `puede-commitear`, `copiar-evidencias` |
 | Plantillas | `.claude/skills/orquestador/plantillas/` | Formato de cada archivo de `<trabajo>` |
 | Reglas | `CLAUDE.md`, `openspec/config.yaml` | Capas, seguridad, datos, interfaz (sistema de diseño de la sala de control: tokens `--sc-*`, componentes de `src/modulos/ui/`) y formato de las specs. Todos los agentes las cargan solos; `revisor-reglas` y G2 las comprueban |
 | Permisos | `.claude/settings.json` | Qué comandos corre sin pedir permiso y cuáles tiene prohibidos |
 
-`openspec-explore` existe, pero el orquestador no lo usa: `context/` cubre lo esencial sin agentes. Lo mantiene el skill `actualizar-contexto`, fuera del flujo, con `.claude/skills/actualizar-contexto/scripts/contexto.mjs`: lee `docs/propuesta.md`, `evidencias/`, `openspec/`, `db/migration/`, `src/`, `contracts/` y las configuraciones, y **solo amplía**: agrega la entrada que no existe, reemplaza la que cambió y nunca borra. Si no hay novedades, no escribe nada, así que no hace falta correrlo antes de cada historia.
+`openspec-explore` existe, pero el orquestador no lo usa: `contexto.mjs` cubre lo esencial en 2 segundos, sin agentes.
 
 ## 5. Dónde queda cada cosa
 
-- **`<trabajo>` = `.flujo/issue-<n>/`:** carpeta de trabajo de la corrida. Está fuera de git. Cada paso lee sus entradas de ahí y escribe su salida antes de cerrar. Contiene `estado.md`, `issue.md`, `preguntas.md`, `decisiones.md`, `gates.md`, `trazabilidad.md`, `verificacion.md`, `agentes-log.md`, `tiempos.md` y `pr-body.md`.
+- **`<trabajo>` = `.flujo/issue-<n>/`:** carpeta de trabajo de la corrida. Está fuera de git. Cada paso lee sus entradas de ahí y escribe su salida antes de cerrar. Contiene `estado.md`, `issue.md`, `preguntas.md`, `decisiones.md`, `contexto.md`, `gates.md`, `trazabilidad.md`, `verificacion.md`, `agentes-log.md`, `tiempos.md` y `pr-body.md`.
 - **`evidencias/issue-<n>/`:** copia de lo anterior que sí se commitea, para que el PR muestre qué decidió y qué revisó cada agente.
 - **`openspec/changes/<change>/`:** la especificación de la historia.
 
