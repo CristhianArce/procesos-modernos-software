@@ -63,16 +63,115 @@ export function rutasDelContrato(rutaContrato) {
   return rutas;
 }
 
+const propositoDe = (texto) => (texto.split(/^## Purpose\s*$/m)[1] ?? "").split(/^##\s/m)[0].trim().split(/\r?\n\r?\n/)[0].replace(/\s+/g, " ");
+
 // Capacidades ya especificadas en openspec/specs/<cap>/spec.md: su Purpose y sus requisitos (fuente de verdad del comportamiento).
 export function capacidadesEspecificadas(dirSpecs) {
   return listar(dirSpecs)
     .filter((c) => existsSync(join(dirSpecs, c, "spec.md")))
     .map((c) => {
       const texto = readFileSync(join(dirSpecs, c, "spec.md"), "utf8");
-      const proposito = (texto.split(/^## Purpose\s*$/m)[1] ?? "").split(/^##\s/m)[0].trim().split(/\r?\n\r?\n/)[0].replace(/\s+/g, " ");
       const requisitos = [...texto.matchAll(/^### Requirement:\s*(.+)$/gm)].map((m) => m[1].trim());
-      return { capacidad: c, proposito, requisitos };
+      return { capacidad: c, proposito: propositoDe(texto), requisitos };
     });
+}
+
+// ── Contexto de negocio ────────────────────────────────────────────────────────────────────────────────────────────────────────
+// Lo que el producto ya promete, leído de sus fuentes (propuesta, issues archivados, decisiones y specs), para que la propuesta nueva
+// no contradiga una regla vigente ni vuelva a preguntar lo que la persona ya decidió.
+
+const seccion = (texto, titulo) => {
+  const inicio = texto.search(new RegExp(`^## ${titulo}\\s*$`, "m"));
+  if (inicio < 0) return [];
+  return texto.slice(inicio).split(/\r?\n/).slice(1).join("\n").split(/^## /m)[0].split(/\r?\n/);
+};
+
+// Qué es el producto y el backlog de historias con lo que depende de qué (docs/propuesta.md §1 y §5).
+export function productoYBacklog(rutaPropuesta) {
+  const texto = leerSi(rutaPropuesta);
+  const resumen = texto.match(/^La aplicación [^\n]+/m)?.[0] ?? null;
+  const corta = (s) => {
+    const limpia = s.replace(/\*\*/g, "").replace(/\s+/g, " ").trim();
+    const frase = limpia.split(/[.:] /)[0];
+    return frase.length > 160 ? `${frase.slice(0, 159)}…` : frase;
+  };
+  const historias = seccion(texto, "5\\. Backlog de historias de usuario")
+    .filter((l) => /^\|\s*\d+\s*\|/.test(l))
+    .map((l) => l.split("|").slice(1, -1).map((c) => c.trim()))
+    .filter((c) => c.length >= 5)
+    .map(([n, historia, fase, dependeDe, entrega]) => ({ n, historia: corta(historia), fase, dependeDe, entrega: corta(entrega) }));
+  return { resumen, historias };
+}
+
+// Reglas de negocio y fuera de alcance de cada historia ya construida, desde su `issue.md` copiado a evidencias/issue-<n>/.
+export function historiasConstruidas(dirEvidencias) {
+  const num = (d) => Number(d.replace("issue-", ""));
+  return listar(dirEvidencias)
+    .filter((d) => /^issue-\d+$/.test(d) && existsSync(join(dirEvidencias, d, "issue.md")))
+    .sort((a, b) => num(a) - num(b))
+    .map((d) => {
+      const texto = readFileSync(join(dirEvidencias, d, "issue.md"), "utf8");
+      const viñetas = (titulo) => seccion(texto, titulo).filter((l) => /^\s*- /.test(l)).map((l) => l.replace(/\s+$/, ""));
+      const decisiones = leerSi(join(dirEvidencias, d, "decisiones.md"))
+        .split(/\r?\n/)
+        .filter((l) => /^\|\s*\d+\s*\|/.test(l))
+        .map((l) => l.split(/\s\|\s/).map((c) => c.replace(/^\||\|$/g, "").trim()))
+        .filter((c) => c.length >= 6 && c[4] === "Persona")
+        .map((c) => ({ numero: c[0], texto: c[3] }));
+      return {
+        issue: num(d),
+        // Sin título (`# Issue #n: …`), la historia se identifica por su frase «Como … quiero …».
+        titulo: (texto.match(/^# Issue #\d+:\s*(.+)$/m)?.[1] ?? seccion(texto, "Historia").find((l) => l.trim()) ?? d).trim().slice(0, 140),
+        reglas: viñetas("Reglas de negocio"),
+        fueraDeAlcance: viñetas("Fuera de alcance"),
+        decisiones,
+      };
+    })
+    .filter((h) => h.reglas.length || h.fueraDeAlcance.length || h.decisiones.length);
+}
+
+// Cada requisito de un spec con su texto completo y los nombres de sus escenarios.
+export function requisitosDeSpec(texto) {
+  return texto
+    .split(/^### Requirement:\s*/m)
+    .slice(1)
+    .map((bloque) => {
+      const [nombre, ...resto] = bloque.split(/\r?\n/);
+      const cuerpo = resto.join("\n").split(/^#{2,4} /m)[0].trim();
+      return {
+        nombre: nombre.trim(),
+        texto: cuerpo.split(/\r?\n\s*\r?\n/)[0].replace(/\s+/g, " "),
+        escenarios: [...bloque.matchAll(/^#### Scenario:\s*(.+)$/gm)].map((m) => m[1].trim()),
+      };
+    });
+}
+
+// Reglas de comportamiento de cada capacidad, ya fusionadas (openspec/specs) o en curso (openspec/changes/<change>/specs).
+// Las de plataforma y proceso (CI, despliegue, agentes…) se listan por nombre: no son reglas del producto.
+export function reglasDeNegocio(raiz, plataforma = []) {
+  const fuentes = [
+    ...listar(join(raiz, "openspec", "specs")).map((c) => ({ capacidad: c, ruta: join(raiz, "openspec", "specs", c, "spec.md"), origen: "vigente" })),
+    ...changesActivos(join(raiz, "openspec", "changes")).flatMap((ch) =>
+      listar(join(raiz, "openspec", "changes", ch, "specs")).map((c) => ({
+        capacidad: c,
+        ruta: join(raiz, "openspec", "changes", ch, "specs", c, "spec.md"),
+        origen: `en curso (${ch})`,
+      })),
+    ),
+  ].filter((f) => existsSync(f.ruta));
+  return fuentes.map((f) => {
+    const texto = readFileSync(f.ruta, "utf8");
+    return { capacidad: f.capacidad, origen: f.origen, plataforma: plataforma.includes(f.capacidad), proposito: propositoDe(texto), requisitos: requisitosDeSpec(texto) };
+  });
+}
+
+export function plataformaConfigurada(raiz) {
+  try {
+    const cfg = JSON.parse(leerSi(join(raiz, ".claude", "orquestador.json")) || "{}");
+    return Array.isArray(cfg.plataforma) ? cfg.plataforma : [];
+  } catch {
+    return [];
+  }
 }
 
 // Changes de OpenSpec en curso (sin archivar): otra historia puede estar tocando lo mismo.
@@ -256,6 +355,9 @@ export function generarContexto(raiz) {
   const conv = convenciones(raiz);
   const reglas = reglasDelProyecto(join(raiz, "CLAUDE.md"));
   const env = entorno(raiz);
+  const producto = productoYBacklog(join(raiz, "docs", "propuesta.md"));
+  const historias = historiasConstruidas(join(raiz, "evidencias"));
+  const negocio = reglasDeNegocio(raiz, plataformaConfigurada(raiz));
   const lista = (xs, vacio = "(ninguno)") => (xs.length ? xs.map((x) => `\`${x}\``).join(", ") : vacio);
   const tablas = tablasDeMigraciones(join(raiz, "db", "migration"));
   const modulos = modulosConExtension(join(raiz, "src", "modulos"));
@@ -266,7 +368,50 @@ export function generarContexto(raiz) {
   const l = [
     "# Contexto del repositorio",
     "",
-    "Generado por `contexto.mjs`. Toda tabla, columna o módulo que use la propuesta debe aparecer aquí; si no aparece, es una pregunta, no un supuesto.",
+    "Generado por `contexto.mjs`. Empieza por el **negocio** (qué promete ya el producto, qué reglas rigen y qué decidió la persona) y sigue con lo **técnico** (qué existe y cómo se escribe). Toda tabla, columna o módulo que use la propuesta debe aparecer aquí; si no aparece, es una pregunta, no un supuesto. Una regla nueva no contradice una vigente: si la historia cambia una, su delta es `## MODIFIED Requirements` y se le pregunta a la persona.",
+    "",
+    "## Producto",
+    "",
+    producto.resumen ?? "(sin resumen en docs/propuesta.md)",
+    "",
+    "Backlog de historias (`docs/propuesta.md` §5): lo que cada una entrega y de cuál depende. Una historia que depende de otra no fusionada no puede suponer su tabla ni su módulo: es una pregunta.",
+    "",
+    "| # | Historia | Fase | Depende de | Entrega |",
+    "|---|---|---|---|---|",
+    ...producto.historias.map((h) => `| ${h.n} | ${h.historia} | ${h.fase} | ${h.dependeDe} | ${h.entrega} |`),
+    ...(producto.historias.length ? [] : ["| (sin backlog) | | | | |"]),
+    "",
+    "## Reglas de negocio de las historias construidas",
+    "",
+    "Copiadas del issue de cada historia (`evidencias/issue-<n>/issue.md`). Las reglas `RN-n` y lo que cada historia dejó fuera de alcance siguen vigentes; los números de decisión son los de ese issue.",
+    "",
+    ...(historias.length
+      ? historias.flatMap((h) => [
+          `### #${h.issue} ${h.titulo}`,
+          "",
+          ...(h.reglas.length ? ["Reglas de negocio:", ...h.reglas] : []),
+          ...(h.fueraDeAlcance.length ? ["Fuera de alcance:", ...h.fueraDeAlcance] : []),
+          ...(h.decisiones.length ? ["Decisiones de la persona:", ...h.decisiones.map((d) => `- #${h.issue} decisión ${d.numero}: ${d.texto}`)] : []),
+          "",
+        ])
+      : ["- (ninguna)", ""]),
+    "## Reglas de negocio vigentes (specs)",
+    "",
+    "Comportamiento ya especificado: `vigente` (en `openspec/specs/`) o `en curso` (en un change sin archivar, ya en el repo). Cada requisito va con su texto completo y los nombres de sus escenarios. Si la historia cambia uno, su delta usa `## MODIFIED Requirements` con el nombre exacto; no se crea otra capacidad para lo mismo.",
+    "",
+    ...negocio.filter((c) => !c.plataforma).flatMap((c) => [
+      `### ${c.capacidad} — ${c.origen}`,
+      "",
+      c.proposito || "(sin Purpose)",
+      "",
+      ...c.requisitos.flatMap((r) => [`- **${r.nombre}:** ${r.texto}`, ...(r.escenarios.length ? [`  - Escenarios: ${r.escenarios.join("; ")}`] : [])]),
+      "",
+    ]),
+    "### Plataforma y proceso (solo nombres)",
+    "",
+    ...(negocio.some((c) => c.plataforma)
+      ? negocio.filter((c) => c.plataforma).map((c) => `- \`${c.capacidad}\` — ${c.origen}: ${c.requisitos.map((r) => r.nombre).join("; ") || "(ninguno)"}`)
+      : ["- (ninguna)"]),
     "",
     "## Capacidades especificadas",
     "",

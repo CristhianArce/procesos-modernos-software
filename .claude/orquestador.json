@@ -1,3 +1,16 @@
 {
-  "base": "main"
+  "base": "main",
+  "plataforma": [
+    "agentes-sdd",
+    "calidad-proyecto",
+    "despliegue-publico",
+    "entorno-local",
+    "entorno-sdd",
+    "extension-modulos",
+    "integracion-continua",
+    "observabilidad",
+    "orquestador-sdd",
+    "plantillas-y-etiquetas",
+    "publicacion-imagen"
+  ]
 }

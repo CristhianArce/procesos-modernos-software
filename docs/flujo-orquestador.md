@@ -18,7 +18,7 @@ SDD (desarrollo guiado por especificaciones) significa que primero se escribe qu
 ```mermaid
 flowchart LR
     S1["1 Preparar<br/>preparar.mjs + preparador"] --> S3
-    S2["2 Contexto<br/>contexto.mjs"] --> S3["3 Propuesta<br/>skill openspec-propose"]
+    S2["2 Contexto<br/>contexto.mjs: negocio y técnica"] --> S3["3 Propuesta<br/>skill openspec-propose"]
     S3 --> REV{{"4 Revisar propuesta<br/>revisor-salida, en segundo plano<br/>openspec validate --strict"}}
     S3 --> ESC{{"escritor-pruebas ×3<br/>unitarias, integración y e2e<br/>en segundo plano"}}
     S3 --> S5["5 Implementar<br/>skill openspec-apply-change<br/>(la sesión escribe el código)"]
@@ -32,6 +32,7 @@ flowchart LR
     S8 --> CI["CI del PR<br/>openspec validate --all<br/>y revisión humana"]
     CI --> ARC["Tras el merge, PR aparte<br/>openspec archive"]
 
+    S2 -.->|"reglas de negocio vigentes y decisiones:<br/>no se pregunta lo ya decidido"| S3
     S2 -.->|"módulo de referencia, firmas,<br/>convenciones y reglas"| S5
     S2 -.-> ESC
     REV -.->|BLOQUEAR| BLOQ(["Bloqueado"])
@@ -50,7 +51,7 @@ Amarillo: lo que ejecuta OpenSpec. Azul: el CI y la revisión humana. Verde: age
 | # | Paso | Quién | Qué deja |
 |---|---|---|---|
 | 1 | **Preparar**: crea la rama `feature/issue-<n>-<slug>` desde `main`, copia el issue y extrae los `CA-n`; bloquea si el issue está cerrado o ya tiene PR | script `preparar.mjs` (lo mecánico) y agente `preparador` (decide las preguntas de negocio) | `issue.md`, `preguntas.md`, `decisiones.md` |
-| 2 | **Contexto**: lista lo que ya existe (capacidades de `openspec/specs/`, tablas de `db/migration/`, módulos, semillas, rutas del contrato) para que la propuesta no suponga nada, y deja lo que evita explorar el código: el módulo de referencia (rutas de un módulo completo y de sus pruebas), las firmas públicas de cada módulo, lo compartido (`src/lib/`, `src/modulos/ui/`, `src/test/`), las convenciones (nombres, mensajes de error, `data-testid`, clases de diseño, última migración), las herramientas (librerías, Vitest, Playwright, Postgres, Flyway, tokens) y las reglas de `CLAUDE.md` §3 a §7 | script `contexto.mjs`, lanzado junto al paso 1 | `contexto.md` |
+| 2 | **Contexto**: lista lo que ya existe (capacidades de `openspec/specs/`, tablas de `db/migration/`, módulos, semillas, rutas del contrato) para que la propuesta no suponga nada. `contexto.md` **abre con el negocio**: el producto y el backlog de historias con sus dependencias (`docs/propuesta.md`), las reglas de negocio `RN-n`, lo fuera de alcance y las decisiones de la persona de cada historia construida (`evidencias/issue-<n>/`), y todos los requisitos vigentes con sus escenarios (`openspec/specs/` y los changes en curso; la plataforma y el proceso, listados en `plataforma` de `.claude/orquestador.json`, van solo por nombre). Con eso la sesión no vuelve a preguntar lo ya decidido ni contradice una regla vigente, y `revisor-salida` lo comprueba. Después deja lo que evita explorar el código: el módulo de referencia (rutas de un módulo completo y de sus pruebas), las firmas públicas de cada módulo, lo compartido (`src/lib/`, `src/modulos/ui/`, `src/test/`), las convenciones (nombres, mensajes de error, `data-testid`, clases de diseño, última migración), las herramientas (librerías, Vitest, Playwright, Postgres, Flyway, tokens) y las reglas de `CLAUDE.md` §3 a §7 | script `contexto.mjs`, lanzado junto al paso 1 | `contexto.md` |
 | 3 | **Propuesta**: pregunta a la persona las dudas de negocio y genera proposal, specs, design y tasks | skill `openspec-propose` | `openspec/changes/<change>/` |
 | 4 | **Revisar la propuesta**: `openspec validate --strict`, trazabilidad CA → requisito → tarea, formato y alcance; con CORREGIR se arregla y se repite una sola vez. El agente corre en segundo plano mientras se implementa y se recoge antes del paso 6 | script `trazabilidad-grep.mjs` y agente `revisor-salida` | veredicto en `gates.md` |
 | 5 | **Implementar**: ejecuta `tasks.md`. La sesión escribe el código, la migración, la semilla y el contrato; tres instancias del agente `escritor-pruebas` (unitarias, de integración y e2e), en paralelo y en segundo plano, escriben las pruebas unitarias, de integración y e2e a partir de las specs y de `

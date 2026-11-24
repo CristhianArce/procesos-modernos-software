@@ -87,10 +87,14 @@ Con lo aplicado hasta ahora, la meta de 5 minutos no se alcanza en una repetici�
 
 ## Tercera ronda: más contexto, menos lecturas de código
 
-Objetivo: que el flujo use mejor `contexto.md` y evite leer código. Las lecturas exploratorias antes de la primera escritura (M1) se atacan dejando en el contexto lo que la sesión y los agentes buscaban en el repo.
+Objetivo: que el flujo use mejor `contexto.md` y evite leer código. Las lecturas exploratorias antes de la primera escritura (M1) se atacan dejando en el contexto lo que la sesión y los agentes buscaban en el repo, y `contexto.md` pasa de inventario técnico a **contexto de negocio** que además fija las reglas técnicas.
 
 | Propuesta | Estado |
 |---|---|
+| «Producto»: resumen y backlog de historias con su fase, de qué depende y qué entrega (`docs/propuesta.md` §1 y §5) | Aplicada. Una historia que depende de otra no fusionada no puede suponer su tabla ni su módulo (el caso de la HU 14 con la HU 8) |
+| «Reglas de negocio de las historias construidas»: `RN-n`, fuera de alcance y decisiones de la persona de cada `evidencias/issue-<n>/` | Aplicada. Evita volver a preguntar lo ya decidido |
+| «Reglas de negocio vigentes»: cada requisito, con su texto completo y los nombres de sus escenarios, de `openspec/specs/` y de los changes en curso; la plataforma y el proceso (`plataforma` en `.claude/orquestador.json`) van solo por nombre | Aplicada. Una capacidad nueva cuenta como negocio mientras no se liste como plataforma |
+| `revisor-salida` marca `CRITICAL` un change que contradice una regla vigente, una `RN-n`, un fuera de alcance o una decisión sin `MODIFIED` | Aplicada |
 | M1 «Módulo de referencia» en `contexto.md`: el módulo completo (repo, service y schema) con más archivos, con las rutas de su handler, de una prueba de integración, de una prueba de componente, de un componente de `ui/` y de `src/test/api.ts` | Aplicada. La selección es determinista (más archivos; a igualdad, el primero por nombre) y solo lista rutas que existen, porque la selección «inteligente» fallaba |
 | «Firmas públicas»: primera línea de cada `export` de `schema.ts`, `repo.ts` y `service.ts` de cada módulo; las constantes que no son funciones quedan con su nombre | Aplicada. Sirve para citar nombres reales y escribir `## Interfaces` sin abrir el código |
 | «Compartido»: firmas de `src/lib/`, `src/modulos/ui/` y `src/test/` | Aplicada. Es lo que se reutiliza y no se reescribe |
@@ -99,6 +103,6 @@ Objetivo: que el flujo use mejor `contexto.md` y evite leer código. Las lectura
 | «Reglas del proyecto»: las viñetas de `CLAUDE.md` §3 a §7, copiadas tal cual | Aplicada. Cuesta unos 7 KB más en `contexto.md`; `CLAUDE.md` sigue siendo la fuente |
 | `SKILL.md`, `escritor-pruebas` y las reglas de `design` de OpenSpec mandan usar `contexto.md` antes de abrir código | Aplicada |
 
-Riesgo: `contexto.md` pasa de unos 3 KB a unos 28 KB (~7 mil tokens), y lo leen la sesión y los agentes con Read. Si el paso 3 se alarga, recortar «Firmas públicas» a los módulos que cita el issue.
+Riesgo: `contexto.md` pasa de unos 3 KB a unos 58 KB (~15 mil tokens) sobre `main`, y lo leen la sesión y los agentes con Read. Medido sobre `main`: las reglas vigentes pesan ~20 KB, las reglas de las historias construidas ~8 KB, las reglas de `CLAUDE.md` ~8 KB, las firmas públicas ~7 KB y lo compartido ~4 KB; el resto es poco. Si el paso 3 se alarga, recortar las firmas a los módulos que cita el issue. Las capacidades de plataforma ya van solo por nombre.
 
 Validación pendiente: en una historia distinta, contar las llamadas `Read` y `Glob` antes de la primera escritura y compararlas con las de la HU 7 (unas 6 rondas de lectura).

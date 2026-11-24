@@ -1,6 +1,18 @@
 # Contexto del repositorio
 
-Generado por `contexto.mjs`. Toda tabla, columna o módulo que use la propuesta debe aparecer aquí; si no aparece, es una pregunta, no un supuesto.
+Generado por `contexto.mjs`. Empieza por el **negocio** y sigue con lo **técnico**. Toda tabla, columna o módulo que use la propuesta debe aparecer aquí; si no aparece, es una pregunta, no un supuesto.
+
+## Producto
+
+Qué hace la aplicación y el backlog de historias, con lo que cada una entrega y de cuál depende (`docs/propuesta.md` §1 y §5).
+
+## Reglas de negocio de las historias construidas
+
+Las `RN-n`, lo fuera de alcance y las decisiones de la persona de cada historia ya construida (`evidencias/issue-<n>/`).
+
+## Reglas de negocio vigentes (specs)
+
+Cada requisito de `openspec/specs/` y de los changes en curso, con su texto completo y los nombres de sus escenarios. Las capacidades de plataforma y proceso (`plataforma` en `.claude/orquestador.json`) van solo por nombre.
 
 ## Capacidades especificadas
 
