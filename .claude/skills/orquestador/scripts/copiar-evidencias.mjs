@@ -5,7 +5,7 @@ import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from
 import { join } from "node:path";
 import { dirTrabajo, esPrincipal, fallar, opciones, raizRepo } from "./comun.mjs";
 
-export const ARCHIVOS_EVIDENCIA = ["issue.md", "preguntas.md", "decisiones.md", "gates.md", "verificacion.md", "ciclo-pr.md", "trazabilidad.md", "contexto.md", "tiempos.md"];
+export const ARCHIVOS_EVIDENCIA = ["issue.md", "preguntas.md", "decisiones.md", "gates.md", "verificacion.md", "trazabilidad.md", "contexto.md", "tiempos.md"];
 
 // Convierte las filas de agentes-log.md al formato de agentes.md.
 export function agentesDesdeLog(textoLog, n) {

@@ -5,8 +5,8 @@
 - [x] 1.1 Ejecutar `openspec init --tools claude --language es --scope project` y verificar que existen `openspec/config.yaml` y los seis skills `openspec-*` en `.claude/skills/` y en `.agents/skills/` (CA-1, CA-2)
 - [x] 1.2 Revisar el frontmatter de los skills `openspec-*`: ninguno trae `disable-model-invocation: true`, así que el orquestador puede invocarlos con la herramienta Skill (CA-2)
 - [x] 1.3 Ajuste mínimo de `openspec/config.yaml` (reglas de formato de specs, `CA-n` y `## Purpose`) y verificar que se lee sin claves duplicadas y que `openspec instructions` no advierte reglas ignoradas (CA-1)
-- [x] 1.4 Escribir `CLAUDE.md` con las reglas del proyecto y de los agentes (flujo-orquestador 7.2) y verificar que una sesión nueva de Claude Code en la raíz las tiene en contexto (CA-1)
-- [x] 1.5 Escribir `.claude/settings.json` con `allow` y `deny` (flujo-orquestador 7.3 más `git reset` sin argumentos y `.github/` en worktrees) y `.gitignore` con `.flujo/`, `.claude/worktrees/`, `.env*` y `!.env.example`; verificar que el JSON es válido (CA-3)
+- [x] 1.4 Escribir `CLAUDE.md` con las reglas del proyecto y de los agentes y verificar que una sesión nueva de Claude Code en la raíz las tiene en contexto (CA-1)
+- [x] 1.5 Escribir `.claude/settings.json` con `allow` y `deny` (con `git reset` sin argumentos y `.github/` en worktrees) y `.gitignore` con `.flujo/`, `.claude/worktrees/`, `.env*` y `!.env.example`; verificar que el JSON es válido (CA-3)
 - [x] 1.6 Crear `.claude/tests/config.test.mjs` con `node --test`: `config.yaml` sin claves duplicadas y con todas las reglas como texto; `settings.json` con cada regla `deny` obligatoria; `.gitignore` con `.flujo/` y `.claude/worktrees/`. Verificar que `node --test ".claude/tests/*.test.mjs"` pasa (CA-1, CA-3)
 - [x] 1.7 Verificación manual en una sesión nueva: `gh pr merge`, `git commit --amend`, `git rebase`, `git reset` y `git push --force` se rechazan; crear y borrar `.claude/worktrees/prueba` no pide confirmación. Anotar el resultado en `evidencias/issue-1/pruebas/permisos.md` (CA-3)
 - [x] 1.8 CI mínimo `.github/workflows/ci.yml` (job `configuracion-ia`: OpenSpec 2.1, `node --test ".claude/tests/*.test.mjs"`, `openspec validate --all --strict --no-interactive`; job `proyecto` condicionado a `package.json`) y verificar que el CI del PR de arranque termina en verde (CA-1, CA-3; Derivado: decisión #21)
@@ -20,7 +20,7 @@
 
 ## 3. Configuración, plantillas y scripts del orquestador (B1)
 
-- [x] 3.1 Crear `.claude/orquestador.json` (`base`, `owner`, `repo`, `revisor`, `revisorEspecializado`, `limpiarTrabajo`) y las plantillas de `<trabajo>` en `.claude/skills/orquestador/plantillas/` (flujo-orquestador 2.1), y verificar con una prueba que existe una plantilla por archivo de flujo-orquestador 2.1 (CA-6)
+- [x] 3.1 Crear `.claude/orquestador.json` (`base`, `owner`, `repo`, `revisor`, `revisorEspecializado`, `limpiarTrabajo`) y las plantillas de `<trabajo>` en `.claude/skills/orquestador/plantillas/`, y verificar con una prueba que existe una plantilla por archivo de `<trabajo>` (CA-6)
 - [x] 3.2 Implementar `estado.mjs` (`leer`/`escribir` campos de `estado.md`) y `puerto.mjs` (parseo de `docker compose port`), y verificar con `node --test` sobre `trabajo-ejemplo` y salidas `0.0.0.0:NNNN` y `[::]:NNNN` (CA-6)
 - [x] 3.3 Implementar `trazabilidad-grep.mjs` y verificar que sobre `change-ok` encuentra cada `CA-n` en requisitos, escenarios y tareas (CA-6)
 - [x] 3.4 Implementar `migracion-timestamp.mjs` y verificar con `node --test` que renombra una migración de fixture con timestamp menor que la última de la base (CA-6)
@@ -30,22 +30,22 @@
 ## 4. Agentes de revisión (B2 a B4)
 
 - [x] 4.1 Escribir `.claude/agents/trazabilidad.md` (haiku / low, `Read, Grep, Glob`, `disallowedTools: Agent`) y verificar con una corrida sobre `change-ok`, pasando `model` y `effort`, que devuelve una fila por `CA-n` sin criterios sin cobertura; guardar en `evidencias/issue-1/pruebas/trazabilidad.md` (CA-6). El flujo de 5 minutos ya no usa este agente: lo reemplaza `trazabilidad-grep.mjs` (Derivado: decisión #9 de design.md)
-- [x] 4.2 Escribir `.claude/agents/revisor-salida.md` (sonnet / medium, ficha 3.5) y verificar con corridas que G2 da `CORREGIR` con un hallazgo de formato sobre `change-espanol` y `APROBADO` sobre `change-ok`, con la cabecera `## G2 — intento <n>`; guardar en `evidencias/issue-1/pruebas/revisor-salida.md` (CA-4)
-- [x] 4.3 Escribir `.claude/agents/revisor-reglas.md` (sonnet / high, ficha 3.11) y verificar con una corrida que el parche de ejemplo da al menos dos `CRITICAL` con archivo y línea, solo con la escala `CRITICAL`/`WARNING`/`SUGGESTION`; guardar en `evidencias/issue-1/pruebas/revisor-reglas.md` (CA-5)
+- [x] 4.2 Escribir `.claude/agents/revisor-salida.md` (sonnet / medium) y verificar con corridas que G2 da `CORREGIR` con un hallazgo de formato sobre `change-espanol` y `APROBADO` sobre `change-ok`, con la cabecera `## G2 — intento <n>`; guardar en `evidencias/issue-1/pruebas/revisor-salida.md` (CA-4)
+- [x] 4.3 Escribir `.claude/agents/revisor-reglas.md` (sonnet / high) y verificar con una corrida que el parche de ejemplo da al menos dos `CRITICAL` con archivo y línea, solo con la escala `CRITICAL`/`WARNING`/`SUGGESTION`; guardar en `evidencias/issue-1/pruebas/revisor-reglas.md` (CA-5)
 - [x] 4.4 Agregar a `.claude/tests/` una prueba de frontmatter: cada agente de `.claude/agents/` tiene `name`, `description`, `model`, `disallowedTools: Agent` y una sección "Prohibido" (CA-2)
 
 ## 5. Preparador (B5)
 
 - [x] 5.1 Crear el issue de prueba (uno solo: #6 "[PRUEBA] Página Acerca de") y verificar que existe con la etiqueta `prueba` (CA-6, CA-7)
-- [x] 5.2 Escribir `.claude/agents/preparador.md` (sonnet / medium, ficha 3.1) y verificar con el issue de prueba #6 que crea `feature/issue-<n>-<slug>` en el checkout principal y `.flujo/issue-<n>/issue.md` con `CA-n`, y que una segunda corrida reutiliza todo; guardar en `evidencias/issue-1/pruebas/preparador.md` (CA-6)
+- [x] 5.2 Escribir `.claude/agents/preparador.md` (sonnet / medium) y verificar con el issue de prueba #6 que crea `feature/issue-<n>-<slug>` en el checkout principal y `.flujo/issue-<n>/issue.md` con `CA-n`, y que una segunda corrida reutiliza todo; guardar en `evidencias/issue-1/pruebas/preparador.md` (CA-6)
 - [x] 5.3 Verificar que con el issue de prueba #6 cerrado el `preparador` devuelve `BLOQUEAR: ya resuelto` sin crear rama ni worktree, y reabrir el issue; guardar en la misma evidencia (CA-7)
 
 ## 6. Compilación, commit y PR
 
 > La 6.1 espera el proyecto de la HU 1b (#2) y el compose mínimo de la HU 2. Esta historia no los construye (decisión #10 de design.md).
 
-- [ ] 6.1 Escribir el skill `build-test` y su `scripts/build-test.mjs` (ficha 3.9) y verificar: verde sobre el proyecto; un tipo roto se clasifica como **código**; con Docker apagado, como **entorno**; typecheck, unit e integración tardan menos de 2 minutos (CA-7)
-- [x] 6.3 Escribir los skills `commit` (ficha 3.15) y `abrir-pr` (ficha 3.16) y verificar que `commit` se niega sin build verde en `estado.md` y que una segunda llamada a `abrir-pr` devuelve el mismo PR (CA-6, CA-7)
+- [x] 6.1 Escribir el skill `build-test` y su `scripts/build-test.mjs` y verificar: verde sobre el proyecto; un tipo roto se clasifica como **código**; un fallo de npm o de red (por ejemplo, un script que falta), como **entorno**; typecheck y unit tardan menos de 2 minutos, medidos en 31 s. La integración y el e2e los corre el CI del PR, no `build-test` (CA-7)
+- [x] 6.3 Escribir los skills `commit` y `abrir-pr` y verificar que `commit` se niega sin build verde en `estado.md` y que una segunda llamada a `abrir-pr` devuelve el mismo PR (CA-6, CA-7)
 - [x] 6.4 Agregar a la prueba de frontmatter los skills `build-test`, `commit` y `abrir-pr`, con `allowed-tools` acotado (nunca `Bash` a secas) (CA-2)
 
 ## 7. Orquestador: un solo modo, 5 minutos (C1 a C3)

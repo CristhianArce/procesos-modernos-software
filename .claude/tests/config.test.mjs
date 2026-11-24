@@ -52,7 +52,6 @@ const DENY_OBLIGATORIO = [
   "Bash(git rebase *)",
   "Bash(git reset)",
   "Bash(git reset *)",
-  "Edit(/.claude/worktrees/**/.github/**)",
 ];
 
 test("CA-3: settings.json rechaza cada comando prohibido", () => {
@@ -67,9 +66,9 @@ test("CA-3: ninguna regla allow permite un comando prohibido", () => {
   assert.deepEqual(peligrosas, []);
 });
 
-test("CA-3: settings.json permite crear y borrar worktrees sin confirmación", () => {
+test("CA-3: settings.json permite escribir en .flujo/ sin confirmación", () => {
   const { permissions } = JSON.parse(leer(".claude/settings.json"));
-  for (const r of ["Bash(git worktree add *)", "Bash(git worktree remove .claude/worktrees/*)", "Edit(/.claude/worktrees/**)", "Edit(/.flujo/**)"]) {
+  for (const r of ["Edit(/.flujo/**)", "Bash(mkdir -p .flujo/*)"]) {
     assert.ok(permissions.allow.includes(r), `falta allow ${r}`);
   }
 });

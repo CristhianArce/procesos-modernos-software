@@ -12,11 +12,11 @@ context: |
   - Lectura: valor medido por un sensor; las genera el simulador (POST /api/simulador).
   - Alerta: se registra cuando una lectura supera el umbral de su sensor; otros módulos se suscriben con on-alerta.ts.
   - Roles: administrador y técnico. Lo que puede hacer cada rol lo fijan los CA de cada historia; no lo supongas.
-  Detalle del producto y del backlog: docs/propuesta.md y docs/backlog/.
+  Detalle del producto y del backlog: docs/propuesta.md (las historias son issues de GitHub).
   Lo que ya existe (tablas, módulos, rutas, capacidades) lo lista <trabajo>/contexto.md en cada historia.
   Las reglas del proyecto (stack, estructura, capas, datos, seguridad) están en CLAUDE.md: respétalas.
 
-# Ajuste mínimo (docs/flujo-orquestador.md, sección 7.1): solo las reglas sin las cuales
+# Ajuste mínimo (docs/flujo-orquestador.md): solo las reglas sin las cuales
 # el flujo falla. Todo lo demás vive en CLAUDE.md. Cada clave aparece una sola vez.
 # rules llega solo al crear cada artefacto; operations llega a apply y archive.
 rules:

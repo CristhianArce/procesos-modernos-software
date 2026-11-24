@@ -1,1 +1,0 @@
-ALTER TABLE acerca ADD COLUMN version text NOT NULL DEFAULT '0.1.0';

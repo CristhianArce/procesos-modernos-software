@@ -23,8 +23,8 @@ Ninguna.
 
 ```bash
 npm run test:unit
-npm run test:integration
-npm run e2e   # solo si la historia agrega pruebas en e2e/
+npm run test:integration   # lo corre el CI del PR
+npm run e2e   # lo corre el CI del PR; solo si la historia agrega pruebas en e2e/
 ```
 
 Change: <change>

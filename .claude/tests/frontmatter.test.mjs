@@ -32,9 +32,8 @@ test("CA-2: existen los tres agentes que usa el flujo", () => {
   assert.deepEqual(AGENTES_IMPRESCINDIBLES.filter((a) => !hay.includes(a)), []);
 });
 
-test("CA-2: modelos según flujo-orquestador 1.6 (opus genera, sonnet revisa; trazabilidad, fuera del flujo, en haiku)", () => {
+test("CA-2: modelos (opus genera, sonnet revisa)", () => {
   const agente = (a) => frontmatter(leer(`.claude/agents/${a}.md`));
-  assert.equal(agente("trazabilidad").model, "haiku");
   assert.equal(agente("preparador").model, "sonnet");
   assert.equal(agente("preparador").effort, "medium");
   assert.equal(agente("revisor-salida").model, "sonnet");
@@ -51,7 +50,7 @@ test("CA-2: la sesión del orquestador (propuesta, implementación y corrección
   assert.match(texto, /agente `revisor-reglas` \(`model: sonnet`, `effort: high`\)/);
 });
 
-test("CA-2: G2 recibe preguntas.md y preguntas.md llega a las evidencias", () => {
+test("CA-2: la revisión de la propuesta recibe preguntas.md y preguntas.md llega a las evidencias", () => {
   // Si el orquestador no le pasa la ruta, el criterio 3c de revisor-salida no puede revisarse.
   assert.match(leer(".claude/skills/orquestador/SKILL.md"), /Preguntas: \.flujo\/issue-<n>\/preguntas\.md\./);
   assert.match(leer(".claude/skills/orquestador/scripts/copiar-evidencias.mjs"), /"preguntas\.md"/);
@@ -61,7 +60,7 @@ test("CA-2: G2 recibe preguntas.md y preguntas.md llega a las evidencias", () =>
   }
 });
 
-test("CA-6: el orquestador registra con un script, no pega CLAUDE.md, prepara G2 y deja lint y build al CI (decisión 29)", () => {
+test("CA-6: el orquestador registra con un script, no pega CLAUDE.md, prepara la revisión de la propuesta y deja lint y build al CI (decisión 29)", () => {
   const texto = leer(".claude/skills/orquestador/SKILL.md");
   // Cada script que nombra el skill existe: una ruta rota detendría la corrida.
   for (const [, ruta] of texto.matchAll(/`node (\.claude\/skills\/[\w./-]+\.mjs)/g)) {
@@ -73,8 +72,7 @@ test("CA-6: el orquestador registra con un script, no pega CLAUDE.md, prepara G2
   assert.match(texto, /\*\*no se las pegues\*\*/);
   assert.match(texto, /--decisiones \.flujo\/issue-<n>\/decisiones\.md/);
   assert.match(texto, /\*\*corrige solo los hallazgos\*\*/);
-  assert.match(texto, /build-test\.mjs <n> --comprobar-bd/);
-  assert.match(texto, /no corras `npm run lint`, `npm run build` ni `openspec validate --all`/);
+  assert.match(texto, /no corras `npm run lint`, `npm run build`, `test:integration`, `e2e` ni `openspec validate --all`/);
   // Los revisores encuentran las reglas sin que se las pasen.
   for (const a of ["revisor-salida", "revisor-reglas"]) {
     assert.match(leer(`.claude/agents/${a}.md`), /si no las ves, léelas de `<raiz>\/CLAUDE\.md`/, `${a}: falta el respaldo de CLAUDE.md`);
