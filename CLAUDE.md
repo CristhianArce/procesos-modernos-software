@@ -71,7 +71,7 @@ TypeScript, una sola app Next.js 16 (App Router) para interfaz y API, Route Hand
 - Al aplicar: marcar `[x]` solo lo hecho, dejar `[ ]` lo pendiente con su motivo en `decisiones.md` (citando el número de la tarea), y no reformatear líneas no tocadas.
 - Las pruebas de aceptación de la historia pasan antes de fusionar, también en el CI del PR (integración continua).
 - Commits y PR citan el issue (`#<n>`) y el change (`Change: <nombre>`).
-- Archivar con `openspec archive <change> --yes` en un PR propio, después del merge y uno a la vez.
+- Archivar con `openspec archive <change> --yes` como último paso de la historia: en su mismo PR, en un commit propio, cuando el CI está en verde y la revisión terminó, y antes del merge. Si después hay que cambiar el comportamiento, se edita el spec en `openspec/specs/`, no el change archivado.
 
 ## 8. Reglas de agentes
 

@@ -89,7 +89,7 @@ flowchart LR
     S7 -->|"repite build-test"| V6
     V6 --> S8["8 PR borrador<br/>y evidencias"]
     S8 --> CI["CI del PR<br/>openspec validate --all<br/>y revisión humana"]
-    CI --> ARC["Tras el merge, PR aparte<br/>openspec archive"]
+    CI --> ARC["Último commit del mismo PR<br/>openspec archive"]
 
     VER -.->|"BLOQUEAR o 2.º CORREGIR"| BLOQ(["Bloqueado"])
     UNI -.->|"tareas pendientes sin motivo"| BLOQ
@@ -191,8 +191,9 @@ Así el orquestador no necesita Docker ni base de datos y se mantiene liviano. E
 ## 7. Después del PR
 
 1. El CI corre todos los controles de la sección 3.
-2. Una persona revisa y fusiona.
-3. Tras el merge, en un PR propio y uno a la vez: `openspec archive <change> --yes`, que pasa la especificación a `openspec/specs/`. Esto lo hace una persona.
+2. Una persona revisa.
+3. Con el CI en verde y la revisión terminada, una persona archiva en el mismo PR, como último commit: `openspec archive <change> --yes`, que pasa la especificación a `openspec/specs/`.
+4. Una persona fusiona.
 
 ## 8. Cómo probar que el flujo funciona
 
