@@ -159,6 +159,33 @@ components:
           oneOf:
             - $ref: "#/components/schemas/Lectura"
             - type: "null"
+    Afectado:
+      type: object
+      required: [id, nodoId, alias, creadoEn]
+      properties:
+        id:
+          type: string
+          format: uuid
+        nodoId:
+          type: string
+          format: uuid
+        alias:
+          type: string
+        creadoEn:
+          type: string
+          format: date-time
+    AfectadoCrear:
+      type: object
+      required: [nodoId, alias]
+      properties:
+        nodoId:
+          type: string
+          format: uuid
+        alias:
+          type: string
+          description: Se recortan los espacios de los extremos.
+          minLength: 1
+          maxLength: 100
     SensorCrear:
       type: object
       required: [nodoId, nombre]
@@ -758,6 +785,33 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Sensor"
+        "400":
+          $ref: "#/components/responses/DatosInvalidos"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+        "403":
+          $ref: "#/components/responses/SinPermiso"
+        "404":
+          $ref: "#/components/responses/NoEncontrado"
+  /api/afectados:
+    post:
+      summary: Agregar un afectado a un nodo
+      description: Solo administradores. Responde 404 si el nodo no existe. El alias puede repetirse en un nodo.
+      security:
+        - sesion: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AfectadoCrear"
+      responses:
+        "201":
+          description: Afectado creado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Afectado"
         "400":
           $ref: "#/components/responses/DatosInvalidos"
         "401":
