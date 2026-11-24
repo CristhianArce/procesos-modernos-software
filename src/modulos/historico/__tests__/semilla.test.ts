@@ -2,8 +2,8 @@ import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const sql = () => readFileSync("db/seed/historico.sql", "utf8");
-const SENSOR_A = "00000000-0000-4000-8000-000000000911";
-const SENSOR_B = "00000000-0000-4000-8000-000000000912";
+const SENSOR_A = "b15e0000-0000-4000-8000-000000000911";
+const SENSOR_B = "b15e0000-0000-4000-8000-000000000912";
 
 describe("semilla del histórico", () => {
   it("#26 CA-1: historico.sql existe entre las semillas", () => {
@@ -17,7 +17,7 @@ describe("semilla del histórico", () => {
   it("#26 CA-2: crea el nodo 901 y los sensores 911 y 912", () => {
     const texto = sql();
     expect(texto).toContain("Nodo histórico demo");
-    expect(texto).toContain("00000000-0000-4000-8000-000000000901");
+    expect(texto).toContain("b15e0000-0000-4000-8000-000000000901");
     expect(texto).toContain("Medidor histórico A");
     expect(texto).toContain("Medidor histórico B");
     expect(texto).toContain(SENSOR_A);
