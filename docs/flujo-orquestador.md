@@ -36,10 +36,11 @@ flowchart LR
     subgraph S5["5 Implementar el código (sesión)"]
         OA["skill openspec-apply-change<br/>ejecuta tasks.md"]
     end
-    VER -->|APROBADO| OA
-    VER ==>|"APROBADO, en segundo plano"| TU[["escritor-pruebas<br/>unitarias"]]
-    VER ==>|"APROBADO, en segundo plano"| TI[["escritor-pruebas<br/>integración"]]
-    VER ==>|"APROBADO, en segundo plano"| TE[["escritor-pruebas<br/>e2e"]]
+    VER -->|APROBADO| FORK(( ))
+    FORK --> OA
+    FORK ==>|"segundo plano"| TU[["escritor-pruebas<br/>unitarias"]]
+    FORK ==>|"segundo plano"| TI[["escritor-pruebas<br/>integración"]]
+    FORK ==>|"segundo plano"| TE[["escritor-pruebas<br/>e2e"]]
 
     OA --> UNI["5 Unir<br/>Sesión: espera a los 3 agentes y ajusta<br/>los nombres que las pruebas supusieron"]
     TU --> UNI
@@ -70,6 +71,7 @@ flowchart LR
     style S3G fill:#ede9fe,stroke:#6d28d9,color:#4c1d95
     style S5 fill:#ede9fe,stroke:#6d28d9,color:#4c1d95
     style REV fill:#dcfce7,stroke:#15803d,color:#14532d
+    style FORK fill:#4c1d95,stroke:#4c1d95
     style PRE stroke-dasharray: 5 4
     style S2 stroke-dasharray: 5 4
     style FIX stroke-dasharray: 5 4
@@ -96,6 +98,7 @@ flowchart LR
 | Rectángulo | Un paso del flujo |
 | Rombo | Una decisión con veredicto (`APROBADO`, `CORREGIR` o `BLOQUEAR`) |
 | Rectángulo con barras dobles a los lados | Un agente que corre en segundo plano, en paralelo con la sesión |
+| Punto morado | El punto donde la sesión lanza varias cosas a la vez (el código y los tres agentes de pruebas) |
 | Estadio (extremos redondeados) | Estado final del flujo |
 
 *Líneas: qué tipo de relación es*
