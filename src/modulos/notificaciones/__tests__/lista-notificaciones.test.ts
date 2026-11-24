@@ -1,9 +1,11 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { formatearFecha } from "@/modulos/dashboard/formato";
 import { ListaNotificaciones } from "../ui/ListaNotificaciones";
 import type { Notificacion } from "../repo";
+
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
 const reciente: Notificacion = {
   id: "n2",
