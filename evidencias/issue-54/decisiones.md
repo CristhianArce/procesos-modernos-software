@@ -1,0 +1,8 @@
+# Decisiones
+
+| # | Fecha | Fase | Decisión | Decidió | Votos | Evidencia | Alternativas descartadas | Revisar |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 2026-11-24 | Propuesta | CA-2: el alias es obligatorio, se recortan los espacios y mide de 1 a 80 caracteres (el mismo límite de la tabla `nodo_usuarios` y del spec `afectados-de-nodos`), sin restringir caracteres. Vacío, solo espacios, más de 80 caracteres o un `nodoId` que no es UUID → 400 (como `sensores`); un UUID sin nodo → 404. Reemplaza la versión de 100 caracteres: la HU 8 ya está fusionada y su CHECK de 80 es inmutable. | Persona | — | preguntas.md #1, #3 | Máximo 50; máximo 100 (exigía migración y modificar el spec vigente) | no |
+| 2 | 2026-11-24 | Propuesta | CA-1: la HU 8 (#25) ya está fusionada (tabla `nodo_usuarios`, módulo `afectados`, panel por `paneles.ts` y `GET /api/afectados`). Esta historia solo agrega el `POST /api/afectados`, la función de alta en repo y servicio, y el formulario de alta en el panel existente, sin migración ni semilla. Reemplaza la versión que creaba tabla, módulo y panel. | Persona | — | preguntas.md #2, #4 | Crear tabla, módulo y panel aquí (premisa obsoleta); detener la corrida | no |
+| 3 | 2026-11-24 | Propuesta | Endpoint `POST /api/afectados` con `{ nodoId, alias }` en el cuerpo, en el mismo `route.ts` que el `GET`; responde 201 con el afectado creado `{ id, alias }`. El panel sigue leyendo la lista con el servicio. | Orquestador | — | Notas técnicas del issue | `POST /api/nodos/{id}/afectados` | sí |
+| 4 | 2026-11-24 | Propuesta | Sin semilla nueva: N0 empieza sin afectados, como pide el e2e del issue. | Orquestador | — | Notas técnicas del issue | Semilla de demostración | no |

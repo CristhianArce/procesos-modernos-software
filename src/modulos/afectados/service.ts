@@ -2,6 +2,7 @@ import "server-only";
 import { obtenerNodo } from "@/modulos/nodos/service";
 import * as repo from "./repo";
 import type { Afectado } from "./repo";
+import type { AfectadoCrear } from "./schema";
 
 export type { Afectado } from "./repo";
 export type AfectadosNodo = { total: number; afectados: Afectado[] };
@@ -11,4 +12,10 @@ export async function listarAfectados(nodoId: string): Promise<AfectadosNodo> {
   await obtenerNodo(nodoId);
   const afectados = await repo.listarPorNodo(nodoId);
   return { total: afectados.length, afectados };
+}
+
+/** Agrega un afectado al nodo; 404 si el nodo no existe y entonces no se guarda nada (CA-1, CA-3). */
+export async function crearAfectado(entrada: AfectadoCrear): Promise<Afectado> {
+  await obtenerNodo(entrada.nodoId);
+  return repo.crear(entrada.nodoId, entrada.alias);
 }

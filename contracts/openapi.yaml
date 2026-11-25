@@ -216,6 +216,17 @@ components:
           type: string
           minLength: 1
           maxLength: 80
+    AfectadoCrear:
+      type: object
+      required: [nodoId, alias]
+      properties:
+        nodoId:
+          type: string
+          format: uuid
+        alias:
+          type: string
+          minLength: 1
+          maxLength: 80
     AfectadosNodo:
       type: object
       required: [total, afectados]
@@ -1049,6 +1060,32 @@ paths:
           $ref: "#/components/responses/DatosInvalidos"
         "401":
           $ref: "#/components/responses/NoAutenticado"
+        "404":
+          $ref: "#/components/responses/NoEncontrado"
+    post:
+      summary: Agregar un afectado a un nodo
+      description: Solo administradores. El alias se recorta y puede repetirse dentro del nodo; el nodo debe existir.
+      security:
+        - sesion: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AfectadoCrear"
+      responses:
+        "201":
+          description: Afectado creado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Afectado"
+        "400":
+          $ref: "#/components/responses/DatosInvalidos"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+        "403":
+          $ref: "#/components/responses/SinPermiso"
         "404":
           $ref: "#/components/responses/NoEncontrado"
   /api/historico:

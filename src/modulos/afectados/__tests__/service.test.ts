@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { obtenerNodo } from "@/modulos/nodos/service";
 import * as repo from "../repo";
-import { listarAfectados } from "../service";
+import { crearAfectado, listarAfectados } from "../service";
 
 vi.mock("../repo");
 vi.mock("@/modulos/nodos/service");
@@ -36,5 +36,24 @@ describe("servicio de afectados", () => {
     nodo.mockRejectedValue({ estado: 404, message: "Nodo no encontrado" });
     await expect(listarAfectados(id)).rejects.toMatchObject({ estado: 404, message: "Nodo no encontrado" });
     expect(r.listarPorNodo).not.toHaveBeenCalled();
+  });
+});
+
+describe("servicio de alta de afectado", () => {
+  it("#54 CA-1: comprueba el nodo, crea el afectado y lo devuelve", async () => {
+    nodo.mockResolvedValue({} as never);
+    r.crear.mockResolvedValue({ id: "a1", alias: "Usuario demo 01" });
+    expect(await crearAfectado({ nodoId: id, alias: "Usuario demo 01" })).toEqual({ id: "a1", alias: "Usuario demo 01" });
+    expect(nodo).toHaveBeenCalledWith(id);
+    expect(r.crear).toHaveBeenCalledWith(id, "Usuario demo 01");
+  });
+
+  it("#54 CA-3: con un nodo inexistente lanza 404 y no llama a repo.crear", async () => {
+    nodo.mockRejectedValue({ estado: 404, message: "Nodo no encontrado" });
+    await expect(crearAfectado({ nodoId: id, alias: "Ana" })).rejects.toMatchObject({
+      estado: 404,
+      message: "Nodo no encontrado",
+    });
+    expect(r.crear).not.toHaveBeenCalled();
   });
 });
